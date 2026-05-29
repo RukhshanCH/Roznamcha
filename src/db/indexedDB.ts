@@ -120,3 +120,77 @@ export async function renumberEntries(date: string): Promise<void> {
     transaction.onerror = () => reject(transaction.error);
   });
 }
+function getLast7Dates(): string[] {
+  const dates: string[] = [];
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    dates.push(d.toISOString().split("T")[0]);
+  }
+
+  return dates;
+}
+export async function exportWeeklyData(): Promise<void> {
+  const dates = getLast7Dates();
+
+  const allEntries: JournalEntry[] = [];
+
+  for (const date of dates) {
+    const entries = await getEntriesByDate(date);
+    allEntries.push(...entries);
+  }
+
+  const blob = new Blob(
+    [JSON.stringify(allEntries, null, 2)],
+    { type: "application/json" }
+  );
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `roznamcha-week-${new Date().toISOString().split("T")[0]}-backup.json`;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+export async function importWeeklyData(file: File): Promise<void> {
+  const text = await file.text();
+  const entries: JournalEntry[] = JSON.parse(text);
+
+  const db = await initDB();
+
+  // collect entries to import first
+  const entriesToAdd: Omit<JournalEntry, "id">[] = [];
+
+  for (const entry of entries) {
+    const existingEntries = await getEntriesByDate(entry.date);
+
+    const alreadyExists = existingEntries.some(
+      (e) => e.serialNo === entry.serialNo
+    );
+
+    if (!alreadyExists) {
+      const { id, ...rest } = entry;
+      entriesToAdd.push(rest);
+    }
+  }
+
+  // NOW start transaction
+  const tx = db.transaction(STORE_NAME, "readwrite");
+  const store = tx.objectStore(STORE_NAME);
+
+  for (const entry of entriesToAdd) {
+    store.add(entry);
+  }
+
+  return new Promise((resolve, reject) => {
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+setInterval(() => {
+  exportWeeklyData();
+}, 7 * 24 * 60 * 60 * 1000);

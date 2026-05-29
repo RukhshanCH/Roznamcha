@@ -14,6 +14,7 @@
   --accent-blue-light: #DBEAFE;
   --accent-blue-hover: #2563EB;
   --accent-green: #10B981;
+  --accent-green-hover: #0ca975;
   --accent-gold: #D97706;
   --border-color: #E5E7EB;
   --table-header-bg: #F9FAFB;
@@ -768,13 +769,23 @@ body {
 }
 
 .btn {
-  padding: 10px 20px;
+  all: unset;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 42px;
+  padding-inline: 20px;
+
   border-radius: 8px;
+
   font-family: var(--font-primary);
   font-size: 0.875rem;
+  line-height: 1;
+
+  box-sizing: border-box;
   cursor: pointer;
-  border: none;
-  transition: background-color 150ms ease, opacity 150ms ease;
 }
 
 .btn:hover {
@@ -789,6 +800,32 @@ body {
 .btn-secondary {
   background: #F3F4F6;
   color: var(--text-primary);
+}
+
+.actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.export-btn {
+  background-color: var(--accent-blue);
+  color: white;
+}
+
+.export-btn:hover {
+  background-color: var(--accent-blue-hover);
+}
+
+.import-btn {
+  background-color: var(--accent-green);
+  color: white;
+}
+
+.import-btn:hover {
+  background-color: var(--accent-green-hover);
 }
 
 /* Add Entry Button */
