@@ -115,7 +115,7 @@ export default function RoznamchaPage() {
         <div className="page-title-left">
           <h1 className="page-title">روزنامچہ رجسٹر</h1>
           <div className="breadcrumb">
-            <Link to="/dashboard">دیش بورڈ</Link>
+            <Link to="/dashboard">ڈیش بورڈ</Link>
             {' / روزنامچہ رجسٹر'}
           </div>
         </div>

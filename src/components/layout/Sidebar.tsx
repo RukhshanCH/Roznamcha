@@ -17,7 +17,7 @@ import { sidebarCollapsedAtom } from '@/store/atoms';
 import { useMemo } from 'react';
 
 const menuItems = [
-  { icon: LayoutDashboard, label: 'دیش بورڈ', path: '/dashboard' },
+  { icon: LayoutDashboard, label: 'ڈیش بورڈ', path: '/dashboard' },
   { icon: PenLine, label: 'روزانہ اندراج', path: '/daily-entry' },
   { icon: BookOpen, label: 'روزنامچہ رجسٹر', path: '/roznamcha' },
   { icon: Users, label: 'گاہک (کسٹمرز)', path: '/customers' },
