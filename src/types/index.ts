@@ -12,6 +12,10 @@ export interface JournalEntry {
   note: string;
   date: string;
   createdAt: number;
+  
+   // NEW FIELDS
+  isBackup?: boolean;
+  backupId?: string; // identifies which backup it came from
 }
 
 export interface MenuItem {

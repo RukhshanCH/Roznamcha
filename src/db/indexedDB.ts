@@ -141,8 +141,19 @@ export async function exportWeeklyData(): Promise<void> {
     allEntries.push(...entries);
   }
 
+  const backupData = {
+    version: 1,
+    backupId: crypto.randomUUID(),
+    exportedAt: new Date().toISOString(),
+    entries: allEntries.map(({ id, ...entry }) => ({
+      ...entry,
+      isBackup: false,
+      backupId: undefined,
+    })),
+  };
+
   const blob = new Blob(
-    [JSON.stringify(allEntries, null, 2)],
+    [JSON.stringify(backupData, null, 2)],
     { type: "application/json" }
   );
 
@@ -150,47 +161,131 @@ export async function exportWeeklyData(): Promise<void> {
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = `roznamcha-week-${new Date().toISOString().split("T")[0]}-backup.json`;
+  a.download = `roznamcha-weekly-backup-${new Date()
+    .toISOString()
+    .split("T")[0]}.json`;
+
   a.click();
 
   URL.revokeObjectURL(url);
 }
-export async function importWeeklyData(file: File): Promise<void> {
+type ImportResult = {
+  imported: number;
+  skipped: number;
+  skippedEntries: {
+    serialNo: number;
+    date: string;
+    reason: string;
+  }[];
+};
+
+export async function importWeeklyData(
+  file: File
+): Promise<ImportResult> {
   const text = await file.text();
-  const entries: JournalEntry[] = JSON.parse(text);
+  const data = JSON.parse(text);
 
-  const db = await initDB();
-
-  // collect entries to import first
-  const entriesToAdd: Omit<JournalEntry, "id">[] = [];
-
-  for (const entry of entries) {
-    const existingEntries = await getEntriesByDate(entry.date);
-
-    const alreadyExists = existingEntries.some(
-      (e) => e.serialNo === entry.serialNo
-    );
-
-    if (!alreadyExists) {
-      const { id, ...rest } = entry;
-      entriesToAdd.push(rest);
-    }
+  if (
+    !data.version ||
+    !data.backupId ||
+    !Array.isArray(data.entries)
+  ) {
+    throw new Error("Invalid backup file");
   }
 
-  // NOW start transaction
+  const backupId = data.backupId;
+  const entries: JournalEntry[] = data.entries;
+
+  const allEntries = await getAllEntries();
+
+  const alreadyImported = allEntries.some(
+    (e) => e.backupId === backupId
+  );
+
+  if (alreadyImported) {
+    throw new Error("Backup already imported");
+  }
+
+  const db = await initDB();
   const tx = db.transaction(STORE_NAME, "readwrite");
   const store = tx.objectStore(STORE_NAME);
 
-  for (const entry of entriesToAdd) {
-    store.add(entry);
+  let imported = 0;
+  let skipped = 0;
+
+  const skippedEntries: ImportResult["skippedEntries"] = [];
+
+  for (const entry of entries) {
+    const { id, ...rest } = entry;
+
+    const duplicate = allEntries.some(
+      (e) =>
+        e.date === entry.date &&
+        e.serialNo === entry.serialNo
+    );
+
+    if (duplicate) {
+      skipped++;
+      skippedEntries.push({
+        serialNo: entry.serialNo,
+        date: entry.date,
+        reason: "Duplicate entry",
+      });
+      continue;
+    }
+
+    store.add({
+      ...rest,
+      isBackup: true,
+      backupId,
+    });
+
+    imported++;
   }
 
   return new Promise((resolve, reject) => {
-    tx.oncomplete = () => resolve();
+    tx.oncomplete = () =>
+      resolve({ imported, skipped, skippedEntries });
+
     tx.onerror = () => reject(tx.error);
+    tx.onabort = () => reject(tx.error);
   });
 }
 
-setInterval(() => {
-  exportWeeklyData();
-}, 7 * 24 * 60 * 60 * 1000);
+export async function checkWeeklyBackup() {
+  const lastBackup = localStorage.getItem("lastBackup");
+
+  const WEEK = 7 * 24 * 60 * 60 * 1000;
+
+  if (
+    !lastBackup ||
+    Date.now() - Number(lastBackup) >= WEEK
+  ) {
+    await exportWeeklyData();
+
+    localStorage.setItem(
+      "lastBackup",
+      Date.now().toString()
+    );
+  }
+}
+
+export async function getWeeklyStats() {
+  const stats: { date: string; count: number }[] = [];
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+
+    const dateStr = d.toISOString().split("T")[0];
+
+    const entries = await getEntriesByDate(dateStr);
+
+    stats.push({
+      date: dateStr,
+      count: entries.length,
+    });
+  }
+
+  return stats;
+}

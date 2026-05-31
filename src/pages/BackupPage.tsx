@@ -11,11 +11,14 @@ export default function BackupPage() {
       </p>
 
       <div className="actions">
-        <button className="btn export-btn" onClick={async () => { await exportWeeklyData(); alert("Data exported successfully!")}}>
+        <button className="btn export-btn" onClick={async () => { await exportWeeklyData(); alert("Data exported successfully!") }}>
           Export This Week
         </button>
 
-        <label className="btn import-btn" htmlFor="file">Import</label>
+        <label className="btn import-btn" htmlFor="file">
+          Import
+        </label>
+
         <input
           hidden
           id="file"
@@ -26,22 +29,34 @@ export default function BackupPage() {
 
             if (!file) return;
 
-            // extra validation
             if (!file.name.endsWith(".json")) {
               alert("Only JSON files are allowed.");
               return;
             }
 
             try {
-              await importWeeklyData(file);
+              const result = await importWeeklyData(file);
 
-              alert("Data imported successfully!");
+              alert(
+                `Imported: ${result.imported}, Skipped: ${result.skipped}`
+              );
+
+              if (result.skippedEntries.length) {
+                // console.log("Skipped entries:", result.skippedEntries);
+              }
             } catch (error) {
-              alert("Failed to import data.");
+              if (
+                error instanceof Error &&
+                error.message === "Backup already imported"
+              ) {
+                alert("This backup has already been imported.");
+              } else {
+                alert("Failed to import backup.");
+              }
+
               console.error(error);
             }
 
-            // reset input so same file can be selected again
             e.target.value = "";
           }}
         />

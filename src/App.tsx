@@ -10,8 +10,13 @@ import PaymentsPage from '@/pages/PaymentsPage'
 import SettingsPage from '@/pages/SettingsPage'
 import UsersPage from '@/pages/UsersPage'
 import BackupPage from '@/pages/BackupPage'
+import { useEffect } from 'react'
+import { checkWeeklyBackup } from './db/indexedDB'
 
 export default function App() {
+  useEffect(() => {
+  checkWeeklyBackup();
+}, []);
   return (
     <AppLayout>
       <Routes>
