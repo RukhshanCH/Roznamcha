@@ -102,7 +102,7 @@ body {
   flex-direction: column;
   transition: width 300ms ease;
   z-index: 100;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .sidebar.collapsed {
@@ -826,6 +826,37 @@ body {
 
 .import-btn:hover {
   background-color: var(--accent-green-hover);
+}
+
+/* TOOLTIP */
+
+.tooltip {
+    position: absolute;
+    right: 60px;
+    top: -30px;
+    background: rgba(20, 20, 20, 0.92);
+    color: white;
+    padding: 8px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(10px);
+    transition: all 0.25s ease;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.menu-item:hover .tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+}
+
+.sidebar:not(.collapsed) .tooltip {
+  display: none;
 }
 
 /* Add Entry Button */

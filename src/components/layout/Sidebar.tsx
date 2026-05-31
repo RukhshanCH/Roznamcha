@@ -66,6 +66,7 @@ export default function Sidebar() {
           return (
             <li key={item.path}>
               <a
+                style={{position: "relative"}}
                 className={`menu-item ${isActive ? 'active' : ''}`}
                 onClick={(e) => {
                   e.preventDefault();
@@ -75,6 +76,9 @@ export default function Sidebar() {
               >
                 <Icon className="menu-item-icon" />
                 <span className="menu-item-label">{item.label}</span>
+                <span className="tooltip">
+                  {item.label}
+                </span>
               </a>
             </li>
           );

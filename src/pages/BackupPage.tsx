@@ -11,7 +11,7 @@ export default function BackupPage() {
       </p>
 
       <div className="actions">
-        <button className="btn export-btn" onClick={exportWeeklyData}>
+        <button className="btn export-btn" onClick={async () => { await exportWeeklyData(); alert("Data exported successfully!")}}>
           Export This Week
         </button>
 
