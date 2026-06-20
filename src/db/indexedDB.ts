@@ -131,6 +131,40 @@ function getLast7Dates(): string[] {
 
   return dates;
 }
+
+// Helper function to trigger file download
+function downloadBackup(
+  entries: JournalEntry[],
+  filename: string
+): void {
+  const backupData = {
+    version: 1,
+    backupId: crypto.randomUUID(),
+    exportedAt: new Date().toISOString(),
+    entries: entries.map(({ id, ...entry }) => ({
+      ...entry,
+      isBackup: false,
+      backupId: undefined,
+    })),
+  };
+
+  const blob = new Blob(
+    [JSON.stringify(backupData, null, 2)],
+    {
+      type: "application/json",
+    }
+  );
+
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+
+  URL.revokeObjectURL(url);
+}
+// Export functions for backup and import
 export async function exportWeeklyData(): Promise<void> {
   const dates = getLast7Dates();
 
@@ -141,34 +175,84 @@ export async function exportWeeklyData(): Promise<void> {
     allEntries.push(...entries);
   }
 
+  downloadBackup(
+    allEntries,
+    `roznamcha-weekly-backup-${
+      new Date().toISOString().split("T")[0]
+    }.json`
+  );
+}
+export async function exportMonthlyData(): Promise<void> {
+  const allEntries = await getAllEntries();
+
+  const oneMonthAgo = new Date();
+  oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+
+  const monthlyEntries = allEntries.filter(
+    (entry) => new Date(entry.date) >= oneMonthAgo
+  );
+
+  downloadBackup(
+    monthlyEntries,
+    `roznamcha-monthly-backup-${
+      new Date().toISOString().split("T")[0]
+    }.json`
+  );
+}
+export async function exportAllData(): Promise<void> {
+  const allEntries = await getAllEntries();
+
+  downloadBackup(
+    allEntries,
+    `roznamcha-full-backup-${
+      new Date().toISOString().split("T")[0]
+    }.json`
+  );
+}
+export async function exportByDateRange(
+  startDate: string,
+  endDate: string
+): Promise<void> {
+  const allEntries = await getAllEntries();
+
+  const filtered = allEntries.filter((entry) => {
+    const entryDate = new Date(entry.date);
+    return (
+      entryDate >= new Date(startDate) &&
+      entryDate <= new Date(endDate)
+    );
+  });
+
   const backupData = {
     version: 1,
     backupId: crypto.randomUUID(),
     exportedAt: new Date().toISOString(),
-    entries: allEntries.map(({ id, ...entry }) => ({
+    range: {
+      startDate,
+      endDate,
+    },
+    entries: filtered.map(({ id, ...entry }) => ({
       ...entry,
       isBackup: false,
       backupId: undefined,
     })),
   };
 
-  const blob = new Blob(
-    [JSON.stringify(backupData, null, 2)],
-    { type: "application/json" }
-  );
+  const blob = new Blob([JSON.stringify(backupData, null, 2)], {
+    type: "application/json",
+  });
 
   const url = URL.createObjectURL(blob);
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = `roznamcha-weekly-backup-${new Date()
-    .toISOString()
-    .split("T")[0]}.json`;
+  a.download = `roznamcha-${startDate}-to-${endDate}.json`;
 
   a.click();
 
   URL.revokeObjectURL(url);
 }
+
 type ImportResult = {
   imported: number;
   skipped: number;
@@ -179,6 +263,7 @@ type ImportResult = {
   }[];
 };
 
+// Returns number of entries imported and skipped (with reasons)
 export async function importWeeklyData(
   file: File
 ): Promise<ImportResult> {
