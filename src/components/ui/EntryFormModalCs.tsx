@@ -65,7 +65,6 @@ export default function EntryFormModalCs() {
             }
 
             const updated = await getCustomers();
-            console.log('Updated customers:', updated);
             setCustomer(updated);
             handleClose();
         } catch (err) {
