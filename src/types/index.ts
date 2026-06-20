@@ -18,6 +18,13 @@ export interface JournalEntry {
   backupId?: string; // identifies which backup it came from
 }
 
+export interface CustomerEntry {
+  id?: number;
+  serialNo: number;
+  name: string;
+  mobileNumber: string;
+}
+
 export interface MenuItem {
   icon: string;
   label: string;

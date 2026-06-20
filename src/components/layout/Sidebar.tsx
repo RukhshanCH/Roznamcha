@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
   LayoutDashboard,
-  PenLine,
   Users,
   MinusCircle,
   Building2,
@@ -15,7 +14,7 @@ import { useMemo } from 'react';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'ڈیش بورڈ', path: '/dashboard' },
-  { icon: PenLine, label: 'روزانہ اندراج', path: '/daily-entry' },
+  // { icon: PenLine, label: 'روزانہ اندراج', path: '/daily-entry' },
   { icon: BookOpen, label: 'روزنامچہ رجسٹر', path: '/roznamcha' },
   { icon: Users, label: 'گاہک (کسٹمرز)', path: '/customers' },
   { icon: MinusCircle, label: 'اخراجات', path: '/expenses' },

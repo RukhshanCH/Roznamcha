@@ -1,8 +1,9 @@
-import type { JournalEntry } from '@/types';
+import type { CustomerEntry, JournalEntry } from '@/types';
 
 const DB_NAME = 'RoznamchaDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = 'entries';
+const CUSTOMER_STORE_NAME = 'customers';
 
 let db: IDBDatabase | null = null;
 
@@ -28,6 +29,12 @@ export async function initDB(): Promise<IDBDatabase> {
         store.createIndex('date', 'date', { unique: false });
         store.createIndex('serialNo', 'serialNo', { unique: false });
       }
+      if (!database.objectStoreNames.contains(CUSTOMER_STORE_NAME)) {
+        database.createObjectStore(CUSTOMER_STORE_NAME, {
+          keyPath: 'id',
+          autoIncrement: true,
+        });
+      }
     };
   });
 }
@@ -37,6 +44,19 @@ export async function addEntry(entry: Omit<JournalEntry, 'id'>): Promise<number>
   return new Promise((resolve, reject) => {
     const transaction = database.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
+    const request = store.add(entry);
+
+    request.onsuccess = () => resolve(request.result as number);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function addEntryCs(entry: Omit<CustomerEntry, 'id'>): Promise<number> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([CUSTOMER_STORE_NAME], 'readwrite');
+    const store = tx.objectStore(CUSTOMER_STORE_NAME);
     const request = store.add(entry);
 
     request.onsuccess = () => resolve(request.result as number);
@@ -56,11 +76,37 @@ export async function updateEntry(entry: JournalEntry): Promise<void> {
   });
 }
 
+export async function updateEntryCs(entry: CustomerEntry): Promise<void> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([CUSTOMER_STORE_NAME], 'readwrite');
+    const store = tx.objectStore(CUSTOMER_STORE_NAME);
+    const request = store.put(entry);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
 export async function deleteEntry(id: number): Promise<void> {
   const database = await initDB();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction([STORE_NAME], 'readwrite');
     const store = transaction.objectStore(STORE_NAME);
+    const request = store.delete(id);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function deleteEntryCs(id: number): Promise<void> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([CUSTOMER_STORE_NAME], 'readwrite');
+    const store = tx.objectStore(CUSTOMER_STORE_NAME);
     const request = store.delete(id);
 
     request.onsuccess = () => resolve();
@@ -93,6 +139,19 @@ export async function getEntriesByDate(date: string): Promise<JournalEntry[]> {
       entries.sort((a, b) => a.serialNo - b.serialNo);
       resolve(entries);
     };
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function getCustomers(): Promise<CustomerEntry[]> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([CUSTOMER_STORE_NAME], 'readonly');
+    const store = tx.objectStore(CUSTOMER_STORE_NAME);
+    const request = store.getAll();
+
+    request.onsuccess = () => resolve(request.result as CustomerEntry[]);
     request.onerror = () => reject(request.error);
   });
 }

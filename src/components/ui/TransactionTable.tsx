@@ -13,8 +13,8 @@ export default function TransactionTable() {
     setIsModalOpen(true);
   };
 
-  const formatAmount = (value: number): string => {
-    if (value === 0) return '---';
+  const formatAmount = (value?: number): string => {
+    if (value === 0 || value == null) return '---';
     return value.toLocaleString('en-US') + '/-';
   };
 
