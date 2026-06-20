@@ -6,34 +6,7 @@ import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom } from '@/store/atoms';
-import { getEntriesByDate, initDB, addEntry } from '@/db/indexedDB';
-
-const demoData = [
-  {
-    serialNo: 1,
-    name: 'اعجاز مینڈیکل سٹور',
-    mobileNumber: '0329-8703623',
-    cashAmount: 900,
-    payment: 400,
-    receipt: 500,
-    balance: 0,
-    remainingAmount: 200,
-    previousBalance: 0,
-    note: 'نقدی',
-  },
-  {
-    serialNo: 2,
-    name: 'عمران کیشٹ کورس سٹور',
-    mobileNumber: '0349-1132594',
-    cashAmount: 0,
-    payment: 350,
-    receipt: 0,
-    balance: 0,
-    remainingAmount: 0,
-    previousBalance: 0,
-    note: '',
-  },
-];
+import { getEntriesByDate, initDB } from '@/db/indexedDB';
 
 export default function RoznamchaPage() {
   const [entries, setEntries] = useAtom(entriesAtom);
@@ -51,21 +24,8 @@ export default function RoznamchaPage() {
 
         const data = await getEntriesByDate(selectedDate);
 
-        // Seed demo data if empty
-        if (data.length === 0) {
-          const today = new Date().toISOString().split('T')[0];
-          for (const item of demoData) {
-            await addEntry({
-              ...item,
-              date: today,
-              createdAt: Date.now(),
-            });
-          }
-          const seeded = await getEntriesByDate(selectedDate);
-          setEntries(seeded);
-        } else {
-          setEntries(data);
-        }
+        setEntries(data);
+
       } catch (err) {
         console.error('Error initializing DB:', err);
       }
