@@ -6,10 +6,7 @@ import {
   PenLine,
   Users,
   MinusCircle,
-  BarChart3,
   Building2,
-  Settings,
-  UserCircle,
   CloudUpload,
   CalendarDays,
 } from 'lucide-react';
@@ -22,10 +19,8 @@ const menuItems = [
   { icon: BookOpen, label: 'روزنامچہ رجسٹر', path: '/roznamcha' },
   { icon: Users, label: 'گاہک (کسٹمرز)', path: '/customers' },
   { icon: MinusCircle, label: 'اخراجات', path: '/expenses' },
-  { icon: BarChart3, label: 'رپورٹس', path: '/reports' },
   { icon: Building2, label: 'ادائیگیاں', path: '/payments' },
-  { icon: Settings, label: 'سیٹنگز', path: '/settings' },
-  { icon: UserCircle, label: 'صارفین', path: '/users' },
+  // { icon: UserCircle, label: 'صارفین', path: '/users' },
   { icon: CloudUpload, label: 'بیک اپ', path: '/backup' },
 ];
 
