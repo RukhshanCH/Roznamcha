@@ -1,10 +1,11 @@
 import { useAtom } from 'jotai';
-import { Menu, Search, Bell, User, ChevronDown } from 'lucide-react';
-import { sidebarCollapsedAtom } from '@/store/atoms';
+import { Menu, Search } from 'lucide-react';
+import { sidebarCollapsedAtom, searchAtom } from '@/store/atoms';
 
 export default function HeaderBar() {
   const [collapsed, setCollapsed] = useAtom(sidebarCollapsedAtom);
-
+  const [search, setSearch] = useAtom(searchAtom);
+  
   return (
     <header className="header-bar">
       <div className="header-left">
@@ -17,10 +18,11 @@ export default function HeaderBar() {
         </button>
       </div>
       <div className="header-right">
-        <button className="header-btn" aria-label="Search">
-          <Search />
-        </button>
-        <button className="header-btn notification-btn" aria-label="Notifications">
+        <div style={{position: "relative"}}>
+          <label htmlFor='search'> <Search className='search-icon' /> </label>
+          <input id="search" className="header-btn search-bar" aria-label="Search" type="text" placeholder="اندراجات تلاش کریں" value={search} onChange={(e) => setSearch(e.target.value)}/>
+        </div>
+        {/* <button className="header-btn notification-btn" aria-label="Notifications">
           <Bell />
           <span className="notification-badge">3</span>
         </button>
@@ -30,7 +32,7 @@ export default function HeaderBar() {
           </div>
           <span className="user-name">ایمن</span>
           <ChevronDown className="user-chevron" />
-        </div>
+        </div> */}
       </div>
     </header>
   );

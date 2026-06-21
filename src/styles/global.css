@@ -283,9 +283,33 @@ body {
   background-color: #F3F4F6;
 }
 
-.header-btn svg {
+.search-bar {
+  position: relative;
+  width: 200px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  font-family: var(--font-ui);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  transition: border-color 150ms ease;
+  cursor: text;
+}
+.search-bar:focus {
+  border-color: var(--accent-blue);
+  outline: none;
+}
+
+.search-icon {
+  position: absolute;
+  top: 50%;
+  left: 8px;
+  transform: translateY(-50%);
   width: 20px;
   height: 20px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  z-index: 1;
 }
 
 .notification-btn {

@@ -16,3 +16,5 @@ export const isModalOpenAtomCs = atom(false);
 
 export const editingEntryAtom = atom<JournalEntry | null>(null);
 export const editingEntryAtomCs = atom<CustomerEntry | null>(null);
+
+export const searchAtom = atom("");
