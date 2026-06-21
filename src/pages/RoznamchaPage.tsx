@@ -70,10 +70,10 @@ export default function RoznamchaPage() {
 
   return (
     <div>
+      <h1 className="page-title">روزنامچہ رجسٹر</h1>
       {/* Page Title Section */}
       <div className="page-title-section">
         <div className="page-title-left">
-          <h1 className="page-title">روزنامچہ رجسٹر</h1>
           <div className="breadcrumb">
             <Link to="/dashboard">ڈیش بورڈ</Link>
             {' / روزنامچہ رجسٹر'}
