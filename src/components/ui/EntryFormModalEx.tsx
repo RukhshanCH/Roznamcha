@@ -1,30 +1,33 @@
 import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
-import { isModalOpenAtomCs, editingEntryAtomCs, customerAtom, selectedDateAtom } from '@/store/atoms';
-import { updateEntryCs, addEntryCs, getCustomers, deleteEntryCs, renumberEntriesCs } from '@/db/indexedDB';
+import { isModalOpenAtomEx, editingEntryAtomEx, expensesAtom, selectedDateAtom } from '@/store/atoms';
+import { updateEntryEx, addEntryEx, getExpenses, deleteEntryEx, renumberEntriesEx } from '@/db/indexedDB';
 
-export default function EntryFormModalCs() {
-    const [isOpen, setIsOpen] = useAtom(isModalOpenAtomCs);
-    const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomCs);
+export default function EntryFormModalEx() {
+    const [isOpen, setIsOpen] = useAtom(isModalOpenAtomEx);
+    const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomEx);
     const [selectedDate] = useAtom(selectedDateAtom);
-    const [, setCustomer] = useAtom(customerAtom);
+    const [, setExpenses] = useAtom(expensesAtom);
 
     const [formData, setFormData] = useState({
         name: '',
-        mobileNumber: '',
+        description: '',
+        amount: '',
     });
 
     useEffect(() => {
         if (editingEntry) {
             setFormData({
                 name: editingEntry.name || '',
-                mobileNumber: editingEntry.mobileNumber || '',
+                description: editingEntry.description || '',
+                amount: editingEntry.amount != null ? String(editingEntry.amount) : '',
             });
         } else {
             setFormData({
                 name: '',
-                mobileNumber: '',
+                description: '',
+                amount: '',
             });
         }
     }, [editingEntry]);
@@ -40,34 +43,35 @@ export default function EntryFormModalCs() {
 
         const entryData = {
             name: formData.name,
-            mobileNumber: formData.mobileNumber,
+            description: formData.description,
+            amount: parseFloat(formData.amount) || 0,
             date: selectedDate,
             createdAt: editingEntry?.createdAt || Date.now(),
         };
 
         try {
             if (editingEntry?.id) {
-                await updateEntryCs({
+                await updateEntryEx({
                     ...entryData,
                     id: editingEntry.id,
                     serialNo: editingEntry.serialNo,
                 });
             } else {
-                const customers = await getCustomers();
+                const expenses = await getExpenses();
 
                 const nextSerial =
-                    customers.length === 0
+                    expenses.length === 0
                         ? 1
-                        : Math.max(...customers.map(c => c.serialNo)) + 1;
+                        : Math.max(...expenses.map(e => e.serialNo)) + 1;
 
-                await addEntryCs({
+                await addEntryEx({
                     ...entryData,
                     serialNo: nextSerial,
                 });
             }
 
-            const updated = await getCustomers();
-            setCustomer(updated);
+            const updated = await getExpenses();
+            setExpenses(updated);
             handleClose();
         } catch (err) {
             console.error('Error saving entry:', err);
@@ -80,10 +84,10 @@ export default function EntryFormModalCs() {
         if (!confirm('کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟')) return;
 
         try {
-            await deleteEntryCs(editingEntry.id);
-            await renumberEntriesCs(selectedDate);
-            const updated = await getCustomers();
-            setCustomer(updated);
+            await deleteEntryEx(editingEntry.id);
+            await renumberEntriesEx(selectedDate);
+            const updated = await getExpenses();
+            setExpenses(updated);
             handleClose();
         } catch (err) {
             console.error('Error deleting entry:', err);
@@ -121,13 +125,25 @@ export default function EntryFormModalCs() {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">موبائل نمبر</label>
+                        <label className="form-label">تفصیل</label>
                         <input
-                            type="tel"
+                            type="text"
                             className="form-input"
-                            value={formData.mobileNumber}
-                            onChange={(e) => handleChange('mobileNumber', e.target.value)}
-                            placeholder="0300-1234567"
+                            value={formData.description}
+                            onChange={(e) => handleChange('description', e.target.value)}
+                            placeholder="تفصیل درج کریں"
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label className="form-label">رقم</label>
+                        <input
+                            type="number"
+                            className="form-input"
+                            value={formData.amount}
+                            onChange={(e) => handleChange('amount', e.target.value)}
+                            placeholder="رقم درج کریں"
+                            required
                         />
                     </div>
 

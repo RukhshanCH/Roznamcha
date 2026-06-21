@@ -1,9 +1,11 @@
-import type { CustomerEntry, JournalEntry } from '@/types';
+import type { CustomerEntry, JournalEntry, ExpensesEntry, PaymentsEntry } from '@/types';
 
 const DB_NAME = 'RoznamchaDB';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 const STORE_NAME = 'entries';
 const CUSTOMER_STORE_NAME = 'customers';
+const EXPENSES_STORE_NAME = 'expenses';
+const PAYMENTS_STORE_NAME = 'payments';
 
 let db: IDBDatabase | null = null;
 
@@ -30,15 +32,36 @@ export async function initDB(): Promise<IDBDatabase> {
         store.createIndex('serialNo', 'serialNo', { unique: false });
       }
       if (!database.objectStoreNames.contains(CUSTOMER_STORE_NAME)) {
-        database.createObjectStore(CUSTOMER_STORE_NAME, {
+        const customerStore = database.createObjectStore(CUSTOMER_STORE_NAME, {
           keyPath: 'id',
           autoIncrement: true,
         });
+        customerStore.createIndex('date', 'date', { unique: false });
+        customerStore.createIndex('serialNo', 'serialNo', { unique: false });
+      }
+      if (!database.objectStoreNames.contains(EXPENSES_STORE_NAME)) {
+        const expensesStore = database.createObjectStore(EXPENSES_STORE_NAME, {
+          keyPath: 'id',
+          autoIncrement: true,
+        });
+        expensesStore.createIndex('date', 'date', { unique: false });
+        expensesStore.createIndex('serialNo', 'serialNo', { unique: false });
+      }
+      if (!database.objectStoreNames.contains(PAYMENTS_STORE_NAME)) {
+        const paymentsStore = database.createObjectStore(PAYMENTS_STORE_NAME, {
+          keyPath: 'id',
+          autoIncrement: true,
+        });
+        paymentsStore.createIndex('date', 'date', { unique: false });
+        paymentsStore.createIndex('serialNo', 'serialNo', { unique: false });
       }
     };
   });
 }
 
+// CRUD operations for Journal Entries
+
+  // Add Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
 export async function addEntry(entry: Omit<JournalEntry, 'id'>): Promise<number> {
   const database = await initDB();
   return new Promise((resolve, reject) => {
@@ -64,6 +87,33 @@ export async function addEntryCs(entry: Omit<CustomerEntry, 'id'>): Promise<numb
   });
 }
 
+export async function addEntryEx(entry: Omit<ExpensesEntry, 'id'>): Promise<number> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([EXPENSES_STORE_NAME], 'readwrite');
+    const store = tx.objectStore(EXPENSES_STORE_NAME);
+    const request = store.add(entry);
+
+    request.onsuccess = () => resolve(request.result as number);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function addEntryPy(entry: Omit<PaymentsEntry, 'id'>): Promise<number> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([PAYMENTS_STORE_NAME], 'readwrite');
+    const store = tx.objectStore(PAYMENTS_STORE_NAME);
+    const request = store.add(entry);
+
+    request.onsuccess = () => resolve(request.result as number);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+  // Update Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
 export async function updateEntry(entry: JournalEntry): Promise<void> {
   const database = await initDB();
   return new Promise((resolve, reject) => {
@@ -89,6 +139,33 @@ export async function updateEntryCs(entry: CustomerEntry): Promise<void> {
   });
 }
 
+export async function updateEntryEx(entry: ExpensesEntry): Promise<void> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([EXPENSES_STORE_NAME], 'readwrite');
+    const store = tx.objectStore(EXPENSES_STORE_NAME);
+    const request = store.put(entry);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function updateEntryPy(entry: PaymentsEntry): Promise<void> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([PAYMENTS_STORE_NAME], 'readwrite');
+    const store = tx.objectStore(PAYMENTS_STORE_NAME);
+    const request = store.put(entry);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+  // Delete Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
 export async function deleteEntry(id: number): Promise<void> {
   const database = await initDB();
   return new Promise((resolve, reject) => {
@@ -114,6 +191,33 @@ export async function deleteEntryCs(id: number): Promise<void> {
   });
 }
 
+export async function deleteEntryEx(id: number): Promise<void> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([EXPENSES_STORE_NAME], 'readwrite');
+    const store = tx.objectStore(EXPENSES_STORE_NAME);
+    const request = store.delete(id);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function deleteEntryPy(id: number): Promise<void> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([PAYMENTS_STORE_NAME], 'readwrite');
+    const store = tx.objectStore(PAYMENTS_STORE_NAME);
+    const request = store.delete(id);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+  // Get all Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
 export async function getAllEntries(): Promise<JournalEntry[]> {
   const database = await initDB();
   return new Promise((resolve, reject) => {
@@ -156,6 +260,110 @@ export async function getCustomers(): Promise<CustomerEntry[]> {
   });
 }
 
+export async function getEntriesByDateCs(date: string): Promise<CustomerEntry[]> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction(CUSTOMER_STORE_NAME, 'readonly');
+    const store = tx.objectStore(CUSTOMER_STORE_NAME);
+
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const entries = request.result as CustomerEntry[];
+
+      const filtered = entries.filter(e =>
+        new Date(e.createdAt).toDateString() ===
+        new Date(date).toDateString()
+      );
+
+      filtered.sort((a, b) => a.serialNo - b.serialNo);
+
+      resolve(filtered);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function getExpenses(): Promise<ExpensesEntry[]> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([EXPENSES_STORE_NAME], 'readonly');
+    const store = tx.objectStore(EXPENSES_STORE_NAME);
+    const request = store.getAll();
+
+    request.onsuccess = () => resolve(request.result as ExpensesEntry[]);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function getEntriesByDateEx(date: string): Promise<ExpensesEntry[]> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction(EXPENSES_STORE_NAME, 'readonly');
+    const store = tx.objectStore(EXPENSES_STORE_NAME);
+
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const entries = request.result as ExpensesEntry[];
+
+      const filtered = entries.filter(e =>
+        new Date(e.createdAt).toDateString() ===
+        new Date(date).toDateString()
+      );
+
+      filtered.sort((a, b) => a.serialNo - b.serialNo);
+
+      resolve(filtered);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function getPayments(): Promise<PaymentsEntry[]> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction([PAYMENTS_STORE_NAME], 'readonly');
+    const store = tx.objectStore(PAYMENTS_STORE_NAME);
+    const request = store.getAll();
+
+    request.onsuccess = () => resolve(request.result as PaymentsEntry[]);
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function getEntriesByDatePy(date: string): Promise<PaymentsEntry[]> {
+  const database = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction(PAYMENTS_STORE_NAME, 'readonly');
+    const store = tx.objectStore(PAYMENTS_STORE_NAME);
+
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const entries = request.result as PaymentsEntry[];
+
+      const filtered = entries.filter(e =>
+        new Date(e.createdAt).toDateString() ===
+        new Date(date).toDateString()
+      );
+
+      filtered.sort((a, b) => a.serialNo - b.serialNo);
+
+      resolve(filtered);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
 export async function getMaxSerialNo(date: string): Promise<number> {
   const entries = await getEntriesByDate(date);
   if (entries.length === 0) return 0;
@@ -179,6 +387,79 @@ export async function renumberEntries(date: string): Promise<void> {
     transaction.onerror = () => reject(transaction.error);
   });
 }
+
+export async function renumberEntriesCs(date: string): Promise<void> {
+  const entries = await getEntriesByDateCs(date);
+
+  // Sort by current serial number
+  entries.sort((a, b) => a.serialNo - b.serialNo);
+
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(CUSTOMER_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(CUSTOMER_STORE_NAME);
+
+    entries.forEach((entry, index) => {
+      store.put({
+        ...entry,
+        serialNo: index + 1,
+      });
+    });
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function renumberEntriesEx(date: string): Promise<void> {
+  const entries = await getEntriesByDateEx(date);
+
+  // Sort by current serial number
+  entries.sort((a, b) => a.serialNo - b.serialNo);
+
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(EXPENSES_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(EXPENSES_STORE_NAME);
+
+    entries.forEach((entry, index) => {
+      store.put({
+        ...entry,
+        serialNo: index + 1,
+      });
+    });
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+export async function renumberEntriesPy(date: string): Promise<void> {
+  const entries = await getEntriesByDatePy(date);
+
+  // Sort by current serial number
+  entries.sort((a, b) => a.serialNo - b.serialNo);
+
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(PAYMENTS_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(PAYMENTS_STORE_NAME);
+
+    entries.forEach((entry, index) => {
+      store.put({
+        ...entry,
+        serialNo: index + 1,
+      });
+    });
+
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
 function getLast7Dates(): string[] {
   const dates: string[] = [];
 

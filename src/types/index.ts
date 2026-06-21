@@ -23,6 +23,25 @@ export interface CustomerEntry {
   serialNo: number;
   name: string;
   mobileNumber: string;
+  createdAt: number;
+}
+
+export interface ExpensesEntry {
+  id?: number;
+  serialNo: number;
+  name: string;
+  description: string;
+  amount: number;
+  createdAt: number;
+}
+
+export interface PaymentsEntry {
+  id?: number;
+  serialNo: number;
+  name: string;
+  description: string;
+  amount: number;
+  createdAt: number;
 }
 
 export interface MenuItem {
