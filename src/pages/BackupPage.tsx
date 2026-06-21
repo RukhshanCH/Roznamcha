@@ -1,4 +1,4 @@
-import { exportAllData, exportByDateRange, exportMonthlyData, exportWeeklyData, importWeeklyData } from "@/db/indexedDB";
+import { exportAllData, exportByDateRange, exportMonthlyData, exportWeeklyData, importBackup } from "@/db/indexedDB";
 import { useState } from "react";
 import "../styles/backup.css";
 
@@ -130,13 +130,13 @@ export default function BackupPage() {
             if (!file) return;
 
             try {
-              const result = await importWeeklyData(file);
+              const result = await importBackup(file);
 
               alert(
                 `Imported: ${result.imported}, Skipped: ${result.skipped}`
               );
             } catch (error) {
-              alert("Failed to import backup.");
+              alert("Failed to import backup.\n" + error);
             }
 
             e.target.value = "";

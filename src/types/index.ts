@@ -23,6 +23,7 @@ export interface CustomerEntry {
   serialNo: number;
   name: string;
   mobileNumber: string;
+  date: string;
   createdAt: number;
 }
 
@@ -32,6 +33,7 @@ export interface ExpensesEntry {
   name: string;
   description: string;
   amount: number;
+  date: string;
   createdAt: number;
 }
 
@@ -41,6 +43,7 @@ export interface PaymentsEntry {
   name: string;
   description: string;
   amount: number;
+  date: string;
   createdAt: number;
 }
 

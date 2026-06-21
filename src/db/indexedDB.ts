@@ -475,24 +475,40 @@ function getLast7Dates(): string[] {
 // Helper function to trigger file download
 function downloadBackup(
   entries: JournalEntry[],
-  filename: string
+  customers: CustomerEntry[],
+  expenses: ExpensesEntry[],
+  payments: PaymentsEntry[],
+  filename: string,
+  range?: { startDate: string; endDate: string }
 ): void {
   const backupData = {
     version: 1,
     backupId: crypto.randomUUID(),
     exportedAt: new Date().toISOString(),
+    ...(range && { range }),
+
     entries: entries.map(({ id, ...entry }) => ({
       ...entry,
       isBackup: false,
       backupId: undefined,
     })),
+
+    customers: customers.map(({ id, ...customer }) => ({
+      ...customer,
+    })),
+
+    expenses: expenses.map(({ id, ...expense }) => ({
+      ...expense,
+    })),
+
+    payments: payments.map(({ id, ...payment }) => ({
+      ...payment,
+    })),
   };
 
   const blob = new Blob(
     [JSON.stringify(backupData, null, 2)],
-    {
-      type: "application/json",
-    }
+    { type: "application/json" }
   );
 
   const url = URL.createObjectURL(blob);
@@ -504,93 +520,103 @@ function downloadBackup(
 
   URL.revokeObjectURL(url);
 }
+
 // Export functions for backup and import
 export async function exportWeeklyData(): Promise<void> {
   const dates = getLast7Dates();
 
-  const allEntries: JournalEntry[] = [];
+  const entries: JournalEntry[] = [];
 
   for (const date of dates) {
-    const entries = await getEntriesByDate(date);
-    allEntries.push(...entries);
+    entries.push(...await getEntriesByDate(date));
   }
 
   downloadBackup(
-    allEntries,
-    `roznamcha-weekly-backup-${
-      new Date().toISOString().split("T")[0]
-    }.json`
+    entries,
+    await getCustomers(),
+    await getExpenses(),
+    await getPayments(),
+    `roznamcha-weekly-backup-${new Date().toISOString().split("T")[0]}.json`
   );
 }
-export async function exportMonthlyData(): Promise<void> {
-  const allEntries = await getAllEntries();
 
+export async function exportMonthlyData(): Promise<void> {
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-  const monthlyEntries = allEntries.filter(
-    (entry) => new Date(entry.date) >= oneMonthAgo
+  const entries = (await getAllEntries()).filter(
+    entry => new Date(entry.date) >= oneMonthAgo
+  );
+
+  const customers = (await getCustomers()).filter(
+    customer => new Date(customer.createdAt) >= oneMonthAgo
+  );
+
+  const expenses = (await getExpenses()).filter(
+    expense => new Date(expense.createdAt) >= oneMonthAgo
+  );
+
+  const payments = (await getPayments()).filter(
+    payment => new Date(payment.createdAt) >= oneMonthAgo
   );
 
   downloadBackup(
-    monthlyEntries,
-    `roznamcha-monthly-backup-${
-      new Date().toISOString().split("T")[0]
-    }.json`
+    entries,
+    customers,
+    expenses,
+    payments,
+    `roznamcha-monthly-backup-${new Date().toISOString().split("T")[0]}.json`
   );
 }
+
 export async function exportAllData(): Promise<void> {
-  const allEntries = await getAllEntries();
-
   downloadBackup(
-    allEntries,
-    `roznamcha-full-backup-${
-      new Date().toISOString().split("T")[0]
-    }.json`
+    await getAllEntries(),
+    await getCustomers(),
+    await getExpenses(),
+    await getPayments(),
+    `roznamcha-full-backup-${new Date().toISOString().split("T")[0]}.json`
   );
 }
+
 export async function exportByDateRange(
   startDate: string,
   endDate: string
 ): Promise<void> {
-  const allEntries = await getAllEntries();
+  const start = new Date(startDate);
+  const end = new Date(endDate);
 
-  const filtered = allEntries.filter((entry) => {
-    const entryDate = new Date(entry.date);
-    return (
-      entryDate >= new Date(startDate) &&
-      entryDate <= new Date(endDate)
-    );
+  const entries = (await getAllEntries()).filter(entry => {
+    const d = new Date(entry.date);
+    return d >= start && d <= end;
   });
 
-  const backupData = {
-    version: 1,
-    backupId: crypto.randomUUID(),
-    exportedAt: new Date().toISOString(),
-    range: {
+  const customers = (await getCustomers()).filter(customer => {
+    const d = new Date(customer.createdAt);
+    return d >= start && d <= end;
+  });
+
+  const expenses = (await getExpenses()).filter(expense => {
+    const d = new Date(expense.createdAt);
+    return d >= start && d <= end;
+  });
+
+  const payments = (await getPayments()).filter(payment => {
+    const d = new Date(payment.createdAt);
+    return d >= start && d <= end;
+  });
+
+  downloadBackup(
+    entries,
+    customers,
+    expenses,
+    payments,
+    `roznamcha-${startDate}-to-${endDate}.json`,
+    {
       startDate,
       endDate,
-    },
-    entries: filtered.map(({ id, ...entry }) => ({
-      ...entry,
-      isBackup: false,
-      backupId: undefined,
-    })),
-  };
-
-  const blob = new Blob([JSON.stringify(backupData, null, 2)], {
-    type: "application/json",
-  });
-
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `roznamcha-${startDate}-to-${endDate}.json`;
-
-  a.click();
-
-  URL.revokeObjectURL(url);
+    }
+  );
 }
 
 type ImportResult = {
@@ -604,7 +630,7 @@ type ImportResult = {
 };
 
 // Returns number of entries imported and skipped (with reasons)
-export async function importWeeklyData(
+export async function importBackup(
   file: File
 ): Promise<ImportResult> {
   const text = await file.text();
@@ -619,8 +645,13 @@ export async function importWeeklyData(
   }
 
   const backupId = data.backupId;
-  const entries: JournalEntry[] = data.entries;
 
+  const entries: JournalEntry[] = data.entries ?? [];
+  const customers: CustomerEntry[] = data.customers ?? [];
+  const expenses: ExpensesEntry[] = data.expenses ?? [];
+  const payments: PaymentsEntry[] = data.payments ?? [];
+
+  // Prevent importing the same backup twice
   const allEntries = await getAllEntries();
 
   const alreadyImported = allEntries.some(
@@ -631,15 +662,33 @@ export async function importWeeklyData(
     throw new Error("Backup already imported");
   }
 
+  const existingCustomers = await getCustomers();
+  const existingExpenses = await getExpenses();
+  const existingPayments = await getPayments();
+
   const db = await initDB();
-  const tx = db.transaction(STORE_NAME, "readwrite");
-  const store = tx.objectStore(STORE_NAME);
+
+  const tx = db.transaction(
+    [
+      STORE_NAME,
+      CUSTOMER_STORE_NAME,
+      EXPENSES_STORE_NAME,
+      PAYMENTS_STORE_NAME,
+    ],
+    "readwrite"
+  );
+
+  const entriesStore = tx.objectStore(STORE_NAME);
+  const customersStore = tx.objectStore(CUSTOMER_STORE_NAME);
+  const expensesStore = tx.objectStore(EXPENSES_STORE_NAME);
+  const paymentsStore = tx.objectStore(PAYMENTS_STORE_NAME);
 
   let imported = 0;
   let skipped = 0;
 
   const skippedEntries: ImportResult["skippedEntries"] = [];
 
+  // Import Roznamcha entries
   for (const entry of entries) {
     const { id, ...rest } = entry;
 
@@ -651,15 +700,17 @@ export async function importWeeklyData(
 
     if (duplicate) {
       skipped++;
+
       skippedEntries.push({
         serialNo: entry.serialNo,
         date: entry.date,
         reason: "Duplicate entry",
       });
+
       continue;
     }
 
-    store.add({
+    entriesStore.add({
       ...rest,
       isBackup: true,
       backupId,
@@ -668,9 +719,67 @@ export async function importWeeklyData(
     imported++;
   }
 
+  // Import customers
+  for (const customer of customers) {
+    const { id, ...rest } = customer;
+
+    const duplicate = existingCustomers.some(
+      (c) =>
+        c.serialNo === customer.serialNo &&
+        c.createdAt === customer.createdAt
+    );
+
+    if (!duplicate) {
+      customersStore.add(rest);
+      imported++;
+    } else {
+      skipped++;
+    }
+  }
+
+  // Import expenses
+  for (const expense of expenses) {
+    const { id, ...rest } = expense;
+
+    const duplicate = existingExpenses.some(
+      (e) =>
+        e.serialNo === expense.serialNo &&
+        e.createdAt === expense.createdAt
+    );
+
+    if (!duplicate) {
+      expensesStore.add(rest);
+      imported++;
+    } else {
+      skipped++;
+    }
+  }
+
+  // Import payments
+  for (const payment of payments) {
+    const { id, ...rest } = payment;
+
+    const duplicate = existingPayments.some(
+      (p) =>
+        p.serialNo === payment.serialNo &&
+        p.createdAt === payment.createdAt
+    );
+
+    if (!duplicate) {
+      paymentsStore.add(rest);
+      imported++;
+    } else {
+      skipped++;
+    }
+  }
+
   return new Promise((resolve, reject) => {
     tx.oncomplete = () =>
-      resolve({ imported, skipped, skippedEntries });
+      resolve({
+        imported,
+        skipped,
+        skippedEntries,
+      });
 
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
