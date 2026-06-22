@@ -8,7 +8,10 @@ export const customerAtom = atom<CustomerEntry[]>([]);
 export const expensesAtom = atom<ExpensesEntry[]>([]);
 export const paymentsAtom = atom<PaymentsEntry[]>([]);
 
-const todayStr = new Date().toISOString().split('T')[0];
+const today = new Date();
+today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+
+const todayStr = today.toISOString().split('T')[0];
 export const selectedDateAtom = atom<string>(todayStr);
 
 export const activeMenuAtom = atom('/roznamcha');

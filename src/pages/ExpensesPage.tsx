@@ -1,11 +1,14 @@
-import { useAtom } from "jotai";
-import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx, selectedDateAtom } from "@/store/atoms";
+import { useAtom, useAtomValue } from "jotai";
+import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx, selectedDateAtom, searchAtom } from "@/store/atoms";
 import { Link } from 'react-router-dom';
-import { CalendarDays, Plus, Printer } from "lucide-react";
+import { CalendarDays, FileDown, Plus, Printer, Share2 } from "lucide-react";
 import TransactionTableEx from "@/components/ui/TransactionTableEx";
 import EntryFormModalEx from "@/components/ui/EntryFormModalEx";
 import { useEffect, useState } from "react";
 import { getEntriesByDateEx, initDB } from "@/db/indexedDB";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import type { ExpensesEntry } from "@/types";
 
 export default function ExpensesPage() {
   const [, setExpenses] = useAtom(expensesAtom);
@@ -13,6 +16,18 @@ export default function ExpensesPage() {
   const [, setEditingEntry] = useAtom(editingEntryAtomEx);
   const [selectedDate, setSelectedDate] = useAtom(selectedDateAtom);
   const [dbReady, setDbReady] = useState(false);
+  const [search] = useAtom(searchAtom);
+  const expenses = useAtomValue(expensesAtom);
+
+  const filteredTransactions = expenses.filter((t) => {
+    const query = search.toLowerCase();
+
+    return (
+      t.name.toLowerCase().includes(query) ||
+      t.description.toLowerCase().includes(query) ||
+      String(t.amount).includes(query)
+    );
+  });
 
   // Initialize IndexedDB and load data
   useEffect(() => {
@@ -55,6 +70,53 @@ export default function ExpensesPage() {
     setSelectedDate(e.target.value);
   };
 
+  const handleDownloadPDF = (filteredTransactions: ExpensesEntry[]) => {
+    const doc = new jsPDF();
+
+    doc.text("Transactions", 14, 15);
+
+    autoTable(doc, {
+      head: [["Serial No", "Name", "Description", "Amount"]],
+      body: filteredTransactions.map((entry) => [
+        String(entry.serialNo).padStart(2, "0"),
+        entry.name || "",
+        entry.description || "",
+        entry.amount || "",
+      ]),
+      startY: 25,
+    });
+
+    doc.save("اخراجات.pdf");
+  };
+
+  const handleSharePDF = async (filteredTransactions: ExpensesEntry[]) => {
+    const doc = new jsPDF();
+
+    autoTable(doc, {
+        head: [["Serial No", "Name", "Description", "Amount"]],
+        body: filteredTransactions.map((entry) => [
+            String(entry.serialNo).padStart(2, "0"),
+            entry.name || "",
+            entry.description || "",
+            entry.amount || "",
+        ]),
+    });
+
+    const pdfBlob = doc.output("blob");
+    const file = new File([pdfBlob], "اخراجات.pdf", {
+        type: "application/pdf",
+    });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+            title: "Transactions",
+            files: [file],
+        });
+    } else {
+        doc.save("اخراجات.pdf");
+    }
+};
+
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
       <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: '2rem', marginBottom: '16px' }}>
@@ -89,10 +151,25 @@ export default function ExpensesPage() {
       </button>
 
       {/* Transaction Table */}
-      <TransactionTableEx />
+      <TransactionTableEx transactions={filteredTransactions} />
 
       {/* Entry Form Modal */}
       <EntryFormModalEx />
+
+      <button
+        className="pdf-btn share-btn"
+        onClick={() => handleSharePDF(filteredTransactions)}
+      >
+        <Share2 className="pdf-icon" size={18} />
+        <span className="tooltip">Share PDF</span>
+      </button>
+      <button
+        className="pdf-btn download-btn"
+        onClick={() => handleDownloadPDF(filteredTransactions)}
+      >
+        <FileDown className="pdf-icon" size={18} />
+        <span className="tooltip">Download PDF</span>
+      </button>
     </div>
   );
 }
