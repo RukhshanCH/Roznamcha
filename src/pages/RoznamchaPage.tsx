@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
-import { CalendarDays, Printer, Plus } from 'lucide-react';
+import { CalendarDays, Printer, Plus, FileDown, Share2 } from 'lucide-react';
 import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
-import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom } from '@/store/atoms';
+import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom } from '@/store/atoms';
 import { getEntriesByDate, initDB } from '@/db/indexedDB';
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import type { JournalEntry } from "@/types";
 
 export default function RoznamchaPage() {
   const [entries, setEntries] = useAtom(entriesAtom);
@@ -14,6 +17,17 @@ export default function RoznamchaPage() {
   const [, setIsModalOpen] = useAtom(isModalOpenAtom);
   const [, setEditingEntry] = useAtom(editingEntryAtom);
   const [dbReady, setDbReady] = useState(false);
+
+  const search = useAtomValue(searchAtom);
+
+  const filteredTransactions = entries.filter((t) => {
+    const query = search.toLowerCase();
+
+    return (
+      t.name.toLowerCase().includes(query) ||
+      t.mobileNumber.toLowerCase().includes(query)
+    );
+  });
 
   // Initialize IndexedDB and load data
   useEffect(() => {
@@ -66,6 +80,65 @@ export default function RoznamchaPage() {
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedDate(e.target.value);
+  };
+
+  const handleDownloadPDF = (filteredTransactions: JournalEntry[]) => {
+    const doc = new jsPDF();
+
+    doc.text("Roznamcha", 14, 15);
+
+    autoTable(doc, {
+      head: [["Serial No", "Name", "Mobile Number", "Cash Amount", "Payment", "Receipt", "Balance", "Remaining Amount", "Previous Balance", "Note"]],
+      body: filteredTransactions.map((entry) => [
+        String(entry.serialNo).padStart(2, "0"),
+        entry.name || "",
+        entry.mobileNumber || "",
+        entry.cashAmount || "",
+        entry.payment || "",
+        entry.receipt || "",
+        entry.balance || "",
+        entry.remainingAmount || "",
+        entry.previousBalance || "",
+        entry.note || "",
+      ]),
+      startY: 25,
+    });
+
+    doc.save("روزنامچہ.pdf");
+  };
+
+  const handleSharePDF = async (filteredTransactions: JournalEntry[]) => {
+    const doc = new jsPDF();
+
+    autoTable(doc, {
+      head: [["Serial No", "Name", "Mobile Number", "Cash Amount", "Payment", "Receipt", "Balance", "Remaining Amount", "Previous Balance", "Note"]],
+      body: filteredTransactions.map((entry) => [
+        String(entry.serialNo).padStart(2, "0"),
+        entry.name || "",
+        entry.mobileNumber || "",
+        entry.cashAmount || "",
+        entry.payment || "",
+        entry.receipt || "",
+        entry.balance || "",
+        entry.remainingAmount || "",
+        entry.previousBalance || "",
+        entry.note || "",
+      ]),
+    });
+
+    const pdfBlob = doc.output("blob");
+    const file = new File([pdfBlob], "روزنامچہ.pdf", {
+      type: "application/pdf",
+    });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: "روزنامچہ",
+        files: [file],
+      });
+    } else {
+      doc.save("روزنامچہ.pdf");
+    }
   };
 
   return (
@@ -130,10 +203,26 @@ export default function RoznamchaPage() {
       </button>
 
       {/* Transaction Table */}
-      <TransactionTable />
+      <TransactionTable transactions={filteredTransactions} />
 
       {/* Entry Form Modal */}
       <EntryFormModal />
+
+      <button
+        className="pdf-btn share-btn"
+        onClick={() => handleSharePDF(filteredTransactions)}
+      >
+        <Share2
+          className="pdf-icon" size={18} />
+        <span className="tooltip">Share PDF</span>
+      </button>
+      <button
+        className="pdf-btn download-btn"
+        onClick={() => handleDownloadPDF(filteredTransactions)}
+      >
+        <FileDown className="pdf-icon" size={18} />
+        <span className="tooltip">Download PDF</span>
+      </button>
     </div>
   );
 }

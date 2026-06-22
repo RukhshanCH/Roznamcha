@@ -1,11 +1,14 @@
-import { useAtom } from "jotai";
+import { useAtom, useAtomValue } from "jotai";
 import { Link } from 'react-router-dom';
-import { paymentsAtom, editingEntryAtomPy, isModalOpenAtomPy, selectedDateAtom } from "@/store/atoms";
-import { CalendarDays, Plus, Printer } from "lucide-react";
+import { paymentsAtom, editingEntryAtomPy, isModalOpenAtomPy, selectedDateAtom, searchAtom } from "@/store/atoms";
+import { CalendarDays, FileDown, Plus, Printer, Share2 } from "lucide-react";
 import TransactionTablePy from "@/components/ui/TransactionTablePy";
 import EntryFormModalPy from "@/components/ui/EntryFormModalPy";
 import { useEffect, useState } from "react";
 import { getEntriesByDatePy, initDB } from "@/db/indexedDB";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import type { PaymentsEntry } from "@/types";
 
 export default function PaymentsPage() {
   const [, setIsModalOpen] = useAtom(isModalOpenAtomPy);
@@ -13,6 +16,20 @@ export default function PaymentsPage() {
   const [, setPayments] = useAtom(paymentsAtom);
   const [selectedDate, setSelectedDate] = useAtom(selectedDateAtom);
   const [dbReady, setDbReady] = useState(false);
+  const payments = useAtomValue(paymentsAtom);
+
+
+  const search = useAtomValue(searchAtom);
+
+  const filteredTransactions = payments.filter((t) => {
+    const query = search.toLowerCase();
+
+    return (
+      t.name.toLowerCase().includes(query) ||
+      t.description.toLowerCase().includes(query) ||
+      String(t.amount).includes(query)
+    );
+  });
 
   // Initialize IndexedDB and load data
   useEffect(() => {
@@ -55,6 +72,53 @@ export default function PaymentsPage() {
     setSelectedDate(e.target.value);
   };
 
+  const handleDownloadPDF = (filteredTransactions: PaymentsEntry[]) => {
+    const doc = new jsPDF();
+
+    doc.text("Adaegiah", 14, 15);
+
+    autoTable(doc, {
+      head: [["Serial No", "Name", "Description", "Amount"]],
+      body: filteredTransactions.map((entry) => [
+        String(entry.serialNo).padStart(2, "0"),
+        entry.name || "",
+        entry.description || "",
+        entry.amount || "",
+      ]),
+      startY: 25,
+    });
+
+    doc.save("ادائیگیاں.pdf");
+  };
+
+  const handleSharePDF = async (filteredTransactions: PaymentsEntry[]) => {
+    const doc = new jsPDF();
+
+    autoTable(doc, {
+      head: [["Serial No", "Name", "Description", "Amount"]],
+      body: filteredTransactions.map((entry) => [
+        String(entry.serialNo).padStart(2, "0"),
+        entry.name || "",
+        entry.description || "",
+        entry.amount || "",
+      ]),
+    });
+
+    const pdfBlob = doc.output("blob");
+    const file = new File([pdfBlob], "ادائیگیاں.pdf", {
+      type: "application/pdf",
+    });
+
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({
+        title: "ادائیگیاں",
+        files: [file],
+      });
+    } else {
+      doc.save("ادائیگیاں.pdf");
+    }
+  };
+
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
       <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: '2rem', marginBottom: '16px' }}>
@@ -89,10 +153,24 @@ export default function PaymentsPage() {
       </button>
 
       {/* Transaction Table */}
-      <TransactionTablePy />
+      <TransactionTablePy transactions={filteredTransactions} />
 
       {/* Entry Form Modal */}
       <EntryFormModalPy />
+      <button
+        className="pdf-btn share-btn"
+        onClick={() => handleSharePDF(filteredTransactions)}
+      >
+        <Share2 className="pdf-icon" size={18} />
+        <span className="tooltip">Share PDF</span>
+      </button>
+      <button
+        className="pdf-btn download-btn"
+        onClick={() => handleDownloadPDF(filteredTransactions)}
+      >
+        <FileDown className="pdf-icon" size={18} />
+        <span className="tooltip">Download PDF</span>
+      </button>
     </div>
   );
 }

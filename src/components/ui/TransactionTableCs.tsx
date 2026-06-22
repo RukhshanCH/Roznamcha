@@ -1,9 +1,13 @@
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { customerAtom, editingEntryAtomCs, isModalOpenAtomCs, searchAtom } from '@/store/atoms';
+import { customerAtom, editingEntryAtomCs, isModalOpenAtomCs } from '@/store/atoms';
 import type { CustomerEntry } from '@/types';
 
-export default function TransactionTableCs() {
+interface Props {
+    transactions: CustomerEntry[];
+}
+
+export default function TransactionTableCs({ transactions }: Props) {
     const [entries] = useAtom(customerAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtomCs);
     const [, setIsModalOpen] = useAtom(isModalOpenAtomCs);
@@ -13,16 +17,6 @@ export default function TransactionTableCs() {
         setIsModalOpen(true);
     };
 
-    const search = useAtomValue(searchAtom);
-
-    const filteredTransactions = entries.filter((t) => {
-        const query = search.toLowerCase();
-
-        return (
-            t.name.toLowerCase().includes(query) ||
-            t.mobileNumber.toLowerCase().includes(query)
-        );
-    });
     return (
         <div className="table-container">
             <table className="data-table">
@@ -35,7 +29,7 @@ export default function TransactionTableCs() {
                     </tr>
                 </thead>
                 <tbody>
-                    {filteredTransactions.map((entry) => (
+                    {transactions.map((entry) => (
                         <tr key={entry.id}>
                             <td className="serial">{String(entry.serialNo).padStart(2, '0')}</td>
                             <td className="name-cell">{entry.name || ''}</td>
@@ -71,7 +65,7 @@ export default function TransactionTableCs() {
                         </tr>
                     )}
 
-                    {entries.length > 0 && filteredTransactions.length === 0 && (
+                    {entries.length > 0 && transactions.length === 0 && (
                         <tr>
                             <td colSpan={11} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
                                 کوئی اندراج نہی۔

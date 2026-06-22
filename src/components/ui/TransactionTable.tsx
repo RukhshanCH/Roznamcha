@@ -1,9 +1,13 @@
-import { useAtom, useAtomValue } from 'jotai';
+import { useAtom } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { entriesAtom, editingEntryAtom, isModalOpenAtom, searchAtom } from '@/store/atoms';
+import { entriesAtom, editingEntryAtom, isModalOpenAtom } from '@/store/atoms';
 import type { JournalEntry } from '@/types';
 
-export default function TransactionTable() {
+interface Props {
+    transactions: JournalEntry[];
+}
+
+export default function TransactionTable({ transactions }: Props) {
   const [entries] = useAtom(entriesAtom);
   const [, setEditingEntry] = useAtom(editingEntryAtom);
   const [, setIsModalOpen] = useAtom(isModalOpenAtom);
@@ -13,17 +17,6 @@ export default function TransactionTable() {
     setIsModalOpen(true);
   };
 
-  const search = useAtomValue(searchAtom);
-  
-      const filteredTransactions = entries.filter((t) => {
-          const query = search.toLowerCase();
-  
-          return (
-              t.name.toLowerCase().includes(query) ||
-              t.mobileNumber.toLowerCase().includes(query)
-          );
-      });
-  
   const formatAmount = (value?: number): string => {
     if (value === 0 || value == null) return '---';
     return value.toLocaleString('en-US') + '/-';
@@ -52,7 +45,7 @@ export default function TransactionTable() {
           </tr>
         </thead>
         <tbody>
-          {filteredTransactions.map((entry) => (
+          {transactions.map((entry) => (
             <tr key={entry.id}>
               <td className="serial">{String(entry.serialNo).padStart(2, '0')}</td>
               <td className="name-cell">{entry.name || ''}</td>
@@ -107,7 +100,7 @@ export default function TransactionTable() {
             </tr>
           )}
 
-          {entries.length > 0 && filteredTransactions.length === 0 && (
+          {entries.length > 0 && transactions.length === 0 && (
             <tr>
               <td colSpan={11} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
                 کوئی اندراج نہی۔

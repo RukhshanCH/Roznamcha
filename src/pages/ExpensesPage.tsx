@@ -73,7 +73,7 @@ export default function ExpensesPage() {
   const handleDownloadPDF = (filteredTransactions: ExpensesEntry[]) => {
     const doc = new jsPDF();
 
-    doc.text("Transactions", 14, 15);
+    doc.text("Ekhrajaat", 14, 15);
 
     autoTable(doc, {
       head: [["Serial No", "Name", "Description", "Amount"]],
@@ -93,29 +93,29 @@ export default function ExpensesPage() {
     const doc = new jsPDF();
 
     autoTable(doc, {
-        head: [["Serial No", "Name", "Description", "Amount"]],
-        body: filteredTransactions.map((entry) => [
-            String(entry.serialNo).padStart(2, "0"),
-            entry.name || "",
-            entry.description || "",
-            entry.amount || "",
-        ]),
+      head: [["Serial No", "Name", "Description", "Amount"]],
+      body: filteredTransactions.map((entry) => [
+        String(entry.serialNo).padStart(2, "0"),
+        entry.name || "",
+        entry.description || "",
+        entry.amount || "",
+      ]),
     });
 
     const pdfBlob = doc.output("blob");
     const file = new File([pdfBlob], "اخراجات.pdf", {
-        type: "application/pdf",
+      type: "application/pdf",
     });
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-            title: "Transactions",
-            files: [file],
-        });
+      await navigator.share({
+        title: "اخراجات",
+        files: [file],
+      });
     } else {
-        doc.save("اخراجات.pdf");
+      doc.save("اخراجات.pdf");
     }
-};
+  };
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
