@@ -72,8 +72,10 @@ export default function ExpensesPage() {
 
   const handleDownloadPDF = (filteredTransactions: ExpensesEntry[]) => {
     const doc = new jsPDF();
-
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
     doc.text("Ekhrajaat", 14, 15);
+    doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
 
     autoTable(doc, {
       head: [["Serial No", "Name", "Description", "Amount"]],
@@ -91,6 +93,10 @@ export default function ExpensesPage() {
 
   const handleSharePDF = async (filteredTransactions: ExpensesEntry[]) => {
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    doc.text("Ekhrajaat", 14, 15);
+    doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
 
     autoTable(doc, {
       head: [["Serial No", "Name", "Description", "Amount"]],

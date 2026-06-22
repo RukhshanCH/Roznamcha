@@ -74,8 +74,10 @@ export default function PaymentsPage() {
 
   const handleDownloadPDF = (filteredTransactions: PaymentsEntry[]) => {
     const doc = new jsPDF();
-
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
     doc.text("Adaegiah", 14, 15);
+    doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
 
     autoTable(doc, {
       head: [["Serial No", "Name", "Description", "Amount"]],
@@ -93,6 +95,10 @@ export default function PaymentsPage() {
 
   const handleSharePDF = async (filteredTransactions: PaymentsEntry[]) => {
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    doc.text("Adaegiah", 14, 15);
+    doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
 
     autoTable(doc, {
       head: [["Serial No", "Name", "Description", "Amount"]],

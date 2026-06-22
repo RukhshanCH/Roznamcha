@@ -84,8 +84,10 @@ export default function RoznamchaPage() {
 
   const handleDownloadPDF = (filteredTransactions: JournalEntry[]) => {
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
 
     doc.text("Roznamcha", 14, 15);
+    doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
 
     autoTable(doc, {
       head: [["Serial No", "Name", "Mobile Number", "Cash Amount", "Payment", "Receipt", "Balance", "Remaining Amount", "Previous Balance", "Note"]],
@@ -109,6 +111,10 @@ export default function RoznamchaPage() {
 
   const handleSharePDF = async (filteredTransactions: JournalEntry[]) => {
     const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    doc.text("Roznamcha", 14, 15);
+    doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
 
     autoTable(doc, {
       head: [["Serial No", "Name", "Mobile Number", "Cash Amount", "Payment", "Receipt", "Balance", "Remaining Amount", "Previous Balance", "Note"]],
