@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
 import { CalendarDays, Printer, Plus, FileDown, Share2 } from 'lucide-react';
@@ -8,8 +8,7 @@ import EntryFormModal from '@/components/ui/EntryFormModal';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom } from '@/store/atoms';
 import { getEntriesByDate, initDB } from '@/db/indexedDB';
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import type { JournalEntry } from "@/types";
+import html2canvas from "html2canvas";
 
 export default function RoznamchaPage() {
   const [entries, setEntries] = useAtom(entriesAtom);
@@ -17,6 +16,7 @@ export default function RoznamchaPage() {
   const [, setIsModalOpen] = useAtom(isModalOpenAtom);
   const [, setEditingEntry] = useAtom(editingEntryAtom);
   const [dbReady, setDbReady] = useState(false);
+  const pdfRef = useRef<HTMLTableElement | null>(null);
 
   const search = useAtomValue(searchAtom);
 
@@ -82,62 +82,57 @@ export default function RoznamchaPage() {
     setSelectedDate(e.target.value);
   };
 
-  const handleDownloadPDF = (filteredTransactions: JournalEntry[]) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
+  const downloadPDF = async () => {
+    if (!pdfRef.current) return;
 
-    doc.text("روزنامچہ", 14, 15);
-    doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
-
-    autoTable(doc, {
-      head: [["Serial No", "Name", "Mobile Number", "Total Amount", "Advance Payment", "Remaining Amount", "Note"]],
-      body: filteredTransactions.map((entry) => [
-        String(entry.serialNo).padStart(2, "0"),
-        entry.name || "",
-        entry.mobileNumber || "",
-        entry.total || "",
-        entry.advance || "",
-        entry.remaining || "",
-        entry.note || "",
-      ]),
-      startY: 25,
+    const canvas = await html2canvas(pdfRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
     });
 
-    doc.save("روزنامچہ.pdf");
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+    pdf.save("روزنامچہ.pdf");
   };
 
-  const handleSharePDF = async (filteredTransactions: JournalEntry[]) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    doc.text("روزنامچہ", 14, 15);
-    doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
+  const handleSharePDF = async () => {
+    if (!pdfRef.current) return;
 
-    autoTable(doc, {
-      head: [["Serial No", "Name", "Mobile Number", "Total Amount", "Advance Payment", "Remaining Amount", "Note"]],
-      body: filteredTransactions.map((entry) => [
-        String(entry.serialNo).padStart(2, "0"),
-        entry.name || "",
-        entry.mobileNumber || "",
-        entry.total || "",
-        entry.advance || "",
-        entry.remaining || "",
-        entry.note || "",
-      ]),
+    const canvas = await html2canvas(pdfRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
     });
 
-    const pdfBlob = doc.output("blob");
-    const file = new File([pdfBlob], "روزنامچہ.pdf", {
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+    const pdfBlob = pdf.output("blob");
+    const file = new File([pdfBlob], "Roznamcha.pdf", {
       type: "application/pdf",
     });
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
-        title: "روزنامچہ",
+        title: "Roznamcha",
         files: [file],
       });
     } else {
-      doc.save("روزنامچہ.pdf");
+      pdf.save("روزنامچہ.pdf");
     }
   };
 
@@ -202,11 +197,11 @@ export default function RoznamchaPage() {
           <Plus />
           <span>نیا اندراج</span>
         </button>
-        
+
         <div className="pdf-actions">
           <button
             className="pdf-btn download-btn"
-            onClick={() => handleDownloadPDF(filteredTransactions)}
+            onClick={() => downloadPDF()}
           >
             <FileDown className="pdf-icon" size={18} />
             <span className="tooltip">Download PDF</span>
@@ -214,18 +209,18 @@ export default function RoznamchaPage() {
 
           <button
             className="pdf-btn share-btn"
-            onClick={() => handleSharePDF(filteredTransactions)}
+            onClick={() => handleSharePDF()}
           >
             <Share2
               className="pdf-icon" size={18} />
             <span className="tooltip">Share PDF</span>
           </button>
-          
+
         </div>
       </div>
 
       {/* Transaction Table */}
-      <TransactionTable transactions={filteredTransactions} />
+      <TransactionTable ref={pdfRef} transactions={filteredTransactions} />
 
       {/* Entry Form Modal */}
       <EntryFormModal />
