@@ -507,17 +507,25 @@ input[type="number"] {
 }
 
 .pdf-btn.share-btn {
-  position: absolute;
-  bottom: 30px;
-  left: 60px;
   background: #2563eb;
 }
 
 .pdf-btn.download-btn {
-  position: absolute;
-  bottom: 30px;
-  left: 115px;
   background: #dc2626;
+}
+
+.actions-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.pdf-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 /* ===== Summary Cards ===== */
@@ -857,7 +865,6 @@ input[type="number"] {
   line-height: 1;
 
   box-sizing: border-box;
-  cursor: pointer;
 }
 
 .btn:hover {
@@ -867,11 +874,19 @@ input[type="number"] {
 .btn-primary {
   background: var(--accent-blue);
   color: white;
+  cursor: pointer;
 }
 
 .btn-secondary {
   background: #F3F4F6;
   color: var(--text-primary);
+  cursor: pointer;
+}
+
+.btn-disabled {
+  background: #E5E7EB;
+  color: #9CA3AF;
+  cursor: not-allowed;
 }
 
 .actions {

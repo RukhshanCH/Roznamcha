@@ -13,38 +13,31 @@ export default function EntryFormModal() {
   const [formData, setFormData] = useState({
     name: '',
     mobileNumber: '',
-    cashAmount: '',
-    payment: '',
-    receipt: '',
-    balance: '',
-    remainingAmount: '',
-    previousBalance: '',
+    total: '',
+    advance: '',
+    remaining: '',
     note: '',
   });
+
+  const isDisabled = !formData.name || Number(formData.total) < 0 || Number(formData.advance) < 0 || Number(formData.advance) > Number(formData.total);
 
   useEffect(() => {
     if (editingEntry) {
       setFormData({
         name: editingEntry.name || '',
         mobileNumber: editingEntry.mobileNumber || '',
-        cashAmount: editingEntry.cashAmount ? String(editingEntry.cashAmount) : '',
-        payment: editingEntry.payment ? String(editingEntry.payment) : '',
-        receipt: editingEntry.receipt ? String(editingEntry.receipt) : '',
-        balance: editingEntry.balance ? String(editingEntry.balance) : '',
-        remainingAmount: editingEntry.remainingAmount ? String(editingEntry.remainingAmount) : '',
-        previousBalance: editingEntry.previousBalance ? String(editingEntry.previousBalance) : '',
+        total: editingEntry.total ? String(editingEntry.total) : '',
+        advance: editingEntry.advance ? String(editingEntry.advance) : '',
+        remaining: editingEntry.remaining ? String(editingEntry.remaining) : '',
         note: editingEntry.note || '',
       });
     } else {
       setFormData({
         name: '',
         mobileNumber: '',
-        cashAmount: '',
-        payment: '',
-        receipt: '',
-        balance: '',
-        remainingAmount: '',
-        previousBalance: '',
+        total: '',
+        advance: '',
+        remaining: '',
         note: '',
       });
     }
@@ -59,15 +52,14 @@ export default function EntryFormModal() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const total = Number(formData.total) || 0;
+    const advance = Number(formData.advance) || 0;
     const entryData = {
       name: formData.name,
       mobileNumber: formData.mobileNumber,
-      cashAmount: Number(formData.cashAmount) || 0,
-      payment: Number(formData.payment) || 0,
-      receipt: Number(formData.receipt) || 0,
-      balance: Number(formData.balance) || 0,
-      remainingAmount: Number(formData.remainingAmount) || 0,
-      previousBalance: Number(formData.previousBalance) || 0,
+      total: total,
+      advance: advance,
+      remaining: total - advance,
       note: formData.note,
       date: selectedDate,
       createdAt: Date.now(),
@@ -155,73 +147,23 @@ export default function EntryFormModal() {
 
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">وصولی (جمع)</label>
+              <label className="form-label"> کل رقم</label>
               <input
                 type="number"
                 className="form-input"
-                value={formData.receipt}
-                onChange={(e) => handleChange('receipt', e.target.value)}
+                value={formData.total}
+                onChange={(e) => handleChange('total', e.target.value)}
                 placeholder="0"
                 min="0"
               />
             </div>
             <div className="form-group">
-              <label className="form-label">ادائیگی (خرچ)</label>
+              <label className="form-label">ادائیگی</label>
               <input
                 type="number"
                 className="form-input"
-                value={formData.payment}
-                onChange={(e) => handleChange('payment', e.target.value)}
-                placeholder="0"
-                min="0"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">نقد رقم</label>
-              <input
-                type="number"
-                className="form-input"
-                value={formData.cashAmount}
-                onChange={(e) => handleChange('cashAmount', e.target.value)}
-                placeholder="0"
-                min="0"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">بقیہ رقم</label>
-              <input
-                type="number"
-                className="form-input"
-                value={formData.remainingAmount}
-                onChange={(e) => handleChange('remainingAmount', e.target.value)}
-                placeholder="0"
-                min="0"
-              />
-            </div>
-          </div>
-
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label">باقیہ</label>
-              <input
-                type="number"
-                className="form-input"
-                value={formData.balance}
-                onChange={(e) => handleChange('balance', e.target.value)}
-                placeholder="0"
-                min="0"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">جمع اچهلی رقم</label>
-              <input
-                type="number"
-                className="form-input"
-                value={formData.previousBalance}
-                onChange={(e) => handleChange('previousBalance', e.target.value)}
+                value={formData.advance}
+                onChange={(e) => handleChange('advance', e.target.value)}
                 placeholder="0"
                 min="0"
               />
@@ -248,7 +190,7 @@ export default function EntryFormModal() {
             <button type="button" className="btn btn-secondary" onClick={handleClose}>
               منسوخ
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button disabled={isDisabled} type="submit" className={`btn ${isDisabled ? 'btn-disabled' : 'btn-primary'}`}>
               {editingEntry ? 'محفوظ کریں' : 'شامل کریں'}
             </button>
           </div>

@@ -3,12 +3,11 @@ export interface JournalEntry {
   serialNo: number;
   name: string;
   mobileNumber: string;
-  cashAmount: number;
-  payment: number;
-  receipt: number;
-  balance: number;
-  remainingAmount: number;
-  previousBalance: number;
+  
+  total: number;
+  advance: number;
+  remaining: number;
+  
   note: string;
   date: string;
   createdAt: number;

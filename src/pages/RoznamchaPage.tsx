@@ -58,13 +58,13 @@ export default function RoznamchaPage() {
   }, [selectedDate, dbReady]);
 
   const summary = useMemo(() => {
-    const totalReceipts = entries.reduce((sum, e) => sum + (e.receipt || 0), 0);
-    const totalPayments = entries.reduce((sum, e) => sum + (e.payment || 0), 0);
-    const netBalance = entries.reduce((sum, e) => sum + (e.remainingAmount || 0), 0);
+    const totalPayments = entries.reduce((sum, e) => sum + (e.total || 0), 0);
+    const totalAdvance = entries.reduce((sum, e) => sum + (e.advance || 0), 0);
+    const totalRemaining = entries.reduce((sum, e) => sum + (e.remaining || 0), 0);
     return {
-      totalReceipts: totalReceipts.toLocaleString('en-US') + '/-',
       totalPayments: totalPayments.toLocaleString('en-US') + '/-',
-      netBalance: netBalance.toLocaleString('en-US') + '/-',
+      totalAdvance: totalAdvance.toLocaleString('en-US') + '/-',
+      totalRemaining: totalRemaining.toLocaleString('en-US') + '/-',
       totalEntries: String(entries.length),
     };
   }, [entries]);
@@ -86,21 +86,18 @@ export default function RoznamchaPage() {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    doc.text("Roznamcha", 14, 15);
+    doc.text("روزنامچہ", 14, 15);
     doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
 
     autoTable(doc, {
-      head: [["Serial No", "Name", "Mobile Number", "Cash Amount", "Payment", "Receipt", "Balance", "Remaining Amount", "Previous Balance", "Note"]],
+      head: [["Serial No", "Name", "Mobile Number", "Total Amount", "Advance Payment", "Remaining Amount", "Note"]],
       body: filteredTransactions.map((entry) => [
         String(entry.serialNo).padStart(2, "0"),
         entry.name || "",
         entry.mobileNumber || "",
-        entry.cashAmount || "",
-        entry.payment || "",
-        entry.receipt || "",
-        entry.balance || "",
-        entry.remainingAmount || "",
-        entry.previousBalance || "",
+        entry.total || "",
+        entry.advance || "",
+        entry.remaining || "",
         entry.note || "",
       ]),
       startY: 25,
@@ -113,21 +110,18 @@ export default function RoznamchaPage() {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     
-    doc.text("Roznamcha", 14, 15);
+    doc.text("روزنامچہ", 14, 15);
     doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
 
     autoTable(doc, {
-      head: [["Serial No", "Name", "Mobile Number", "Cash Amount", "Payment", "Receipt", "Balance", "Remaining Amount", "Previous Balance", "Note"]],
+      head: [["Serial No", "Name", "Mobile Number", "Total Amount", "Advance Payment", "Remaining Amount", "Note"]],
       body: filteredTransactions.map((entry) => [
         String(entry.serialNo).padStart(2, "0"),
         entry.name || "",
         entry.mobileNumber || "",
-        entry.cashAmount || "",
-        entry.payment || "",
-        entry.receipt || "",
-        entry.balance || "",
-        entry.remainingAmount || "",
-        entry.previousBalance || "",
+        entry.total || "",
+        entry.advance || "",
+        entry.remaining || "",
         entry.note || "",
       ]),
     });
@@ -178,19 +172,19 @@ export default function RoznamchaPage() {
       <div className="summary-cards">
         <SummaryCard
           label="کل وصولی (جمع)"
-          value={summary.totalReceipts}
+          value={summary.totalPayments}
           icon="wallet"
           variant="blue"
         />
         <SummaryCard
-          label="کل ادائیگی (خرچ)"
-          value={summary.totalPayments}
+          label="کل ادائیگی"
+          value={summary.totalAdvance}
           icon="arrowDown"
           variant="green"
         />
         <SummaryCard
           label="کل بقایا"
-          value={summary.netBalance}
+          value={summary.totalRemaining}
           icon="scale"
           variant="gold"
         />
@@ -203,32 +197,38 @@ export default function RoznamchaPage() {
       </div>
 
       {/* Add Entry Button */}
-      <button className="add-entry-btn" onClick={handleAddNew}>
-        <Plus />
-        <span>نیا اندراج</span>
-      </button>
+      <div className="actions-section">
+        <button className="add-entry-btn" onClick={handleAddNew}>
+          <Plus />
+          <span>نیا اندراج</span>
+        </button>
+        
+        <div className="pdf-actions">
+          <button
+            className="pdf-btn download-btn"
+            onClick={() => handleDownloadPDF(filteredTransactions)}
+          >
+            <FileDown className="pdf-icon" size={18} />
+            <span className="tooltip">Download PDF</span>
+          </button>
+
+          <button
+            className="pdf-btn share-btn"
+            onClick={() => handleSharePDF(filteredTransactions)}
+          >
+            <Share2
+              className="pdf-icon" size={18} />
+            <span className="tooltip">Share PDF</span>
+          </button>
+          
+        </div>
+      </div>
 
       {/* Transaction Table */}
       <TransactionTable transactions={filteredTransactions} />
 
       {/* Entry Form Modal */}
       <EntryFormModal />
-
-      <button
-        className="pdf-btn share-btn"
-        onClick={() => handleSharePDF(filteredTransactions)}
-      >
-        <Share2
-          className="pdf-icon" size={18} />
-        <span className="tooltip">Share PDF</span>
-      </button>
-      <button
-        className="pdf-btn download-btn"
-        onClick={() => handleDownloadPDF(filteredTransactions)}
-      >
-        <FileDown className="pdf-icon" size={18} />
-        <span className="tooltip">Download PDF</span>
-      </button>
     </div>
   );
 }
