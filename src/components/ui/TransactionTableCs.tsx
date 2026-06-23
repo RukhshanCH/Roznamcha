@@ -1,16 +1,19 @@
 import { useAtom } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { customerAtom, editingEntryAtomCs, isModalOpenAtomCs } from '@/store/atoms';
+import { customerAtom, editingEntryAtomCs, isModalOpenAtomCs, selectedDateAtom } from '@/store/atoms';
 import type { CustomerEntry } from '@/types';
+import { forwardRef } from "react";
 
 interface Props {
     transactions: CustomerEntry[];
 }
 
-export default function TransactionTableCs({ transactions }: Props) {
-    const [entries] = useAtom(customerAtom);
-    const [, setEditingEntry] = useAtom(editingEntryAtomCs);
-    const [, setIsModalOpen] = useAtom(isModalOpenAtomCs);
+const TransactionTableCs = forwardRef<HTMLTableElement, Props>(
+    ({ transactions }, ref) => {
+        const [entries] = useAtom(customerAtom);
+        const [, setEditingEntry] = useAtom(editingEntryAtomCs);
+        const [, setIsModalOpen] = useAtom(isModalOpenAtomCs);
+        const [selectedDate,] = useAtom(selectedDateAtom);
 
     const handleEdit = (entry: CustomerEntry) => {
         setEditingEntry(entry);
@@ -19,8 +22,14 @@ export default function TransactionTableCs({ transactions }: Props) {
 
     return (
         <div className="table-container">
-            <table className="data-table">
+            <table className="data-table" ref={ref}>
                 <thead>
+                    <tr>
+                        <th colSpan={2} style={{ margin: 0, fontSize: "20px" }}>روزنامچہ</th>
+                        <th colSpan={2} style={{ margin: 0, fontSize: "14px", color: "#555" }}>
+                            تاریخ: {selectedDate}
+                        </th>
+                    </tr>
                     <tr>
                         <th>نمبر شمار</th>
                         <th>نام</th>
@@ -76,4 +85,6 @@ export default function TransactionTableCs({ transactions }: Props) {
             </table>
         </div>
     );
-}
+})
+
+export default TransactionTableCs;

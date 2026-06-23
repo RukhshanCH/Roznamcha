@@ -40,9 +40,8 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
     }, [entries]);
 
     return (
-      <div className="table-container" ref={ref}>
-
-        <table className="data-table">
+      <div className="table-container">
+        <table className="data-table" ref={ref}>
           <thead>
             <tr>
               <th colSpan={4} style={{ margin: 0, fontSize: "20px" }}>روزنامچہ</th>
@@ -146,4 +145,5 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
       </div>
     );
   })
+
 export default TransactionTable;

@@ -1,16 +1,19 @@
 import { useAtom } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { isModalOpenAtomPy, paymentsAtom, editingEntryAtomPy } from '@/store/atoms';
+import { isModalOpenAtomPy, paymentsAtom, editingEntryAtomPy, selectedDateAtom } from '@/store/atoms';
 import type { PaymentsEntry } from '@/types';
+import { forwardRef } from 'react';
 
 interface Props {
     transactions: PaymentsEntry[];
 }
 
-export default function TransactionTablePy({ transactions }: Props) {
+const TransactionTablePy = forwardRef<HTMLTableElement, Props>(
+    ({ transactions }, ref) => {
     const [entries] = useAtom(paymentsAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtomPy);
     const [, setIsModalOpen] = useAtom(isModalOpenAtomPy);
+    const [selectedDate,] = useAtom(selectedDateAtom);
 
     const handleEdit = (entry: PaymentsEntry) => {
         setEditingEntry(entry);
@@ -19,8 +22,14 @@ export default function TransactionTablePy({ transactions }: Props) {
 
     return (
         <div className="table-container">
-            <table className="data-table">
+            <table className="data-table" ref={ref}>
                 <thead>
+                    <tr>
+                        <th colSpan={2} style={{ margin: 0, fontSize: "20px" }}>روزنامچہ</th>
+                        <th colSpan={2} style={{ margin: 0, fontSize: "14px", color: "#555" }}>
+                            تاریخ: {selectedDate}
+                        </th>
+                    </tr>
                     <tr>
                         <th>نمبر شمار</th>
                         <th>نام</th>
@@ -78,4 +87,6 @@ export default function TransactionTablePy({ transactions }: Props) {
             </table>
         </div>
     );
-}
+})
+
+export default TransactionTablePy;

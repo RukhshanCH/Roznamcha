@@ -4,11 +4,10 @@ import { Link } from 'react-router-dom';
 import { CalendarDays, FileDown, Plus, Printer, Share2 } from "lucide-react";
 import TransactionTableEx from "@/components/ui/TransactionTableEx";
 import EntryFormModalEx from "@/components/ui/EntryFormModalEx";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getEntriesByDateEx, initDB } from "@/db/indexedDB";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import type { ExpensesEntry } from "@/types";
+import html2canvas from "html2canvas";
 
 export default function ExpensesPage() {
   const [, setExpenses] = useAtom(expensesAtom);
@@ -18,6 +17,7 @@ export default function ExpensesPage() {
   const [dbReady, setDbReady] = useState(false);
   const [search] = useAtom(searchAtom);
   const expenses = useAtomValue(expensesAtom);
+  const pdfRef = useRef<HTMLTableElement | null>(null);
 
   const filteredTransactions = expenses.filter((t) => {
     const query = search.toLowerCase();
@@ -70,56 +70,57 @@ export default function ExpensesPage() {
     setSelectedDate(e.target.value);
   };
 
-  const handleDownloadPDF = (filteredTransactions: ExpensesEntry[]) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    doc.text("Ekhrajaat", 14, 15);
-    doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
+  const downloadPDF = async () => {
+    if (!pdfRef.current) return;
 
-    autoTable(doc, {
-      head: [["Serial No", "Name", "Description", "Amount"]],
-      body: filteredTransactions.map((entry) => [
-        String(entry.serialNo).padStart(2, "0"),
-        entry.name || "",
-        entry.description || "",
-        entry.amount || "",
-      ]),
-      startY: 25,
+    const canvas = await html2canvas(pdfRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
     });
 
-    doc.save("اخراجات.pdf");
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+    pdf.save("اخراجات.pdf");
   };
 
-  const handleSharePDF = async (filteredTransactions: ExpensesEntry[]) => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    
-    doc.text("Ekhrajaat", 14, 15);
-    doc.text(selectedDate, pageWidth - 14, 15, { align: "right" });
+  const handleSharePDF = async () => {
+    if (!pdfRef.current) return;
 
-    autoTable(doc, {
-      head: [["Serial No", "Name", "Description", "Amount"]],
-      body: filteredTransactions.map((entry) => [
-        String(entry.serialNo).padStart(2, "0"),
-        entry.name || "",
-        entry.description || "",
-        entry.amount || "",
-      ]),
+    const canvas = await html2canvas(pdfRef.current, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: "#ffffff",
     });
 
-    const pdfBlob = doc.output("blob");
-    const file = new File([pdfBlob], "اخراجات.pdf", {
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF("p", "mm", "a4");
+
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+
+    const pdfBlob = pdf.output("blob");
+    const file = new File([pdfBlob], "Akhrajaat.pdf", {
       type: "application/pdf",
     });
 
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       await navigator.share({
-        title: "اخراجات",
+        title: "Akhrajaat",
         files: [file],
       });
     } else {
-      doc.save("اخراجات.pdf");
+      pdf.save("اخراجات.pdf");
     }
   };
 
@@ -151,31 +152,38 @@ export default function ExpensesPage() {
         </div>
       </div>
       {/* Add Entry Button */}
-      <button className="add-entry-btn" onClick={handleAddNew}>
-        <Plus />
-        <span>نیا اندراج</span>
-      </button>
+      <div className="actions-section">
+        <button className="add-entry-btn" onClick={handleAddNew}>
+          <Plus />
+          <span>نیا اندراج</span>
+        </button>
+
+        <div className="pdf-actions">
+          <button
+            className="pdf-btn download-btn"
+            onClick={() => downloadPDF()}
+          >
+            <FileDown className="pdf-icon" size={18} />
+            <span className="tooltip">Download PDF</span>
+          </button>
+
+          <button
+            className="pdf-btn share-btn"
+            onClick={() => handleSharePDF()}
+          >
+            <Share2
+              className="pdf-icon" size={18} />
+            <span className="tooltip">Share PDF</span>
+          </button>
+
+        </div>
+      </div>
 
       {/* Transaction Table */}
-      <TransactionTableEx transactions={filteredTransactions} />
+      <TransactionTableEx transactions={filteredTransactions} ref={pdfRef} />
 
       {/* Entry Form Modal */}
       <EntryFormModalEx />
-
-      <button
-        className="pdf-btn share-btn"
-        onClick={() => handleSharePDF(filteredTransactions)}
-      >
-        <Share2 className="pdf-icon" size={18} />
-        <span className="tooltip">Share PDF</span>
-      </button>
-      <button
-        className="pdf-btn download-btn"
-        onClick={() => handleDownloadPDF(filteredTransactions)}
-      >
-        <FileDown className="pdf-icon" size={18} />
-        <span className="tooltip">Download PDF</span>
-      </button>
     </div>
   );
 }
