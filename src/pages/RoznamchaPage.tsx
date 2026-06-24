@@ -230,10 +230,10 @@ export default function RoznamchaPage() {
       </div>
 
       {/* Transaction Table */}
-      <TransactionTable ref={pdfRef} transactions={filteredTransactions} pageName={"روزنامچہ"} isRemaining={true} />
+      <TransactionTable ref={pdfRef} transactions={filteredTransactions} pageName={"روزنامچہ"} isRemaining={false} />
 
       {/* Entry Form Modal */}
-      <EntryFormModal />
+      <EntryFormModal isRemaining={false} />
     </div>
   );
 }

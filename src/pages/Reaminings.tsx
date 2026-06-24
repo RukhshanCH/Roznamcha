@@ -7,6 +7,7 @@ import { entriesAtom, searchAtom } from '@/store/atoms';
 import { getAllEntries, initDB } from '@/db/indexedDB';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import EntryFormModal from '@/components/ui/EntryFormModal';
 
 export default function Remainings() {
     const [entries, setEntries] = useAtom(entriesAtom);
@@ -147,7 +148,10 @@ export default function Remainings() {
             </div>
 
             {/* Transaction Table */}
-            <TransactionTable ref={pdfRef} transactions={filteredRemainings} pageName={"بقیہ جات"} isRemaining={false} />
+            <TransactionTable ref={pdfRef} transactions={filteredRemainings} pageName={"بقیہ جات"} isRemaining={true} />
+
+            {/* Entry Form Modal */}
+            <EntryFormModal isRemaining={true} />
         </div>
     );
 }

@@ -122,7 +122,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
             <tfoot className="table-footer">
               <tr>
                 {
-                  isRemaining ?
+                  !isRemaining ?
                     <>
                       <td colSpan={4}>
                         <div className="footer-total-label">
@@ -140,7 +140,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                     :
                     ""
                 }
-                <td colSpan={isRemaining ? 1 : 6}>
+                <td colSpan={!isRemaining ? 1 : 6}>
                   <div className="footer-total-label">
                     <span className="label">کل بقایا:</span>
                     <span className="footer-value gold">{formatAmount(summary.totalRemaining)}</span>

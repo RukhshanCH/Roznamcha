@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom } from '@/store/atoms';
-import { addEntry, updateEntry, deleteEntry, getEntriesByDate, renumberEntries } from '@/db/indexedDB';
+import { addEntry, updateEntry, deleteEntry, getEntriesByDate, renumberEntries, getAllEntries } from '@/db/indexedDB';
 
-export default function EntryFormModal() {
+interface Props {
+  isRemaining: Boolean
+}
+
+export default function EntryFormModal({isRemaining}:Props) {
   const [isOpen, setIsOpen] = useAtom(isModalOpenAtom);
   const [editingEntry, setEditingEntry] = useAtom(editingEntryAtom);
   const [selectedDate] = useAtom(selectedDateAtom);
@@ -85,7 +89,7 @@ export default function EntryFormModal() {
         });
       }
 
-      const updated = await getEntriesByDate(selectedDate);
+      const updated = isRemaining ? await getAllEntries() : await getEntriesByDate(selectedDate);
       setEntries(updated);
       handleClose();
     } catch (err) {
@@ -101,7 +105,7 @@ export default function EntryFormModal() {
     try {
       await deleteEntry(editingEntry.id);
       await renumberEntries(selectedDate);
-      const updated = await getEntriesByDate(selectedDate);
+      const updated = isRemaining ? await getAllEntries() : await getEntriesByDate(selectedDate);
       setEntries(updated);
       handleClose();
     } catch (err) {
