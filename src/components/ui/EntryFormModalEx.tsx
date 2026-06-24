@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
 import { isModalOpenAtomEx, editingEntryAtomEx, expensesAtom, selectedDateAtom } from '@/store/atoms';
-import { updateEntryEx, addEntryEx, getExpenses, deleteEntryEx, renumberEntriesEx } from '@/db/indexedDB';
+import { updateEntryEx, addEntryEx, deleteEntryEx, renumberEntriesEx, getEntriesByDateEx } from '@/db/indexedDB';
 
 export default function EntryFormModalEx() {
     const [isOpen, setIsOpen] = useAtom(isModalOpenAtomEx);
     const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomEx);
     const [selectedDate] = useAtom(selectedDateAtom);
     const [, setExpenses] = useAtom(expensesAtom);
-
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -57,12 +56,12 @@ export default function EntryFormModalEx() {
                     serialNo: editingEntry.serialNo,
                 });
             } else {
-                const expenses = await getExpenses();
+                const entriesForDate = await getEntriesByDateEx(selectedDate);
 
                 const nextSerial =
-                    expenses.length === 0
+                    entriesForDate.length === 0
                         ? 1
-                        : Math.max(...expenses.map(e => e.serialNo)) + 1;
+                        : Math.max(...entriesForDate.map(e => e.serialNo)) + 1;
 
                 await addEntryEx({
                     ...entryData,
@@ -70,7 +69,7 @@ export default function EntryFormModalEx() {
                 });
             }
 
-            const updated = await getExpenses();
+            const updated = await getEntriesByDateEx(selectedDate);
             setExpenses(updated);
             handleClose();
         } catch (err) {
@@ -86,7 +85,7 @@ export default function EntryFormModalEx() {
         try {
             await deleteEntryEx(editingEntry.id);
             await renumberEntriesEx(selectedDate);
-            const updated = await getExpenses();
+            const updated = await getEntriesByDateEx(selectedDate);
             setExpenses(updated);
             handleClose();
         } catch (err) {

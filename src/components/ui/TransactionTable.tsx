@@ -1,6 +1,6 @@
 import { useAtom } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { entriesAtom, editingEntryAtom, isModalOpenAtom, selectedDateAtom } from '@/store/atoms';
+import { entriesAtom, editingEntryAtom, isModalOpenAtom } from '@/store/atoms';
 import type { JournalEntry } from '@/types';
 import { useMemo } from 'react';
 import { forwardRef } from "react";
@@ -14,7 +14,6 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
     const [entries] = useAtom(entriesAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtom);
     const [, setIsModalOpen] = useAtom(isModalOpenAtom);
-    const [selectedDate,] = useAtom(selectedDateAtom);
 
 
     const handleEdit = (entry: JournalEntry) => {
@@ -44,10 +43,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
         <table className="data-table" ref={ref}>
           <thead>
             <tr>
-              <th colSpan={4} style={{ margin: 0, fontSize: "20px" }}>روزنامچہ</th>
-              <th colSpan={4} style={{ margin: 0, fontSize: "14px", color: "#555" }}>
-                تاریخ: {selectedDate}
-              </th>
+              <th colSpan={9} style={{ margin: 0, fontSize: "20px" }}>روزنامچہ</th>
             </tr>
             <tr>
               <th>نمبر شمار</th>
@@ -57,6 +53,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
               <th>ادائیگی</th>
               <th>بقیہ رقم</th>
               <th>نوٹ</th>
+              <th>تاریخ</th>
               <th>عمل</th>
             </tr>
           </thead>
@@ -76,6 +73,9 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                   {formatAmount(entry.remaining)}
                 </td>
                 <td>{entry.note || ''}</td>
+                <td className="phone">
+                    {entry.date}
+                </td>
                 <td>
                   {entry.name && (
                     <div className="action-btns">
@@ -137,7 +137,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                     <span className="footer-value gold">{formatAmount(summary.totalRemaining)}</span>
                   </div>
                 </td>
-                <td colSpan={2}></td>
+                <td colSpan={3}></td>
               </tr>
             </tfoot>
           )}

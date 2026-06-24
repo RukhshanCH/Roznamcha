@@ -1,6 +1,6 @@
 import { useAtom } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx, selectedDateAtom } from '@/store/atoms';
+import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx } from '@/store/atoms';
 import type { ExpensesEntry } from '@/types';
 import { forwardRef } from "react";
 
@@ -12,7 +12,6 @@ const TransactionTableEx = forwardRef<HTMLTableElement, Props>(( { transactions 
     const [entries] = useAtom(expensesAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtomEx);
     const [, setIsModalOpen] = useAtom(isModalOpenAtomEx);
-    const [selectedDate,] = useAtom(selectedDateAtom);
 
     const handleEdit = (entry: ExpensesEntry) => {
         setEditingEntry(entry);
@@ -24,26 +23,27 @@ const TransactionTableEx = forwardRef<HTMLTableElement, Props>(( { transactions 
             <table className="data-table" ref={ref}>
                 <thead>
                     <tr>
-                        <th colSpan={2} style={{ margin: 0, fontSize: "20px" }}>روزنامچہ</th>
-                        <th colSpan={2} style={{ margin: 0, fontSize: "14px", color: "#555" }}>
-                            تاریخ: {selectedDate}
-                        </th>
+                        <th colSpan={6} style={{ margin: 0, fontSize: "20px" }}>روزنامچہ</th>
                     </tr>
                     <tr>
                         <th>نمبر شمار</th>
                         <th>نام</th>
                         <th>تفصیل</th>
                         <th>رقم</th>
+                        <th>تاریخ</th>
                         <th>عمل</th>
                     </tr>
                 </thead>
                 <tbody>
                     {transactions.map((entry) => (
                         <tr key={entry.id}>
-                            <td className="serial">{String(entry.serialNo).padStart(2, '0')}</td>
+                            <td className="serial">{entry.serialNo}</td>
                             <td className="name-cell">{entry.name || ''}</td>
                             <td className="phone">{entry.description || ''}</td>
                             <td className="phone">{entry.amount || ''}</td>
+                            <td className="phone">
+                                {entry.date}
+                            </td>
                             <td>
                                 {entry.name && (
                                     <div className="action-btns">

@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom } from '@/store/atoms';
-import { addEntry, updateEntry, deleteEntry, getEntriesByDate, renumberEntries, getMaxSerialNo } from '@/db/indexedDB';
+import { addEntry, updateEntry, deleteEntry, getEntriesByDate, renumberEntries } from '@/db/indexedDB';
 
 export default function EntryFormModal() {
   const [isOpen, setIsOpen] = useAtom(isModalOpenAtom);
   const [editingEntry, setEditingEntry] = useAtom(editingEntryAtom);
   const [selectedDate] = useAtom(selectedDateAtom);
   const [, setEntries] = useAtom(entriesAtom);
-
   const [formData, setFormData] = useState({
     name: '',
     mobileNumber: '',
@@ -73,10 +72,16 @@ export default function EntryFormModal() {
           serialNo: editingEntry.serialNo,
         });
       } else {
-        const maxSerial = await getMaxSerialNo(selectedDate);
+        const entriesForDate = await getEntriesByDate(selectedDate);
+
+        const nextSerial =
+          entriesForDate.length === 0
+            ? 1
+            : Math.max(...entriesForDate.map(e => e.serialNo)) + 1;
+        
         await addEntry({
           ...entryData,
-          serialNo: maxSerial + 1,
+          serialNo: nextSerial + 1,
         });
       }
 

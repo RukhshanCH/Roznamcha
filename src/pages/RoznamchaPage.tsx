@@ -6,7 +6,7 @@ import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom } from '@/store/atoms';
-import { getEntriesByDate, initDB } from '@/db/indexedDB';
+import { getAllEntries, getEntriesByDate, initDB } from '@/db/indexedDB';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -29,33 +29,35 @@ export default function RoznamchaPage() {
     );
   });
 
-  // Initialize IndexedDB and load data
-  useEffect(() => {
-    async function setup() {
-      try {
-        await initDB();
-        setDbReady(true);
-
-        const data = await getEntriesByDate(selectedDate);
-
-        setEntries(data);
-
-      } catch (err) {
-        console.error('Error initializing DB:', err);
+  // Initialize DB once
+    useEffect(() => {
+      async function setup() {
+        try {
+          await initDB();
+          setDbReady(true);
+        } catch (err) {
+          console.error("Error initializing DB:", err);
+        }
       }
-    }
-    setup();
-  }, []);
-
-  // Reload when date changes
-  useEffect(() => {
-    if (!dbReady) return;
-    async function load() {
-      const data = await getEntriesByDate(selectedDate);
-      setEntries(data);
-    }
-    load();
-  }, [selectedDate, dbReady]);
+  
+      setup();
+    }, []);
+  
+    // Load data
+    const loadData = async () => {
+      if (search.trim() === "") {
+        const data = await getEntriesByDate(selectedDate);
+        setEntries(data);
+      } else {
+        const allData = await getAllEntries();
+        setEntries(allData);
+      }
+    };
+  
+    useEffect(() => {
+      if (!dbReady) return;
+      loadData();
+    }, [dbReady, selectedDate, search]);
 
   const summary = useMemo(() => {
     const totalPayments = entries.reduce((sum, e) => sum + (e.total || 0), 0);

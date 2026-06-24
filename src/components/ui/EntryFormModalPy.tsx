@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
 import { isModalOpenAtomPy, editingEntryAtomPy, paymentsAtom, selectedDateAtom } from '@/store/atoms';
-import { updateEntryPy, addEntryPy, deleteEntryPy, renumberEntriesPy, getPayments } from '@/db/indexedDB';
+import { updateEntryPy, addEntryPy, deleteEntryPy, renumberEntriesPy, getEntriesByDatePy } from '@/db/indexedDB';
 
 export default function EntryFormModalPy() {
     const [isOpen, setIsOpen] = useAtom(isModalOpenAtomPy);
     const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomPy);
     const [selectedDate] = useAtom(selectedDateAtom);
     const [, setPayments] = useAtom(paymentsAtom);
-
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -57,12 +56,12 @@ export default function EntryFormModalPy() {
                     serialNo: editingEntry.serialNo,
                 });
             } else {
-                const payments = await getPayments();
+                const entriesForDate = await getEntriesByDatePy(selectedDate);
 
                 const nextSerial =
-                    payments.length === 0
+                    entriesForDate.length === 0
                         ? 1
-                        : Math.max(...payments.map(e => e.serialNo)) + 1;
+                        : Math.max(...entriesForDate.map(e => e.serialNo)) + 1;
 
                 await addEntryPy({
                     ...entryData,
@@ -70,7 +69,7 @@ export default function EntryFormModalPy() {
                 });
             }
 
-            const updated = await getPayments();
+            const updated = await getEntriesByDatePy(selectedDate);
             setPayments(updated);
             handleClose();
         } catch (err) {
@@ -86,7 +85,7 @@ export default function EntryFormModalPy() {
         try {
             await deleteEntryPy(editingEntry.id);
             await renumberEntriesPy(selectedDate);
-            const updated = await getPayments();
+            const updated = await getEntriesByDatePy(selectedDate);
             setPayments(updated);
             handleClose();
         } catch (err) {

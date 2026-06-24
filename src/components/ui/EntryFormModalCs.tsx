@@ -2,14 +2,13 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
 import { isModalOpenAtomCs, editingEntryAtomCs, customerAtom, selectedDateAtom } from '@/store/atoms';
-import { updateEntryCs, addEntryCs, getCustomers, deleteEntryCs, renumberEntriesCs } from '@/db/indexedDB';
+import { updateEntryCs, addEntryCs, deleteEntryCs, renumberEntriesCs, getEntriesByDateCs } from '@/db/indexedDB';
 
 export default function EntryFormModalCs() {
     const [isOpen, setIsOpen] = useAtom(isModalOpenAtomCs);
     const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomCs);
     const [selectedDate] = useAtom(selectedDateAtom);
     const [, setCustomer] = useAtom(customerAtom);
-
     const [formData, setFormData] = useState({
         name: '',
         mobileNumber: '',
@@ -53,12 +52,12 @@ export default function EntryFormModalCs() {
                     serialNo: editingEntry.serialNo,
                 });
             } else {
-                const customers = await getCustomers();
+                const entriesForDate = await getEntriesByDateCs(selectedDate);
 
                 const nextSerial =
-                    customers.length === 0
+                    entriesForDate.length === 0
                         ? 1
-                        : Math.max(...customers.map(c => c.serialNo)) + 1;
+                        : Math.max(...entriesForDate.map(e => e.serialNo)) + 1;
 
                 await addEntryCs({
                     ...entryData,
@@ -66,7 +65,7 @@ export default function EntryFormModalCs() {
                 });
             }
 
-            const updated = await getCustomers();
+            const updated = await getEntriesByDateCs(selectedDate);
             setCustomer(updated);
             handleClose();
         } catch (err) {
@@ -82,7 +81,7 @@ export default function EntryFormModalCs() {
         try {
             await deleteEntryCs(editingEntry.id);
             await renumberEntriesCs(selectedDate);
-            const updated = await getCustomers();
+            const updated = await getEntriesByDateCs(selectedDate);
             setCustomer(updated);
             handleClose();
         } catch (err) {

@@ -5,7 +5,7 @@ import { CalendarDays, FileDown, Plus, Printer, Share2 } from "lucide-react";
 import TransactionTableEx from "@/components/ui/TransactionTableEx";
 import EntryFormModalEx from "@/components/ui/EntryFormModalEx";
 import { useEffect, useRef, useState } from "react";
-import { getEntriesByDateEx, initDB } from "@/db/indexedDB";
+import { getEntriesByDateEx, getExpenses, initDB } from "@/db/indexedDB";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -29,33 +29,35 @@ export default function ExpensesPage() {
     );
   });
 
-  // Initialize IndexedDB and load data
+  // Initialize DB once
   useEffect(() => {
     async function setup() {
       try {
         await initDB();
         setDbReady(true);
-
-        const data = await getEntriesByDateEx(selectedDate);
-
-        setExpenses(data);
-
       } catch (err) {
-        console.error('Error initializing DB:', err);
+        console.error("Error initializing DB:", err);
       }
     }
+
     setup();
   }, []);
 
-  // Reload when date changes
-  useEffect(() => {
-    if (!dbReady) return;
-    async function load() {
+  // Load data
+  const loadData = async () => {
+    if (search.trim() === "") {
       const data = await getEntriesByDateEx(selectedDate);
       setExpenses(data);
+    } else {
+      const allData = await getExpenses();
+      setExpenses(allData);
     }
-    load();
-  }, [selectedDate, dbReady]);
+  };
+
+  useEffect(() => {
+    if (!dbReady) return;
+    loadData();
+  }, [dbReady, selectedDate, search]);
 
   const handleAddNew = () => {
     setEditingEntry(null);

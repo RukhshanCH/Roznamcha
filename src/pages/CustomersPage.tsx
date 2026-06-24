@@ -1,37 +1,23 @@
 import { useAtom, useAtomValue } from "jotai";
-import { customerAtom, editingEntryAtomCs, isModalOpenAtomCs, searchAtom } from "@/store/atoms";
+import { customerAtom, editingEntryAtomCs, isModalOpenAtomCs, searchAtom, selectedDateAtom } from "@/store/atoms";
 import { FileDown, Plus, Share2 } from "lucide-react";
 import TransactionTableCs from "@/components/ui/TransactionTableCs";
 import EntryFormModalCs from "@/components/ui/EntryFormModalCs";
-import { useEffect, useRef } from "react";
-import { getCustomers } from "@/db/indexedDB";
+import { useEffect, useRef, useState } from "react";
+import { getCustomers, getEntriesByDateCs, initDB } from "@/db/indexedDB";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 export default function CustomersPage() {
+  const [dbReady, setDbReady] = useState(false);
   const [, setIsModalOpen] = useAtom(isModalOpenAtomCs);
   const [, setEditingEntry] = useAtom(editingEntryAtomCs);
-  const [, setCustomers] = useAtom(customerAtom);
-  const customer = useAtomValue(customerAtom);
+  const [customers, setCustomers] = useAtom(customerAtom);
+  const [selectedDate] = useAtom(selectedDateAtom);
+  const search = useAtomValue(searchAtom);
   const pdfRef = useRef<HTMLTableElement | null>(null);
 
-  useEffect(() => {
-    async function loadCustomers() {
-      const customers = await getCustomers();
-      setCustomers(customers);
-    }
-
-    loadCustomers();
-  }, []);
-
-  const handleAddNew = () => {
-    setEditingEntry(null);
-    setIsModalOpen(true);
-  };
-
-  const search = useAtomValue(searchAtom);
-
-  const filteredTransactions = customer.filter((t) => {
+  const filteredTransactions = customers.filter((t) => {
     const query = search.toLowerCase();
 
     return (
@@ -39,6 +25,41 @@ export default function CustomersPage() {
       t.mobileNumber.toLowerCase().includes(query)
     );
   });
+
+  // Initialize DB once
+    useEffect(() => {
+      async function setup() {
+        try {
+          await initDB();
+          setDbReady(true);
+        } catch (err) {
+          console.error("Error initializing DB:", err);
+        }
+      }
+  
+      setup();
+    }, []);
+  
+    // Load data
+    const loadData = async () => {
+      if (search.trim() === "") {
+        const data = await getEntriesByDateCs(selectedDate);
+        setCustomers(data);
+      } else {
+        const allData = await getCustomers();
+        setCustomers(allData);
+      }
+    };
+  
+    useEffect(() => {
+      if (!dbReady) return;
+      loadData();
+    }, [dbReady, selectedDate, search]);
+
+  const handleAddNew = () => {
+    setEditingEntry(null);
+    setIsModalOpen(true);
+  };
 
   const downloadPDF = async () => {
     if (!pdfRef.current) return;

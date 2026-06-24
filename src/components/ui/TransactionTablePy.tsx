@@ -1,6 +1,6 @@
 import { useAtom } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { isModalOpenAtomPy, paymentsAtom, editingEntryAtomPy, selectedDateAtom } from '@/store/atoms';
+import { isModalOpenAtomPy, paymentsAtom, editingEntryAtomPy } from '@/store/atoms';
 import type { PaymentsEntry } from '@/types';
 import { forwardRef } from 'react';
 
@@ -13,7 +13,6 @@ const TransactionTablePy = forwardRef<HTMLTableElement, Props>(
     const [entries] = useAtom(paymentsAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtomPy);
     const [, setIsModalOpen] = useAtom(isModalOpenAtomPy);
-    const [selectedDate,] = useAtom(selectedDateAtom);
 
     const handleEdit = (entry: PaymentsEntry) => {
         setEditingEntry(entry);
@@ -25,16 +24,14 @@ const TransactionTablePy = forwardRef<HTMLTableElement, Props>(
             <table className="data-table" ref={ref}>
                 <thead>
                     <tr>
-                        <th colSpan={2} style={{ margin: 0, fontSize: "20px" }}>روزنامچہ</th>
-                        <th colSpan={2} style={{ margin: 0, fontSize: "14px", color: "#555" }}>
-                            تاریخ: {selectedDate}
-                        </th>
+                        <th colSpan={6} style={{ margin: 0, fontSize: "20px" }}>روزنامچہ</th>
                     </tr>
                     <tr>
                         <th>نمبر شمار</th>
                         <th>نام</th>
                         <th>تفصیل</th>
                         <th>رقم</th>
+                        <th>تاریخ</th>
                         <th>عمل</th>
                     </tr>
                 </thead>
@@ -45,6 +42,9 @@ const TransactionTablePy = forwardRef<HTMLTableElement, Props>(
                             <td className="name-cell">{entry.name || ''}</td>
                             <td className="phone">{entry.description || ''}</td>
                             <td className="phone">{entry.amount || ''}</td>
+                            <td className="phone">
+                                {entry.date}
+                            </td>
                             <td>
                                 {entry.name && (
                                     <div className="action-btns">

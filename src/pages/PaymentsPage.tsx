@@ -5,7 +5,7 @@ import { CalendarDays, FileDown, Plus, Printer, Share2 } from "lucide-react";
 import TransactionTablePy from "@/components/ui/TransactionTablePy";
 import EntryFormModalPy from "@/components/ui/EntryFormModalPy";
 import { useEffect, useRef, useState } from "react";
-import { getEntriesByDatePy, initDB } from "@/db/indexedDB";
+import { getEntriesByDatePy, getPayments, initDB } from "@/db/indexedDB";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -31,33 +31,35 @@ export default function PaymentsPage() {
     );
   });
 
-  // Initialize IndexedDB and load data
-  useEffect(() => {
-    async function setup() {
-      try {
-        await initDB();
-        setDbReady(true);
-
-        const data = await getEntriesByDatePy(selectedDate);
-
-        setPayments(data);
-
-      } catch (err) {
-        console.error('Error initializing DB:', err);
-      }
-    }
-    setup();
-  }, []);
-
-  // Reload when date changes
-  useEffect(() => {
-    if (!dbReady) return;
-    async function load() {
-      const data = await getEntriesByDatePy(selectedDate);
-      setPayments(data);
-    }
-    load();
-  }, [selectedDate, dbReady]);
+  // Initialize DB once
+      useEffect(() => {
+        async function setup() {
+          try {
+            await initDB();
+            setDbReady(true);
+          } catch (err) {
+            console.error("Error initializing DB:", err);
+          }
+        }
+    
+        setup();
+      }, []);
+    
+      // Load data
+      const loadData = async () => {
+        if (search.trim() === "") {
+          const data = await getEntriesByDatePy(selectedDate);
+          setPayments(data);
+        } else {
+          const allData = await getPayments();
+          setPayments(allData);
+        }
+      };
+    
+      useEffect(() => {
+        if (!dbReady) return;
+        loadData();
+      }, [dbReady, selectedDate, search]);
 
   const handleAddNew = () => {
     setEditingEntry(null);
