@@ -57,7 +57,7 @@ export default function RoznamchaPage() {
     useEffect(() => {
       if (!dbReady) return;
       loadData();
-    }, [dbReady, selectedDate, search]);
+    }, [dbReady, selectedDate]);
 
   const summary = useMemo(() => {
     const totalPayments = entries.reduce((sum, e) => sum + (e.total || 0), 0);
@@ -230,7 +230,7 @@ export default function RoznamchaPage() {
       </div>
 
       {/* Transaction Table */}
-      <TransactionTable ref={pdfRef} transactions={filteredTransactions} />
+      <TransactionTable ref={pdfRef} transactions={filteredTransactions} pageName={"روزنامچہ"} isRemaining={true} />
 
       {/* Entry Form Modal */}
       <EntryFormModal />

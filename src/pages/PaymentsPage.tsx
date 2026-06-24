@@ -59,7 +59,7 @@ export default function PaymentsPage() {
       useEffect(() => {
         if (!dbReady) return;
         loadData();
-      }, [dbReady, selectedDate, search]);
+      }, [dbReady, selectedDate]);
 
   const handleAddNew = () => {
     setEditingEntry(null);

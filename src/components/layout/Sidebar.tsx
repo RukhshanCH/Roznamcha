@@ -8,6 +8,7 @@ import {
   Building2,
   CloudUpload,
   CalendarDays,
+  Wallet,
 } from 'lucide-react';
 import { sidebarCollapsedAtom } from '@/store/atoms';
 import { useMemo } from 'react';
@@ -19,6 +20,7 @@ const menuItems = [
   { icon: Users, label: 'گاہک (کسٹمرز)', path: '/customers' },
   { icon: MinusCircle, label: 'اخراجات', path: '/expenses' },
   { icon: Building2, label: 'ادائیگیاں', path: '/payments' },
+  { icon: Wallet, label: 'بقیہ جات', path: '/remainings' },
   // { icon: UserCircle, label: 'صارفین', path: '/users' },
   { icon: CloudUpload, label: 'بیک اپ', path: '/backup' },
 ];

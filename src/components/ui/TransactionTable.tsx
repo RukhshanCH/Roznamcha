@@ -7,10 +7,12 @@ import { forwardRef } from "react";
 
 interface Props {
   transactions: JournalEntry[];
+  pageName: String;
+  isRemaining: Boolean
 }
 
 const TransactionTable = forwardRef<HTMLTableElement, Props>(
-  ({ transactions }, ref) => {
+  ({ transactions, pageName, isRemaining }, ref) => {
     const [entries] = useAtom(entriesAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtom);
     const [, setIsModalOpen] = useAtom(isModalOpenAtom);
@@ -43,7 +45,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
         <table className="data-table" ref={ref}>
           <thead>
             <tr>
-              <th colSpan={9} style={{ margin: 0, fontSize: "20px" }}>روزنامچہ</th>
+              <th colSpan={9} style={{ margin: 0, fontSize: "20px" }}>{pageName}</th>
             </tr>
             <tr>
               <th>نمبر شمار</th>
@@ -74,7 +76,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                 </td>
                 <td>{entry.note || ''}</td>
                 <td className="phone">
-                    {entry.date}
+                  {entry.date}
                 </td>
                 <td>
                   {entry.name && (
@@ -119,19 +121,26 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
           {entries.length > 0 && (
             <tfoot className="table-footer">
               <tr>
-                <td colSpan={4}>
-                  <div className="footer-total-label">
-                    <span className="label">کل وصولی:</span>
-                    <span className="footer-value blue">{formatAmount(summary.totalPayments)}</span>
-                  </div>
-                </td>
-                <td colSpan={1}>
-                  <div className="footer-total-label">
-                    <span className="label">کل ادائیگی:</span>
-                    <span className="footer-value green">{formatAmount(summary.totalAdvance)}</span>
-                  </div>
-                </td>
-                <td colSpan={1}>
+                {
+                  isRemaining ?
+                    <>
+                      <td colSpan={4}>
+                        <div className="footer-total-label">
+                          <span className="label">کل وصولی:</span>
+                          <span className="footer-value blue">{formatAmount(summary.totalPayments)}</span>
+                        </div>
+                      </td>
+                      <td colSpan={1}>
+                        <div className="footer-total-label">
+                          <span className="label">کل ادائیگی:</span>
+                          <span className="footer-value green">{formatAmount(summary.totalAdvance)}</span>
+                        </div>
+                      </td>
+                    </>
+                    :
+                    ""
+                }
+                <td colSpan={isRemaining ? 1 : 6}>
                   <div className="footer-total-label">
                     <span className="label">کل بقایا:</span>
                     <span className="footer-value gold">{formatAmount(summary.totalRemaining)}</span>
