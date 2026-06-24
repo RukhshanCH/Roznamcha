@@ -4,7 +4,7 @@ import { FileDown, Plus, Share2 } from "lucide-react";
 import TransactionTableCs from "@/components/ui/TransactionTableCs";
 import EntryFormModalCs from "@/components/ui/EntryFormModalCs";
 import { useEffect, useRef, useState } from "react";
-import { getCustomers, getEntriesByDateCs, initDB } from "@/db/indexedDB";
+import { getCustomers, initDB } from "@/db/indexedDB";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
@@ -42,13 +42,8 @@ export default function CustomersPage() {
   
     // Load data
     const loadData = async () => {
-      if (search.trim() === "") {
-        const data = await getEntriesByDateCs(selectedDate);
-        setCustomers(data);
-      } else {
-        const allData = await getCustomers();
-        setCustomers(allData);
-      }
+      const allData = await getCustomers();
+      setCustomers(allData);
     };
   
     useEffect(() => {

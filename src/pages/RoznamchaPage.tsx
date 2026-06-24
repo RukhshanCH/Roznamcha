@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
-import { CalendarDays, Printer, Plus, FileDown, Share2 } from 'lucide-react';
+import { CalendarDays, Printer, Plus, FileDown, Share2, Files } from 'lucide-react';
 import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
@@ -74,6 +74,10 @@ export default function RoznamchaPage() {
   const handlePrint = () => {
     window.print();
   };
+
+  const handlegetAll = async () => {
+    setEntries(await getAllEntries())
+  }
 
   const handleAddNew = () => {
     setEditingEntry(null);
@@ -158,6 +162,10 @@ export default function RoznamchaPage() {
               onChange={handleDateChange}
             />
           </div>
+          <button className="print-btn" onClick={handlegetAll}>
+            <Files />
+            <span>تمام ڈیٹا</span>
+          </button>
           <button className="print-btn" onClick={handlePrint}>
             <Printer />
             <span>پرنٹ کریں</span>

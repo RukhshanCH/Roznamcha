@@ -1,7 +1,7 @@
 import { useAtom, useAtomValue } from "jotai";
 import { Link } from 'react-router-dom';
 import { paymentsAtom, editingEntryAtomPy, isModalOpenAtomPy, selectedDateAtom, searchAtom } from "@/store/atoms";
-import { CalendarDays, FileDown, Plus, Printer, Share2 } from "lucide-react";
+import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTablePy from "@/components/ui/TransactionTablePy";
 import EntryFormModalPy from "@/components/ui/EntryFormModalPy";
 import { useEffect, useRef, useState } from "react";
@@ -69,6 +69,10 @@ export default function PaymentsPage() {
   const handlePrint = () => {
     window.print();
   };
+
+  const handlegetAll = async () => {
+    setPayments(await getPayments())
+  }
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedDate(e.target.value);
@@ -149,6 +153,10 @@ export default function PaymentsPage() {
               onChange={handleDateChange}
             />
           </div>
+          <button className="print-btn" onClick={handlegetAll}>
+            <Files />
+            <span>تمام ڈیٹا</span>
+          </button>
           <button className="print-btn" onClick={handlePrint}>
             <Printer />
             <span>پرنٹ کریں</span>

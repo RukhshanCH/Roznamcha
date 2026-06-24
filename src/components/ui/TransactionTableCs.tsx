@@ -35,9 +35,9 @@ const TransactionTableCs = forwardRef<HTMLTableElement, Props>(
                     </tr>
                 </thead>
                 <tbody>
-                    {transactions.map((entry) => (
+                    {transactions.map((entry, index) => (
                         <tr key={entry.id}>
-                            <td className="serial">{String(entry.serialNo).padStart(2, '0')}</td>
+                            <td className="serial">{index + 1}</td>
                             <td className="name-cell">{entry.name || ''}</td>
                             <td className="phone">{entry.mobileNumber || ''}</td>
                             <td className="phone">
