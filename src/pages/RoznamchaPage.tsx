@@ -5,7 +5,7 @@ import { CalendarDays, Printer, Plus, FileDown, Share2, Files } from 'lucide-rea
 import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
-import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom } from '@/store/atoms';
+import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom, showAllAtom } from '@/store/atoms';
 import { getAllEntries, getEntriesByDate } from '@/db/indexedDB';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -20,6 +20,7 @@ export default function RoznamchaPage() {
   const pdfRef = useRef<HTMLTableElement | null>(null);
   const expenses = useAtomValue(expensesAtom);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+  const [showAll, setShowAll] = useAtom(showAllAtom);
 
   const search = useAtomValue(searchAtom);
 
@@ -41,7 +42,7 @@ export default function RoznamchaPage() {
       String(t.amount).includes(query)
     );
   });
-  
+
   // Load data
   const loadData = async () => {
     if (search.trim() === "") {
@@ -53,9 +54,18 @@ export default function RoznamchaPage() {
     }
   };
 
+  const loadDataAll = async () => {
+    if (showAll) {
+      setEntries(await getAllEntries());
+    } else {
+      setEntries(await getEntriesByDate(selectedDate));
+    }
+  };
+
   useEffect(() => {
     loadData();
-  }, [selectedDate]);
+    loadDataAll();
+  }, [selectedDate, showAll, search]);
 
   const summary = useMemo(() => {
     const totalPayments = entries.reduce((sum, e) => sum + (e.total || 0), 0);
@@ -78,6 +88,7 @@ export default function RoznamchaPage() {
   };
 
   const handlegetAll = async () => {
+    setShowAll(true);
     setEntries(await getAllEntries())
   }
 
@@ -87,6 +98,7 @@ export default function RoznamchaPage() {
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setShowAll(false);
     setSelectedDate(e.target.value);
   };
 

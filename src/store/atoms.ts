@@ -27,3 +27,5 @@ export const editingEntryAtomEx = atom<ExpensesEntry | null>(null);
 export const editingEntryAtomPy = atom<PaymentsEntry | null>(null);
 
 export const searchAtom = atom("");
+
+export const showAllAtom = atom(false);

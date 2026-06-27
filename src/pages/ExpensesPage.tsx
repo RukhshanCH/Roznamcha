@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from "jotai";
-import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx, selectedDateAtom, searchAtom } from "@/store/atoms";
+import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx, selectedDateAtom, searchAtom, showAllAtom } from "@/store/atoms";
 import { Link } from 'react-router-dom';
 import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTableEx from "@/components/ui/TransactionTableEx";
@@ -17,6 +17,7 @@ export default function ExpensesPage() {
   const [search] = useAtom(searchAtom);
   const expenses = useAtomValue(expensesAtom);
   const pdfRef = useRef<HTMLTableElement | null>(null);
+  const [showAll, setShowAll] = useAtom(showAllAtom);
 
   const filteredTransactions = expenses.filter((t) => {
     const query = search.toLowerCase();
@@ -39,9 +40,18 @@ export default function ExpensesPage() {
     }
   };
 
+  const loadDataAll = async () => {
+    if (showAll) {
+      setExpenses(await getExpenses());
+    } else {
+      setExpenses(await getEntriesByDateEx(selectedDate));
+    }
+  };
+
   useEffect(() => {
     loadData();
-  }, [selectedDate, search]);
+    loadDataAll();
+  }, [selectedDate, search, showAll]);
 
   const handleAddNew = () => {
     setEditingEntry(null);
@@ -53,10 +63,12 @@ export default function ExpensesPage() {
   };
 
   const handlegetAll = async () => {
+    setShowAll(true);
     setExpenses(await getExpenses())
   }
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setShowAll(false);
     setSelectedDate(e.target.value);
   };
 
