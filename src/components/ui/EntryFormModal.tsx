@@ -85,7 +85,7 @@ export default function EntryFormModal({isRemaining}:Props) {
         
         await addEntry({
           ...entryData,
-          serialNo: nextSerial + 1,
+          serialNo: nextSerial,
         });
       }
 

@@ -12,7 +12,7 @@ interface Props {
 }
 
 const TransactionTable = forwardRef<HTMLTableElement, Props>(
-  ({ transactions, pageName, isRemaining }, ref) => {
+  ({ transactions, pageName, isRemaining }) => {
     const [entries] = useAtom(entriesAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtom);
     const [, setIsModalOpen] = useAtom(isModalOpenAtom);
@@ -42,7 +42,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
 
     return (
       <div className="table-container">
-        <table className="data-table" ref={ref}>
+        <table className="data-table">
           <thead>
             <tr>
               <th colSpan={9} style={{ margin: 0, fontSize: "20px" }}>{pageName}</th>
@@ -52,7 +52,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
               <th>نام</th>
               <th>موبائل نمبر</th>
               <th>کل رقم</th>
-              <th>ادائیگی</th>
+              <th>ادائیگی/ایڈوانس</th>
               <th>بقیہ رقم</th>
               <th>نوٹ</th>
               <th>تاریخ</th>

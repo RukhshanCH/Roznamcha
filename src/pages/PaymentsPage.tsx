@@ -4,8 +4,8 @@ import { paymentsAtom, editingEntryAtomPy, isModalOpenAtomPy, selectedDateAtom, 
 import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTablePy from "@/components/ui/TransactionTablePy";
 import EntryFormModalPy from "@/components/ui/EntryFormModalPy";
-import { useEffect, useRef, useState } from "react";
-import { getEntriesByDatePy, getPayments, initDB } from "@/db/indexedDB";
+import { useEffect, useRef } from "react";
+import { getEntriesByDatePy, getPayments } from "@/db/indexedDB";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -14,7 +14,6 @@ export default function PaymentsPage() {
   const [, setEditingEntry] = useAtom(editingEntryAtomPy);
   const [, setPayments] = useAtom(paymentsAtom);
   const [selectedDate, setSelectedDate] = useAtom(selectedDateAtom);
-  const [dbReady, setDbReady] = useState(false);
   const payments = useAtomValue(paymentsAtom);
   const pdfRef = useRef<HTMLTableElement | null>(null);
 
@@ -30,20 +29,6 @@ export default function PaymentsPage() {
       String(t.amount).includes(query)
     );
   });
-
-  // Initialize DB once
-      useEffect(() => {
-        async function setup() {
-          try {
-            await initDB();
-            setDbReady(true);
-          } catch (err) {
-            console.error("Error initializing DB:", err);
-          }
-        }
-    
-        setup();
-      }, []);
     
       // Load data
       const loadData = async () => {
@@ -57,9 +42,8 @@ export default function PaymentsPage() {
       };
     
       useEffect(() => {
-        if (!dbReady) return;
         loadData();
-      }, [dbReady, selectedDate]);
+      }, [selectedDate]);
 
   const handleAddNew = () => {
     setEditingEntry(null);
@@ -192,7 +176,7 @@ export default function PaymentsPage() {
       </div>
 
       {/* Transaction Table */}
-      <TransactionTablePy transactions={filteredTransactions} ref={pdfRef} />
+      <TransactionTablePy transactions={filteredTransactions} ref={pdfRef} pageName={"ادائیگیاں"} />
 
       {/* Entry Form Modal */}
       <EntryFormModalPy />

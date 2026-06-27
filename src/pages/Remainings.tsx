@@ -1,17 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
 import { Printer, FileDown, Share2 } from 'lucide-react';
 import TransactionTable from '@/components/ui/TransactionTable';
 import { entriesAtom, searchAtom } from '@/store/atoms';
-import { getAllEntries, initDB } from '@/db/indexedDB';
+import { getAllEntries } from '@/db/indexedDB';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import EntryFormModal from '@/components/ui/EntryFormModal';
 
 export default function Remainings() {
     const [entries, setEntries] = useAtom(entriesAtom);
-    const [dbReady, setDbReady] = useState(false);
     const pdfRef = useRef<HTMLTableElement | null>(null);
 
     const search = useAtomValue(searchAtom);
@@ -25,20 +24,6 @@ export default function Remainings() {
         return Number(e.remaining) > 0 && matchesSearch;
     });
 
-    // Initialize DB once
-    useEffect(() => {
-        async function setup() {
-            try {
-                await initDB();
-                setDbReady(true);
-            } catch (err) {
-                console.error("Error initializing DB:", err);
-            }
-        }
-
-        setup();
-    }, []);
-
     // Load data
     const loadData = async () => {
         const allData = await getAllEntries();
@@ -46,9 +31,8 @@ export default function Remainings() {
     };
 
     useEffect(() => {
-        if (!dbReady) return;
         loadData();
-    }, [dbReady]);
+    }, []);
 
     const handlePrint = () => {
         window.print();

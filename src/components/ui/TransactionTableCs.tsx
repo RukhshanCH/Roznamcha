@@ -6,10 +6,11 @@ import { forwardRef } from "react";
 
 interface Props {
     transactions: CustomerEntry[];
+    pageName: String;
 }
 
 const TransactionTableCs = forwardRef<HTMLTableElement, Props>(
-    ({ transactions }, ref) => {
+    ({ transactions, pageName }, ref) => {
         const [entries] = useAtom(customerAtom);
         const [, setEditingEntry] = useAtom(editingEntryAtomCs);
         const [, setIsModalOpen] = useAtom(isModalOpenAtomCs);
@@ -24,7 +25,7 @@ const TransactionTableCs = forwardRef<HTMLTableElement, Props>(
             <table className="data-table" ref={ref}>
                 <thead>
                     <tr>
-                        <th colSpan={5} style={{ margin: 0, fontSize: "20px" }}>روزنامچہ</th>
+                        <th colSpan={5} style={{ margin: 0, fontSize: "20px" }}>{pageName}</th>
                     </tr>
                     <tr>
                         <th>نمبر شمار</th>

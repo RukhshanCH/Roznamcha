@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTableEx from "@/components/ui/TransactionTableEx";
 import EntryFormModalEx from "@/components/ui/EntryFormModalEx";
-import { useEffect, useRef, useState } from "react";
-import { getEntriesByDateEx, getExpenses, initDB } from "@/db/indexedDB";
+import { useEffect, useRef } from "react";
+import { getEntriesByDateEx, getExpenses } from "@/db/indexedDB";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -14,7 +14,6 @@ export default function ExpensesPage() {
   const [, setIsModalOpen] = useAtom(isModalOpenAtomEx);
   const [, setEditingEntry] = useAtom(editingEntryAtomEx);
   const [selectedDate, setSelectedDate] = useAtom(selectedDateAtom);
-  const [dbReady, setDbReady] = useState(false);
   const [search] = useAtom(searchAtom);
   const expenses = useAtomValue(expensesAtom);
   const pdfRef = useRef<HTMLTableElement | null>(null);
@@ -29,20 +28,6 @@ export default function ExpensesPage() {
     );
   });
 
-  // Initialize DB once
-  useEffect(() => {
-    async function setup() {
-      try {
-        await initDB();
-        setDbReady(true);
-      } catch (err) {
-        console.error("Error initializing DB:", err);
-      }
-    }
-
-    setup();
-  }, []);
-
   // Load data
   const loadData = async () => {
     if (search.trim() === "") {
@@ -55,9 +40,8 @@ export default function ExpensesPage() {
   };
 
   useEffect(() => {
-    if (!dbReady) return;
     loadData();
-  }, [dbReady, selectedDate]);
+  }, [selectedDate, search]);
 
   const handleAddNew = () => {
     setEditingEntry(null);
@@ -190,7 +174,7 @@ export default function ExpensesPage() {
       </div>
 
       {/* Transaction Table */}
-      <TransactionTableEx transactions={filteredTransactions} ref={pdfRef} />
+      <TransactionTableEx transactions={filteredTransactions} ref={pdfRef} pageName={"اخراجات"} />
 
       {/* Entry Form Modal */}
       <EntryFormModalEx />

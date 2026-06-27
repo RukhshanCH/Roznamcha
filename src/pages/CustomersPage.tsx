@@ -3,13 +3,12 @@ import { customerAtom, editingEntryAtomCs, isModalOpenAtomCs, searchAtom, select
 import { FileDown, Plus, Share2 } from "lucide-react";
 import TransactionTableCs from "@/components/ui/TransactionTableCs";
 import EntryFormModalCs from "@/components/ui/EntryFormModalCs";
-import { useEffect, useRef, useState } from "react";
-import { getCustomers, initDB } from "@/db/indexedDB";
+import { useEffect, useRef } from "react";
+import { getCustomers } from "@/db/indexedDB";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 
 export default function CustomersPage() {
-  const [dbReady, setDbReady] = useState(false);
   const [, setIsModalOpen] = useAtom(isModalOpenAtomCs);
   const [, setEditingEntry] = useAtom(editingEntryAtomCs);
   const [customers, setCustomers] = useAtom(customerAtom);
@@ -25,20 +24,6 @@ export default function CustomersPage() {
       t.mobileNumber.toLowerCase().includes(query)
     );
   });
-
-  // Initialize DB once
-    useEffect(() => {
-      async function setup() {
-        try {
-          await initDB();
-          setDbReady(true);
-        } catch (err) {
-          console.error("Error initializing DB:", err);
-        }
-      }
-  
-      setup();
-    }, []);
   
     // Load data
     const loadData = async () => {
@@ -47,9 +32,8 @@ export default function CustomersPage() {
     };
   
     useEffect(() => {
-      if (!dbReady) return;
       loadData();
-    }, [dbReady, selectedDate]);
+    }, [selectedDate]);
 
   const handleAddNew = () => {
     setEditingEntry(null);
@@ -145,7 +129,7 @@ export default function CustomersPage() {
       </div>
 
       {/* Transaction Table */}
-      <TransactionTableCs transactions={filteredTransactions} ref={pdfRef} />
+      <TransactionTableCs transactions={filteredTransactions} ref={pdfRef} pageName={"گاہک"} />
 
       {/* Entry Form Modal */}
       <EntryFormModalCs />

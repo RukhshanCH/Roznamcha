@@ -20,6 +20,7 @@
   --table-header-bg: #F9FAFB;
   --table-footer-bg: #F9FAFB;
   --badge-red: #EF4444;
+  --badge-red-light: #fcd1d1;
 
   --font-primary: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
   --font-ui: 'Inter', system-ui, -apple-system, sans-serif;
@@ -565,6 +566,10 @@ input[type="number"] {
   background: var(--bg-card-gold);
 }
 
+.summary-card.red {
+  background: var(--badge-red-light);
+}
+
 .card-icon-wrapper {
   width: 48px;
   height: 48px;
@@ -591,6 +596,10 @@ input[type="number"] {
   background: #F3F4F6;
 }
 
+.summary-card.red .card-icon-wrapper {
+  background: #f7b0b0;
+}
+
 .card-icon-wrapper svg {
   width: 24px;
   height: 24px;
@@ -610,6 +619,10 @@ input[type="number"] {
 
 .summary-card.white .card-icon-wrapper svg {
   color: var(--text-secondary);
+}
+
+.summary-card.red .card-icon-wrapper svg {
+  color: var(--badge-red);
 }
 
 .card-content {
@@ -645,6 +658,10 @@ input[type="number"] {
 
 .summary-card.white .card-value {
   color: var(--text-primary);
+}
+
+.summary-card.red .card-value {
+  color: var(--badge-red);
 }
 
 /* ===== Transaction Table ===== */

@@ -5,18 +5,21 @@ import { CalendarDays, Printer, Plus, FileDown, Share2, Files } from 'lucide-rea
 import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
-import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom } from '@/store/atoms';
-import { getAllEntries, getEntriesByDate, initDB } from '@/db/indexedDB';
+import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom } from '@/store/atoms';
+import { getAllEntries, getEntriesByDate } from '@/db/indexedDB';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import TransactionTableEx from '@/components/ui/TransactionTableEx';
 
 export default function RoznamchaPage() {
   const [entries, setEntries] = useAtom(entriesAtom);
+  const [entriesEx] = useAtom(expensesAtom);
   const [selectedDate, setSelectedDate] = useAtom(selectedDateAtom);
   const [, setIsModalOpen] = useAtom(isModalOpenAtom);
   const [, setEditingEntry] = useAtom(editingEntryAtom);
-  const [dbReady, setDbReady] = useState(false);
   const pdfRef = useRef<HTMLTableElement | null>(null);
+  const expenses = useAtomValue(expensesAtom);
+  const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
 
   const search = useAtomValue(searchAtom);
 
@@ -29,47 +32,46 @@ export default function RoznamchaPage() {
     );
   });
 
-  // Initialize DB once
-    useEffect(() => {
-      async function setup() {
-        try {
-          await initDB();
-          setDbReady(true);
-        } catch (err) {
-          console.error("Error initializing DB:", err);
-        }
-      }
+  const filteredTransactionsEx = expenses.filter((t) => {
+    const query = search.toLowerCase();
+
+    return (
+      t.name.toLowerCase().includes(query) ||
+      t.description.toLowerCase().includes(query) ||
+      String(t.amount).includes(query)
+    );
+  });
   
-      setup();
-    }, []);
-  
-    // Load data
-    const loadData = async () => {
-      if (search.trim() === "") {
-        const data = await getEntriesByDate(selectedDate);
-        setEntries(data);
-      } else {
-        const allData = await getAllEntries();
-        setEntries(allData);
-      }
-    };
-  
-    useEffect(() => {
-      if (!dbReady) return;
-      loadData();
-    }, [dbReady, selectedDate]);
+  // Load data
+  const loadData = async () => {
+    if (search.trim() === "") {
+      const data = await getEntriesByDate(selectedDate);
+      setEntries(data);
+    } else {
+      const allData = await getAllEntries();
+      setEntries(allData);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [selectedDate]);
 
   const summary = useMemo(() => {
     const totalPayments = entries.reduce((sum, e) => sum + (e.total || 0), 0);
     const totalAdvance = entries.reduce((sum, e) => sum + (e.advance || 0), 0);
     const totalRemaining = entries.reduce((sum, e) => sum + (e.remaining || 0), 0);
+    const totalExpense = entriesEx.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const remainingBalance = totalAdvance - totalExpense;
     return {
       totalPayments: totalPayments.toLocaleString('en-US') + '/-',
       totalAdvance: totalAdvance.toLocaleString('en-US') + '/-',
       totalRemaining: totalRemaining.toLocaleString('en-US') + '/-',
+      totalExpense: totalExpense.toLocaleString('en-US') + '/-',
+      remainingBalance: remainingBalance.toLocaleString('en-US') + '/-',
       totalEntries: String(entries.length),
     };
-  }, [entries]);
+  }, [entries, entriesEx]);
 
   const handlePrint = () => {
     window.print();
@@ -91,11 +93,18 @@ export default function RoznamchaPage() {
   const downloadPDF = async () => {
     if (!pdfRef.current) return;
 
+    setIsGeneratingPdf(true);
+
+    // Wait for React to render TransactionTableEx
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     const canvas = await html2canvas(pdfRef.current, {
       scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
     });
+
+    setIsGeneratingPdf(false);
 
     const imgData = canvas.toDataURL("image/png");
 
@@ -112,11 +121,18 @@ export default function RoznamchaPage() {
   const handleSharePDF = async () => {
     if (!pdfRef.current) return;
 
+    setIsGeneratingPdf(true);
+
+    // Wait for React to render TransactionTableEx
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     const canvas = await html2canvas(pdfRef.current, {
       scale: 2,
       useCORS: true,
       backgroundColor: "#ffffff",
     });
+
+    setIsGeneratingPdf(false);
 
     const imgData = canvas.toDataURL("image/png");
 
@@ -173,67 +189,84 @@ export default function RoznamchaPage() {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="summary-cards">
-        <SummaryCard
-          label="کل وصولی (جمع)"
-          value={summary.totalPayments}
-          icon="wallet"
-          variant="blue"
-        />
-        <SummaryCard
-          label="کل ادائیگی"
-          value={summary.totalAdvance}
-          icon="arrowDown"
-          variant="green"
-        />
-        <SummaryCard
-          label="کل بقایا"
-          value={summary.totalRemaining}
-          icon="scale"
-          variant="gold"
-        />
-        <SummaryCard
-          label="کل اندراجات"
-          value={summary.totalEntries}
-          icon="fileText"
-          variant="white"
-        />
-      </div>
-
-      {/* Add Entry Button */}
-      <div className="actions-section">
-        <button className="add-entry-btn" onClick={handleAddNew}>
-          <Plus />
-          <span>نیا اندراج</span>
-        </button>
-
-        <div className="pdf-actions">
-          <button
-            className="pdf-btn download-btn"
-            onClick={() => downloadPDF()}
-          >
-            <FileDown className="pdf-icon" size={18} />
-            <span className="tooltip">Download PDF</span>
-          </button>
-
-          <button
-            className="pdf-btn share-btn"
-            onClick={() => handleSharePDF()}
-          >
-            <Share2
-              className="pdf-icon" size={18} />
-            <span className="tooltip">Share PDF</span>
-          </button>
-
+      <div ref={pdfRef}>
+        {/* Summary Cards */}
+        <div className="summary-cards">
+          <SummaryCard
+            label="تمام بل کا جمع"
+            value={summary.totalPayments}
+            icon="wallet"
+            variant="blue"
+          />
+          <SummaryCard
+            label="کل ادائیگی/ایڈوانس"
+            value={summary.totalAdvance}
+            icon="arrowDown"
+            variant="green"
+          />
+          <SummaryCard
+            label="کل بقایا"
+            value={summary.totalRemaining}
+            icon="scale"
+            variant="gold"
+          />
+          <SummaryCard
+            label="کل اندراجات"
+            value={summary.totalEntries}
+            icon="fileText"
+            variant="white"
+          />
+          <SummaryCard
+            label="کل اخراجات"
+            value={summary.totalExpense}
+            icon="receipt"
+            variant="red"
+          />
+          <SummaryCard
+            label="کل ادائیگی - کل اخراجات (بقایا رقم)"
+            value={summary.remainingBalance}
+            icon="fileWarning"
+            variant="green"
+          />
         </div>
+
+        {/* Add Entry Button */}
+        <div className="actions-section">
+          <button className="add-entry-btn" onClick={handleAddNew}>
+            <Plus />
+            <span>نیا اندراج</span>
+          </button>
+
+          <div className="pdf-actions">
+            <button
+              className="pdf-btn download-btn"
+              onClick={() => downloadPDF()}
+            >
+              <FileDown className="pdf-icon" size={18} />
+              <span className="tooltip">Download PDF</span>
+            </button>
+
+            <button
+              className="pdf-btn share-btn"
+              onClick={() => handleSharePDF()}
+            >
+              <Share2
+                className="pdf-icon" size={18} />
+              <span className="tooltip">Share PDF</span>
+            </button>
+
+          </div>
+        </div>
+
+        {/* Transaction Table */}
+        <TransactionTable transactions={filteredTransactions} pageName={"روزنامچہ"} isRemaining={false} />
+        {isGeneratingPdf && (
+          <TransactionTableEx transactions={filteredTransactionsEx} pageName={"اخراجات"} />
+        )}
+
+        {/* Entry Form Modal */}
+        <EntryFormModal isRemaining={false} />
       </div>
-
-      {/* Transaction Table */}
-      <TransactionTable ref={pdfRef} transactions={filteredTransactions} pageName={"روزنامچہ"} isRemaining={false} />
-
-      {/* Entry Form Modal */}
-      <EntryFormModal isRemaining={false} />
     </div>
   );
 }

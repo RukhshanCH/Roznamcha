@@ -7,14 +7,46 @@ import CustomersPage from '@/pages/CustomersPage'
 import ExpensesPage from '@/pages/ExpensesPage'
 import PaymentsPage from '@/pages/PaymentsPage'
 import BackupPage from '@/pages/BackupPage'
-import { useEffect } from 'react'
-import { checkWeeklyBackup } from './db/indexedDB'
-import Remainings from './pages/Reaminings'
+import { useEffect, useState } from 'react'
+import { checkWeeklyBackup, getEntriesByDateEx, initDB } from './db/indexedDB'
+import Remainings from './pages/Remainings'
+import { expensesAtom, selectedDateAtom } from './store/atoms'
+import { useAtom, useAtomValue } from 'jotai'
+
 
 export default function App() {
+  const [, setExpenses] = useAtom(expensesAtom);
+  const selectedDate = useAtomValue(selectedDateAtom);
+  const [dbReady, setDbReady] = useState(false);
+
+  // Initialize DB once
   useEffect(() => {
-  checkWeeklyBackup();
-}, []);
+    async function setup() {
+      try {
+        await initDB();
+        setDbReady(true);
+      } catch (err) {
+        console.error("Error initializing DB:", err);
+      }
+    }
+
+    setup();
+  }, []);
+
+  useEffect(() => {
+    if (!dbReady) return;
+
+    const load = async () => {
+      const data = await getEntriesByDateEx(selectedDate);
+      setExpenses(data);
+    };
+
+    load();
+  }, [dbReady, selectedDate]);
+
+  useEffect(() => {
+    checkWeeklyBackup();
+  }, []);
   return (
     <AppLayout>
       <Routes>

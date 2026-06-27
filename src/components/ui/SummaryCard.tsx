@@ -3,14 +3,16 @@ import {
   ArrowDownLeft,
   Scale,
   FileText,
+  Receipt,
+  FileWarning
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface SummaryCardProps {
   label: string;
   value: string;
-  icon: 'wallet' | 'arrowDown' | 'scale' | 'fileText';
-  variant: 'blue' | 'green' | 'gold' | 'white';
+  icon: 'wallet' | 'arrowDown' | 'scale' | 'fileText' | 'receipt' | 'fileWarning';
+  variant: 'blue' | 'green' | 'gold' | 'white' | 'red';
 }
 
 const iconMap: Record<string, LucideIcon> = {
@@ -18,6 +20,8 @@ const iconMap: Record<string, LucideIcon> = {
   arrowDown: ArrowDownLeft,
   scale: Scale,
   fileText: FileText,
+  receipt: Receipt,
+  fileWarning: FileWarning
 };
 
 export default function SummaryCard({ label, value, icon, variant }: SummaryCardProps) {
