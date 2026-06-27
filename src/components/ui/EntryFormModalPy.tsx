@@ -9,11 +9,12 @@ export default function EntryFormModalPy() {
     const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomPy);
     const [selectedDate] = useAtom(selectedDateAtom);
     const [, setPayments] = useAtom(paymentsAtom);
-    const [formData, setFormData] = useState({
+    const initialFormData = {
         name: '',
         description: '',
         amount: '',
-    });
+    };
+    const [formData, setFormData] = useState(initialFormData);
 
     useEffect(() => {
         if (editingEntry) {
@@ -76,6 +77,7 @@ export default function EntryFormModalPy() {
             console.error('Error saving entry:', err);
             alert('اندراج محفوظ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔');
         }
+        setFormData(initialFormData);
     };
 
     const handleDelete = async () => {

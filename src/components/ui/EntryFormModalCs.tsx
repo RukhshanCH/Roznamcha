@@ -9,10 +9,11 @@ export default function EntryFormModalCs() {
     const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomCs);
     const [selectedDate] = useAtom(selectedDateAtom);
     const [, setCustomer] = useAtom(customerAtom);
-    const [formData, setFormData] = useState({
+    const initialFormData = {
         name: '',
         mobileNumber: '',
-    });
+    };
+    const [formData, setFormData] = useState(initialFormData);
 
     useEffect(() => {
         if (editingEntry) {
@@ -72,6 +73,7 @@ export default function EntryFormModalCs() {
             console.error('Error saving entry:', err);
             alert('اندراج محفوظ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔');
         }
+        setFormData(initialFormData);
     };
 
     const handleDelete = async () => {

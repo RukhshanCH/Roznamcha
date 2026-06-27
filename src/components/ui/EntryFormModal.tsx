@@ -8,19 +8,20 @@ interface Props {
   isRemaining: Boolean
 }
 
-export default function EntryFormModal({isRemaining}:Props) {
+export default function EntryFormModal({ isRemaining }: Props) {
   const [isOpen, setIsOpen] = useAtom(isModalOpenAtom);
   const [editingEntry, setEditingEntry] = useAtom(editingEntryAtom);
   const [selectedDate] = useAtom(selectedDateAtom);
   const [, setEntries] = useAtom(entriesAtom);
-  const [formData, setFormData] = useState({
+  const initialFormData = {
     name: '',
     mobileNumber: '',
     total: '',
     advance: '',
     remaining: '',
     note: '',
-  });
+  };
+  const [formData, setFormData] = useState(initialFormData);
 
   const isDisabled = !formData.name || Number(formData.total) < 0 || Number(formData.advance) < 0 || Number(formData.advance) > Number(formData.total);
 
@@ -82,7 +83,7 @@ export default function EntryFormModal({isRemaining}:Props) {
           entriesForDate.length === 0
             ? 1
             : Math.max(...entriesForDate.map(e => e.serialNo)) + 1;
-        
+
         await addEntry({
           ...entryData,
           serialNo: nextSerial,
@@ -96,6 +97,7 @@ export default function EntryFormModal({isRemaining}:Props) {
       console.error('Error saving entry:', err);
       alert('اندراج محفوظ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔');
     }
+    setFormData(initialFormData);
   };
 
   const handleDelete = async () => {
