@@ -29,21 +29,21 @@ export default function PaymentsPage() {
       String(t.amount).includes(query)
     );
   });
-    
-      // Load data
-      const loadData = async () => {
-        if (search.trim() === "") {
-          const data = await getEntriesByDatePy(selectedDate);
-          setPayments(data);
-        } else {
-          const allData = await getPayments();
-          setPayments(allData);
-        }
-      };
-    
-      useEffect(() => {
-        loadData();
-      }, [selectedDate]);
+
+  // Load data
+  const loadData = async () => {
+    if (search.trim() === "") {
+      const data = await getEntriesByDatePy(selectedDate);
+      setPayments(data);
+    } else {
+      const allData = await getPayments();
+      setPayments(allData);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [selectedDate]);
 
   const handleAddNew = () => {
     setEditingEntry(null);
@@ -76,9 +76,24 @@ export default function PaymentsPage() {
     const pdf = new jsPDF("p", "mm", "a4");
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+      heightLeft -= pdfHeight;
+    }
 
     pdf.save("ادائیگیاں.pdf");
   };
@@ -97,9 +112,24 @@ export default function PaymentsPage() {
     const pdf = new jsPDF("p", "mm", "a4");
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+      heightLeft -= pdfHeight;
+    }
 
     const pdfBlob = pdf.output("blob");
     const file = new File([pdfBlob], "Payments.pdf", {

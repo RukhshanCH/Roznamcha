@@ -52,9 +52,24 @@ export default function Remainings() {
         const pdf = new jsPDF("p", "mm", "a4");
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+
+            pdf.addPage();
+            pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+            heightLeft -= pdfHeight;
+        }
 
         pdf.save("بقیہ جات.pdf");
     };
@@ -73,9 +88,24 @@ export default function Remainings() {
         const pdf = new jsPDF("p", "mm", "a4");
 
         const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+        const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
+
+        while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+
+            pdf.addPage();
+            pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+            heightLeft -= pdfHeight;
+        }
 
         const pdfBlob = pdf.output("blob");
         const file = new File([pdfBlob], "Remainings.pdf", {
@@ -112,7 +142,7 @@ export default function Remainings() {
             </div>
 
             {/* Add Entry Button */}
-            <div className="actions-section" style={{paddingBottom: "10px"}}>
+            <div className="actions-section" style={{ paddingBottom: "10px" }}>
                 <button
                     className="pdf-btn download-btn"
                     onClick={() => downloadPDF()}

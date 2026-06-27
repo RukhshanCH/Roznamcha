@@ -24,16 +24,16 @@ export default function CustomersPage() {
       t.mobileNumber.toLowerCase().includes(query)
     );
   });
-  
-    // Load data
-    const loadData = async () => {
-      const allData = await getCustomers();
-      setCustomers(allData);
-    };
-  
-    useEffect(() => {
-      loadData();
-    }, [selectedDate]);
+
+  // Load data
+  const loadData = async () => {
+    const allData = await getCustomers();
+    setCustomers(allData);
+  };
+
+  useEffect(() => {
+    loadData();
+  }, [selectedDate]);
 
   const handleAddNew = () => {
     setEditingEntry(null);
@@ -54,9 +54,24 @@ export default function CustomersPage() {
     const pdf = new jsPDF("p", "mm", "a4");
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+      heightLeft -= pdfHeight;
+    }
 
     pdf.save("گاہک.pdf");
   };
@@ -75,9 +90,24 @@ export default function CustomersPage() {
     const pdf = new jsPDF("p", "mm", "a4");
 
     const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight;
+
+      pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+      heightLeft -= pdfHeight;
+    }
 
     const pdfBlob = pdf.output("blob");
     const file = new File([pdfBlob], "Customers.pdf", {
