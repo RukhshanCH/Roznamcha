@@ -108,12 +108,12 @@ export default function RoznamchaPage() {
     setIsGeneratingPdf(true);
 
     // Wait for React to render TransactionTableEx
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 300));
 
     const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
+      scale: window.devicePixelRatio > 1 ? 2 : 1,
       useCORS: true,
-      backgroundColor: "#ffffff",
+      backgroundColor: "#F5F0E8",
     });
 
     setIsGeneratingPdf(false);
@@ -154,9 +154,9 @@ export default function RoznamchaPage() {
     await new Promise((resolve) => setTimeout(resolve, 100));
 
     const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
+      scale: window.devicePixelRatio > 1 ? 2 : 1,
       useCORS: true,
-      backgroundColor: "#ffffff",
+      backgroundColor: "#F5F0E8",
     });
 
     setIsGeneratingPdf(false);

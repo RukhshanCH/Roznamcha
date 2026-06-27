@@ -44,9 +44,9 @@ export default function CustomersPage() {
     if (!pdfRef.current) return;
 
     const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
+      scale: window.devicePixelRatio > 1 ? 2 : 1,
       useCORS: true,
-      backgroundColor: "#ffffff",
+      backgroundColor: "#F5F0E8",
     });
 
     const imgData = canvas.toDataURL("image/png");
@@ -80,9 +80,9 @@ export default function CustomersPage() {
     if (!pdfRef.current) return;
 
     const canvas = await html2canvas(pdfRef.current, {
-      scale: 2,
+      scale: window.devicePixelRatio > 1 ? 2 : 1,
       useCORS: true,
-      backgroundColor: "#ffffff",
+      backgroundColor: "#F5F0E8",
     });
 
     const imgData = canvas.toDataURL("image/png");
