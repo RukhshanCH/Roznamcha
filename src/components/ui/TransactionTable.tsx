@@ -12,7 +12,7 @@ interface Props {
 }
 
 const TransactionTable = forwardRef<HTMLTableElement, Props>(
-  ({ transactions, pageName, isRemaining }) => {
+  ({ transactions, pageName, isRemaining }, _ref) => {
     const [entries] = useAtom(entriesAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtom);
     const [, setIsModalOpen] = useAtom(isModalOpenAtom);

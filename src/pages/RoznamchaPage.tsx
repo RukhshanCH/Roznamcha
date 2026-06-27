@@ -44,27 +44,21 @@ export default function RoznamchaPage() {
   });
 
   // Load data
-  const loadData = async () => {
-    if (search.trim() === "") {
-      const data = await getEntriesByDate(selectedDate);
-      setEntries(data);
-    } else {
-      const allData = await getAllEntries();
-      setEntries(allData);
-    }
-  };
-
-  const loadDataAll = async () => {
-    if (showAll) {
-      setEntries(await getAllEntries());
-    } else {
-      setEntries(await getEntriesByDate(selectedDate));
-    }
-  };
-
   useEffect(() => {
-    loadData();
-    loadDataAll();
+    const loadEntries = async () => {
+      if (search.trim() !== "") {
+        setEntries(await getAllEntries());
+        return;
+      }
+
+      if (showAll) {
+        setEntries(await getAllEntries());
+      } else {
+        setEntries(await getEntriesByDate(selectedDate));
+      }
+    };
+
+    loadEntries();
   }, [selectedDate, showAll, search]);
 
   const summary = useMemo(() => {

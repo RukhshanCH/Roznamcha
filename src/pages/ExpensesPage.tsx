@@ -30,28 +30,22 @@ export default function ExpensesPage() {
   });
 
   // Load data
-  const loadData = async () => {
-    if (search.trim() === "") {
-      const data = await getEntriesByDateEx(selectedDate);
-      setExpenses(data);
-    } else {
-      const allData = await getExpenses();
-      setExpenses(allData);
-    }
-  };
-
-  const loadDataAll = async () => {
-    if (showAll) {
-      setExpenses(await getExpenses());
-    } else {
-      setExpenses(await getEntriesByDateEx(selectedDate));
-    }
-  };
-
   useEffect(() => {
-    loadData();
-    loadDataAll();
-  }, [selectedDate, search, showAll]);
+    const loadEntries = async () => {
+      if (search.trim() !== "") {
+        setExpenses(await getExpenses());
+        return;
+      }
+
+      if (showAll) {
+        setExpenses(await getExpenses());
+      } else {
+        setExpenses(await getEntriesByDateEx(selectedDate));
+      }
+    };
+
+    loadEntries();
+  }, [selectedDate, showAll, search]);
 
   const handleAddNew = () => {
     setEditingEntry(null);

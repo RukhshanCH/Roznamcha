@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue } from "jotai";
 import { Link } from 'react-router-dom';
-import { paymentsAtom, editingEntryAtomPy, isModalOpenAtomPy, selectedDateAtom, searchAtom } from "@/store/atoms";
+import { paymentsAtom, editingEntryAtomPy, isModalOpenAtomPy, selectedDateAtom, searchAtom, showAllAtom } from "@/store/atoms";
 import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTablePy from "@/components/ui/TransactionTablePy";
 import EntryFormModalPy from "@/components/ui/EntryFormModalPy";
@@ -16,6 +16,7 @@ export default function PaymentsPage() {
   const [selectedDate, setSelectedDate] = useAtom(selectedDateAtom);
   const payments = useAtomValue(paymentsAtom);
   const pdfRef = useRef<HTMLTableElement | null>(null);
+  const [showAll, setShowAll] = useAtom(showAllAtom);
 
 
   const search = useAtomValue(searchAtom);
@@ -31,19 +32,22 @@ export default function PaymentsPage() {
   });
 
   // Load data
-  const loadData = async () => {
-    if (search.trim() === "") {
-      const data = await getEntriesByDatePy(selectedDate);
-      setPayments(data);
-    } else {
-      const allData = await getPayments();
-      setPayments(allData);
-    }
-  };
-
   useEffect(() => {
-    loadData();
-  }, [selectedDate]);
+    const loadEntries = async () => {
+      if (search.trim() !== "") {
+        setPayments(await getPayments());
+        return;
+      }
+
+      if (showAll) {
+        setPayments(await getPayments());
+      } else {
+        setPayments(await getEntriesByDatePy(selectedDate));
+      }
+    };
+
+    loadEntries();
+  }, [selectedDate, showAll, search]);
 
   const handleAddNew = () => {
     setEditingEntry(null);
@@ -55,10 +59,12 @@ export default function PaymentsPage() {
   };
 
   const handlegetAll = async () => {
+    setShowAll(true);
     setPayments(await getPayments())
   }
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setShowAll(false);
     setSelectedDate(e.target.value);
   };
 
