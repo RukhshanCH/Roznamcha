@@ -100,8 +100,7 @@ export default function PaymentsPage() {
 
       heightLeft -= pdfHeight;
     }
-
-    pdf.save("ادائیگیاں.pdf");
+    pdf.save("ادائیگیاں__" + selectedDate + ".pdf");
   };
 
   const handleSharePDF = async () => {
@@ -148,7 +147,7 @@ export default function PaymentsPage() {
         files: [file],
       });
     } else {
-      pdf.save("ادائیگیاں.pdf");
+      pdf.save("ادائیگیاں__" + selectedDate + ".pdf");
     }
   };
 

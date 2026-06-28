@@ -136,7 +136,7 @@ export default function RoznamchaPage() {
       heightLeft -= pdfHeight;
     }
 
-    pdf.save("روزنامچہ.pdf");
+    pdf.save("روزنامچہ__" + selectedDate + ".pdf");
   };
 
   const handleSharePDF = async () => {
@@ -190,7 +190,7 @@ export default function RoznamchaPage() {
         files: [file],
       });
     } else {
-      pdf.save("روزنامچہ.pdf");
+      pdf.save("روزنامچہ__" + selectedDate + ".pdf");
     }
   };
 

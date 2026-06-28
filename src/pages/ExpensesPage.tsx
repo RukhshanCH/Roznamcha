@@ -98,8 +98,7 @@ export default function ExpensesPage() {
 
       heightLeft -= pdfHeight;
     }
-
-    pdf.save("اخراجات.pdf");
+    pdf.save("اخراجات__" + selectedDate + ".pdf");
   };
 
   const handleSharePDF = async () => {
@@ -146,7 +145,7 @@ export default function ExpensesPage() {
         files: [file],
       });
     } else {
-      pdf.save("اخراجات.pdf");
+      pdf.save("اخراجات__" + selectedDate + ".pdf");
     }
   };
 
