@@ -52,6 +52,23 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
       };
     }, [entries]);
 
+    const highlightText = (text = "", query = "") => {
+      if (!query.trim()) return text;
+
+      const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      const regex = new RegExp(`(${escapedQuery})`, "gi");
+
+      return text.split(regex).map((part, index) =>
+        part.toLowerCase() === query.toLowerCase() ? (
+          <mark key={index} className="bg-yellow-300 text-black px-0.5 rounded">
+            {part}
+          </mark>
+        ) : (
+          part
+        )
+      );
+    };
+
     return (
       <div className="table-container">
         <table className="data-table">
@@ -79,8 +96,12 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
             {transactions.map((entry) => (
               <tr key={entry.id}>
                 <td className="serial">{String(entry.serialNo).padStart(2, '0')}</td>
-                <td className="name-cell">{entry.name || ''}</td>
-                <td className="phone">{entry.mobileNumber || ''}</td>
+                <td className="name-cell">
+                  {highlightText(entry.name, search)}
+                </td>
+                <td className="phone">
+                  {highlightText(entry.mobileNumber, search)}
+                </td>
                 <td className={!entry.total ? 'empty-cell' : ''}>
                   {formatAmount(entry.total)}
                 </td>
@@ -93,7 +114,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                 <td className="note-cell">
                   {entry.note.split("\n").map((line, i) => (
                     <React.Fragment key={i}>
-                      {line}
+                      {highlightText(line, search)}
                       <br />
                     </React.Fragment>
                   ))}
@@ -101,7 +122,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                 <td className="phone">
                   {
                     search.trim() !== "" && (
-                      entry.date
+                      highlightText(entry.date, search)
                     )
                   }
                 </td>

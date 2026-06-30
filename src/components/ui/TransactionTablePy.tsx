@@ -1,6 +1,6 @@
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { isModalOpenAtomPy, paymentsAtom, editingEntryAtomPy } from '@/store/atoms';
+import { isModalOpenAtomPy, paymentsAtom, editingEntryAtomPy, searchAtom } from '@/store/atoms';
 import type { PaymentsEntry } from '@/types';
 import { forwardRef } from 'react';
 
@@ -14,10 +14,28 @@ const TransactionTablePy = forwardRef<HTMLTableElement, Props>(
     const [entries] = useAtom(paymentsAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtomPy);
     const [, setIsModalOpen] = useAtom(isModalOpenAtomPy);
+    const search = useAtomValue(searchAtom);
 
     const handleEdit = (entry: PaymentsEntry) => {
         setEditingEntry(entry);
         setIsModalOpen(true);
+    };
+    
+    const highlightText = (text = "", query = "") => {
+        if (!query.trim()) return text;
+
+        const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(`(${escapedQuery})`, "gi");
+
+        return text.split(regex).map((part, index) =>
+            part.toLowerCase() === query.toLowerCase() ? (
+                <mark key={index} className="bg-yellow-300 text-black px-0.5 rounded">
+                    {part}
+                </mark>
+            ) : (
+                part
+            )
+        );
     };
 
     return (
@@ -40,11 +58,17 @@ const TransactionTablePy = forwardRef<HTMLTableElement, Props>(
                     {transactions.map((entry) => (
                         <tr key={entry.id}>
                             <td className="serial">{String(entry.serialNo).padStart(2, '0')}</td>
-                            <td className="name-cell">{entry.name || ''}</td>
-                            <td className="phone">{entry.description || ''}</td>
-                            <td className="phone">{entry.amount || ''}</td>
+                            <td className="name-cell">
+                                {highlightText(entry.name, search)}
+                            </td>
                             <td className="phone">
-                                {entry.date}
+                                {highlightText(entry.description, search)}
+                            </td>
+                            <td className="phone">
+                                {highlightText(String(entry.amount), search)}
+                            </td>
+                            <td className="phone">
+                                {highlightText(entry.date, search)}
                             </td>
                             <td>
                                 {entry.name && (

@@ -1,6 +1,6 @@
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx } from '@/store/atoms';
+import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx, searchAtom } from '@/store/atoms';
 import type { ExpensesEntry } from '@/types';
 import { forwardRef, useMemo } from "react";
 
@@ -13,6 +13,7 @@ const TransactionTableEx = forwardRef<HTMLTableElement, Props>(({ transactions, 
     const [entries] = useAtom(expensesAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtomEx);
     const [, setIsModalOpen] = useAtom(isModalOpenAtomEx);
+    const search = useAtomValue(searchAtom);
 
     const handleEdit = (entry: ExpensesEntry) => {
         setEditingEntry(entry);
@@ -29,6 +30,23 @@ const TransactionTableEx = forwardRef<HTMLTableElement, Props>(({ transactions, 
             totalExpense: totalExpense,
         };
     }, [entries]);
+
+    const highlightText = (text = "", query = "") => {
+        if (!query.trim()) return text;
+
+        const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const regex = new RegExp(`(${escapedQuery})`, "gi");
+
+        return text.split(regex).map((part, index) =>
+            part.toLowerCase() === query.toLowerCase() ? (
+                <mark key={index} className="bg-yellow-300 text-black px-0.5 rounded">
+                    {part}
+                </mark>
+            ) : (
+                part
+            )
+        );
+    };
 
     return (
         <div className="table-container">
@@ -50,11 +68,17 @@ const TransactionTableEx = forwardRef<HTMLTableElement, Props>(({ transactions, 
                     {transactions.map((entry) => (
                         <tr key={entry.id}>
                             <td className="serial">{entry.serialNo}</td>
-                            <td className="name-cell">{entry.name || ''}</td>
-                            <td className="phone">{entry.description || ''}</td>
-                            <td className="phone">{entry.amount || ''}</td>
+                            <td className="name-cell">
+                                {highlightText(entry.name, search)}
+                            </td>
                             <td className="phone">
-                                {entry.date}
+                                {highlightText(entry.description, search)}</td>
+
+                            <td className="phone">
+                                {highlightText(String(entry.amount), search)}
+                            </td>
+                            <td className="phone">
+                                {highlightText(entry.date, search)}
                             </td>
                             <td>
                                 {entry.name && (
