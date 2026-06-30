@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
-import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom } from '@/store/atoms';
+import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, remainingPlusAtom } from '@/store/atoms';
 import { addEntry, updateEntry, deleteEntry, getEntriesByDate, renumberEntries, getAllEntries } from '@/db/indexedDB';
 
 interface Props {
@@ -13,12 +13,14 @@ export default function EntryFormModal({ isRemaining }: Props) {
   const [editingEntry, setEditingEntry] = useAtom(editingEntryAtom);
   const [selectedDate] = useAtom(selectedDateAtom);
   const [, setEntries] = useAtom(entriesAtom);
+  const [remainingPlusValue,] = useAtom(remainingPlusAtom);
   const initialFormData = {
     name: '',
     mobileNumber: '',
     total: '',
     advance: '',
     remaining: '',
+    remainingPlus: '',
     note: '',
   };
   const [formData, setFormData] = useState(initialFormData);
@@ -33,6 +35,7 @@ export default function EntryFormModal({ isRemaining }: Props) {
         total: editingEntry.total ? String(editingEntry.total) : '',
         advance: editingEntry.advance ? String(editingEntry.advance) : '',
         remaining: editingEntry.remaining ? String(editingEntry.remaining) : '',
+        remainingPlus: editingEntry.remainingPlus ? String(editingEntry.remainingPlus) : '',
         note: editingEntry.note || '',
       });
     } else {
@@ -42,6 +45,7 @@ export default function EntryFormModal({ isRemaining }: Props) {
         total: '',
         advance: '',
         remaining: '',
+        remainingPlus: '',
         note: '',
       });
     }
@@ -58,25 +62,60 @@ export default function EntryFormModal({ isRemaining }: Props) {
 
     const total = Number(formData.total) || 0;
     const advance = Number(formData.advance) || 0;
+    const remainingPlus = Number(formData.remainingPlus) || 0;
     const entryData = {
       name: formData.name,
       mobileNumber: formData.mobileNumber,
       total: total,
-      advance: advance,
-      remaining: total - advance,
+      advance: !remainingPlusValue ? advance : advance + remainingPlus,
+      remaining: !remainingPlusValue ? total - advance : total - advance - remainingPlus,
+      remainingPlus,
       note: formData.note,
-      date: selectedDate,
-      createdAt: Date.now(),
+      date: editingEntry?.date ?? selectedDate,
+      createdAt: editingEntry?.createdAt ?? Date.now(),
     };
 
     try {
       if (editingEntry?.id) {
-        await updateEntry({
+        const updatedEntry = {
+          ...editingEntry,
           ...entryData,
           id: editingEntry.id,
           serialNo: editingEntry.serialNo,
-        });
-      } else {
+          date: editingEntry.date,
+          createdAt: editingEntry.createdAt
+        };
+
+        await updateEntry(updatedEntry);
+
+        // Create automatic entry only when updating remaining payment
+        if (remainingPlusValue && remainingPlus > 0) {
+          const today = new Date().toISOString().split("T")[0];
+
+          const todayEntries = await getEntriesByDate(today);
+
+          const nextSerial =
+            todayEntries.length === 0
+              ? 1
+              : Math.max(...todayEntries.map(e => e.serialNo)) + 1;
+
+          await addEntry({
+            serialNo: nextSerial,
+            name: editingEntry.name,
+            mobileNumber: editingEntry.mobileNumber,
+
+            total: editingEntry.remaining,            // previous remaining
+            advance: remainingPlus,                  // amount paid today
+            remaining: editingEntry.remaining - remainingPlus,
+            remainingPlus: 0,
+
+            note: "پچھلی ادائیگی سے بقیہ رقم۔ تاریخ: " + editingEntry.date,
+            date: today,
+            createdAt: Date.now(),
+          });
+        }
+      }
+      else {
         const entriesForDate = await getEntriesByDate(selectedDate);
 
         const nextSerial =
@@ -156,30 +195,57 @@ export default function EntryFormModal({ isRemaining }: Props) {
             />
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label className="form-label"> کل رقم</label>
-              <input
-                type="number"
-                className="form-input"
-                value={formData.total}
-                onChange={(e) => handleChange('total', e.target.value)}
-                placeholder="0"
-                min="0"
-              />
-            </div>
-            <div className="form-group">
-              <label className="form-label">ادائیگی</label>
-              <input
-                type="number"
-                className="form-input"
-                value={formData.advance}
-                onChange={(e) => handleChange('advance', e.target.value)}
-                placeholder="0"
-                min="0"
-              />
-            </div>
-          </div>
+          {
+            !remainingPlusValue ?
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label"> کل رقم</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={formData.total}
+                    onChange={(e) => handleChange('total', e.target.value)}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">ادائیگی</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={formData.advance}
+                    onChange={(e) => handleChange('advance', e.target.value)}
+                    placeholder="0"
+                    min="0"
+                    max={formData.total}
+                  />
+                </div>
+              </div>
+              :
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label"> بقیہ رقم</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    value={editingEntry?.remaining ?? 0}
+                    readOnly
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">ادائیگی</label>
+                  <input
+                    type="number"
+                    className="form-input"
+                    onChange={(e) => handleChange('remainingPlus', e.target.value)}
+                    placeholder="0"
+                    min="0"
+                    max={editingEntry?.remaining}
+                  />
+                </div>
+              </div>
+          }
 
           <div className="form-group">
             <label className="form-label">نوٹ</label>

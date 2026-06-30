@@ -1,6 +1,6 @@
-import { useAtom } from 'jotai';
+import { useAtom, useAtomValue } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { entriesAtom, editingEntryAtom, isModalOpenAtom } from '@/store/atoms';
+import { entriesAtom, editingEntryAtom, isModalOpenAtom, remainingPlusAtom, searchAtom } from '@/store/atoms';
 import type { JournalEntry } from '@/types';
 import { useMemo } from 'react';
 import { forwardRef } from "react";
@@ -16,13 +16,21 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
     const [entries] = useAtom(entriesAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtom);
     const [, setIsModalOpen] = useAtom(isModalOpenAtom);
+    const [, setRemainigPlus] = useAtom(remainingPlusAtom);
+    const search = useAtomValue(searchAtom);
 
-
+    const today = new Date().toISOString().split("T")[0];
     const handleEdit = (entry: JournalEntry) => {
       setEditingEntry(entry);
       setIsModalOpen(true);
+      setRemainigPlus(false)
     };
 
+    const handleRemaining = (entry: JournalEntry) => {
+      setEditingEntry(entry);
+      setRemainigPlus(true)
+      setIsModalOpen(true);
+    }
     const formatAmount = (value?: number): string => {
       if (value === 0 || value == null) return '---';
       return value.toLocaleString('en-US') + '/-';
@@ -55,8 +63,12 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
               <th>ادائیگی/ایڈوانس</th>
               <th>بقیہ رقم</th>
               <th>نوٹ</th>
-              <th>تاریخ</th>
-              <th>عمل</th>
+              {
+                search.trim() !== "" && (
+                  <th>تاریخ</th>
+                )
+              }
+              <th colSpan={search.trim() !== "" ? 3 : 6}>عمل</th>
             </tr>
           </thead>
           <tbody>
@@ -76,11 +88,27 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                 </td>
                 <td>{entry.note || ''}</td>
                 <td className="phone">
-                  {entry.date}
+                  {
+                    search.trim() !== "" && (
+                      entry.date
+                    )
+                  }
                 </td>
                 <td>
                   {entry.name && (
                     <div className="action-btns">
+                      {
+                        entry.remaining > 0 && entry.date !== today && (
+                          <button
+                            style={{ color: "green" }}
+                            className="action-btn"
+                            onClick={() => handleRemaining(entry)}
+                            title="بقیہ"
+                          >
+                            <Pencil />
+                          </button>
+                        )
+                      }
                       <button
                         className="action-btn edit"
                         onClick={() => handleEdit(entry)}
@@ -103,7 +131,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
 
             {entries.length === 0 && (
               <tr>
-                <td colSpan={11} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
+                <td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
                   کوئی اندراج نہیں۔ نیا اندراج شامل کرنے کے لیے "نیا اندراج" بٹن دبائیں۔
                 </td>
               </tr>
@@ -111,7 +139,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
 
             {entries.length > 0 && transactions.length === 0 && (
               <tr>
-                <td colSpan={11} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
+                <td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
                   کوئی اندراج نہی۔
                 </td>
               </tr>
@@ -124,13 +152,13 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                 {
                   !isRemaining ?
                     <>
-                      <td colSpan={4}>
+                      <td colSpan={2}>
                         <div className="footer-total-label">
                           <span className="label">کل وصولی:</span>
                           <span className="footer-value blue">{formatAmount(summary.totalPayments)}</span>
                         </div>
                       </td>
-                      <td colSpan={1}>
+                      <td colSpan={2}>
                         <div className="footer-total-label">
                           <span className="label">کل ادائیگی:</span>
                           <span className="footer-value green">{formatAmount(summary.totalAdvance)}</span>
@@ -140,7 +168,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                     :
                     ""
                 }
-                <td colSpan={!isRemaining ? 1 : 6}>
+                <td colSpan={!isRemaining ? 2 : 6}>
                   <div className="footer-total-label">
                     <span className="label">کل بقایا:</span>
                     <span className="footer-value gold">{formatAmount(summary.totalRemaining)}</span>

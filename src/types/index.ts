@@ -7,6 +7,7 @@ export interface JournalEntry {
   total: number;
   advance: number;
   remaining: number;
+  remainingPlus: number;
   
   note: string;
   date: string;

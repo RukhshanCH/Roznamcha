@@ -29,3 +29,5 @@ export const editingEntryAtomPy = atom<PaymentsEntry | null>(null);
 export const searchAtom = atom("");
 
 export const showAllAtom = atom(false);
+
+export const remainingPlusAtom = atom(false);

@@ -5,7 +5,7 @@ import { CalendarDays, Printer, Plus, FileDown, Share2, Files } from 'lucide-rea
 import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
-import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom, showAllAtom } from '@/store/atoms';
+import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom, showAllAtom, remainingPlusAtom } from '@/store/atoms';
 import { getAllEntries, getEntriesByDate } from '@/db/indexedDB';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -21,7 +21,7 @@ export default function RoznamchaPage() {
   const expenses = useAtomValue(expensesAtom);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showAll, setShowAll] = useAtom(showAllAtom);
-
+  const [, setRemainigPlus] = useAtom(remainingPlusAtom);
   const search = useAtomValue(searchAtom);
 
   const filteredTransactions = entries.filter((t) => {
@@ -89,6 +89,7 @@ export default function RoznamchaPage() {
   const handleAddNew = () => {
     setEditingEntry(null);
     setIsModalOpen(true);
+    setRemainigPlus(false)
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
