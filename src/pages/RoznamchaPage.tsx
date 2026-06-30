@@ -29,7 +29,8 @@ export default function RoznamchaPage() {
 
     return (
       t.name.toLowerCase().includes(query) ||
-      t.mobileNumber.toLowerCase().includes(query)
+      t.mobileNumber.toLowerCase().includes(query) ||
+      t.note.toLowerCase().includes(query)
     );
   });
 
