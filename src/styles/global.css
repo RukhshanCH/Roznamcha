@@ -719,6 +719,12 @@ input[type="number"] {
   color: #9CA3AF;
 }
 
+.note-cell {
+  white-space: pre-wrap;
+  direction: rtl;
+  unicode-bidi: plaintext;
+}
+
 /* Table Footer */
 .table-footer {
   background: var(--table-footer-bg);

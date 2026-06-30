@@ -4,6 +4,7 @@ import { entriesAtom, editingEntryAtom, isModalOpenAtom, remainingPlusAtom, sear
 import type { JournalEntry } from '@/types';
 import { useMemo } from 'react';
 import { forwardRef } from "react";
+import React from 'react';
 
 interface Props {
   transactions: JournalEntry[];
@@ -19,7 +20,10 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
     const [, setRemainigPlus] = useAtom(remainingPlusAtom);
     const search = useAtomValue(searchAtom);
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = new Date();
+    today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
+
+    const todayStr = today.toISOString().split('T')[0];
     const handleEdit = (entry: JournalEntry) => {
       setEditingEntry(entry);
       setIsModalOpen(true);
@@ -86,7 +90,14 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                 <td className={!entry.remaining ? 'empty-cell' : ''}>
                   {formatAmount(entry.remaining)}
                 </td>
-                <td>{entry.note || ''}</td>
+                <td className="note-cell">
+                  {entry.note.split("\n").map((line, i) => (
+                    <React.Fragment key={i}>
+                      {line}
+                      <br />
+                    </React.Fragment>
+                  ))}
+                </td>
                 <td className="phone">
                   {
                     search.trim() !== "" && (
@@ -98,7 +109,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                   {entry.name && (
                     <div className="action-btns">
                       {
-                        entry.remaining > 0 && entry.date !== today && (
+                        entry.remaining > 0 && entry.date !== todayStr && !entry.note.includes("Dated") && (
                           <button
                             style={{ color: "green" }}
                             className="action-btn"

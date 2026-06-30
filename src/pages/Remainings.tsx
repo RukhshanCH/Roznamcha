@@ -12,7 +12,6 @@ import EntryFormModal from '@/components/ui/EntryFormModal';
 export default function Remainings() {
     const [entries, setEntries] = useAtom(entriesAtom);
     const pdfRef = useRef<HTMLTableElement | null>(null);
-
     const search = useAtomValue(searchAtom);
 
     const filteredRemainings = entries.filter((e) => {
@@ -21,7 +20,7 @@ export default function Remainings() {
             e.name.toLowerCase().includes(search.toLowerCase()) ||
             e.mobileNumber.includes(search);
 
-        return Number(e.remaining) > 0 && matchesSearch;
+        return Number(e.remaining) > 0 && matchesSearch && !e.note.includes("Dated");
     });
 
     // Load data

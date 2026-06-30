@@ -90,14 +90,25 @@ export default function EntryFormModal({ isRemaining }: Props) {
 
         // Create automatic entry only when updating remaining payment
         if (remainingPlusValue && remainingPlus > 0) {
-          const today = new Date().toISOString().split("T")[0];
+          const today = new Date();
+          today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
 
-          const todayEntries = await getEntriesByDate(today);
+          const todayStr = today.toISOString().split('T')[0];
+
+          const todayEntries = await getEntriesByDate(todayStr);
 
           const nextSerial =
             todayEntries.length === 0
               ? 1
               : Math.max(...todayEntries.map(e => e.serialNo)) + 1;
+          
+          const newRemaining = editingEntry.remaining - remainingPlus;
+          const isNill = newRemaining === 0;
+          
+          await updateEntry({
+            ...editingEntry,
+            note: isNill ? "Nil" + "\nDated: " + todayStr : String(editingEntry.remaining) + '-' + String(remainingPlus) + '=' + String(editingEntry.remaining - remainingPlus) + "\nDated: " + todayStr,
+          });
 
           await addEntry({
             serialNo: nextSerial,
@@ -109,8 +120,8 @@ export default function EntryFormModal({ isRemaining }: Props) {
             remaining: editingEntry.remaining - remainingPlus,
             remainingPlus: 0,
 
-            note: "پچھلی ادائیگی سے بقیہ رقم۔ تاریخ: " + editingEntry.date,
-            date: today,
+            note: " بقیہ رقم۔ تاریخ: " + editingEntry.date,
+            date: todayStr,
             createdAt: Date.now(),
           });
         }
