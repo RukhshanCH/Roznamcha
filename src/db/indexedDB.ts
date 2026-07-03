@@ -61,7 +61,7 @@ export async function initDB(): Promise<IDBDatabase> {
 
 // CRUD operations for Journal Entries
 
-  // Add Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
+// Add Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
 export async function addEntry(entry: Omit<JournalEntry, 'id'>): Promise<number> {
   const database = await initDB();
   return new Promise((resolve, reject) => {
@@ -113,7 +113,7 @@ export async function addEntryPy(entry: Omit<PaymentsEntry, 'id'>): Promise<numb
   });
 }
 
-  // Update Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
+// Update Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
 export async function updateEntry(entry: JournalEntry): Promise<void> {
   const database = await initDB();
   return new Promise((resolve, reject) => {
@@ -165,67 +165,145 @@ export async function updateEntryPy(entry: PaymentsEntry): Promise<void> {
   });
 }
 
-  // Delete Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
+// Delete Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
 export async function deleteEntry(id: number): Promise<void> {
-  const database = await initDB();
-  return new Promise((resolve, reject) => {
-    const transaction = database.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.delete(id);
+  const db = await initDB();
 
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction([STORE_NAME], "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+
+    const getRequest = store.get(id);
+
+    getRequest.onerror = () => reject(getRequest.error);
+
+    getRequest.onsuccess = () => {
+      const entry = getRequest.result;
+
+      if (!entry) {
+        reject(new Error("Entry not found"));
+        return;
+      }
+
+      entry.isDeleted = true;
+      entry.deletedAt = new Date().toISOString();
+
+      const updateRequest = store.put(entry);
+
+      updateRequest.onsuccess = () => resolve();
+      updateRequest.onerror = () => reject(updateRequest.error);
+    };
   });
 }
 
 export async function deleteEntryCs(id: number): Promise<void> {
-  const database = await initDB();
+  const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([CUSTOMER_STORE_NAME], 'readwrite');
-    const store = tx.objectStore(CUSTOMER_STORE_NAME);
-    const request = store.delete(id);
+    const transaction = db.transaction([CUSTOMER_STORE_NAME], "readwrite");
+    const store = transaction.objectStore(CUSTOMER_STORE_NAME);
 
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+    const getRequest = store.get(id);
+
+    getRequest.onerror = () => reject(getRequest.error);
+
+    getRequest.onsuccess = () => {
+      const entry = getRequest.result;
+
+      if (!entry) {
+        reject(new Error("Entry not found"));
+        return;
+      }
+
+      entry.isDeleted = true;
+      entry.deletedAt = new Date().toISOString();
+
+      const updateRequest = store.put(entry);
+
+      updateRequest.onsuccess = () => resolve();
+      updateRequest.onerror = () => reject(updateRequest.error);
+    };
   });
 }
 
 export async function deleteEntryEx(id: number): Promise<void> {
-  const database = await initDB();
+  const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([EXPENSES_STORE_NAME], 'readwrite');
-    const store = tx.objectStore(EXPENSES_STORE_NAME);
-    const request = store.delete(id);
+    const transaction = db.transaction([EXPENSES_STORE_NAME], "readwrite");
+    const store = transaction.objectStore(EXPENSES_STORE_NAME);
 
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+    const getRequest = store.get(id);
+
+    getRequest.onerror = () => reject(getRequest.error);
+
+    getRequest.onsuccess = () => {
+      const entry = getRequest.result;
+
+      if (!entry) {
+        reject(new Error("Entry not found"));
+        return;
+      }
+
+      entry.isDeleted = true;
+      entry.deletedAt = new Date().toISOString();
+
+      const updateRequest = store.put(entry);
+
+      updateRequest.onsuccess = () => resolve();
+      updateRequest.onerror = () => reject(updateRequest.error);
+    };
   });
 }
 
 export async function deleteEntryPy(id: number): Promise<void> {
-  const database = await initDB();
+  const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([PAYMENTS_STORE_NAME], 'readwrite');
-    const store = tx.objectStore(PAYMENTS_STORE_NAME);
-    const request = store.delete(id);
+    const transaction = db.transaction([PAYMENTS_STORE_NAME], "readwrite");
+    const store = transaction.objectStore(PAYMENTS_STORE_NAME);
 
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
+    const getRequest = store.get(id);
+
+    getRequest.onerror = () => reject(getRequest.error);
+
+    getRequest.onsuccess = () => {
+      const entry = getRequest.result;
+
+      if (!entry) {
+        reject(new Error("Entry not found"));
+        return;
+      }
+
+      entry.isDeleted = true;
+      entry.deletedAt = new Date().toISOString();
+
+      const updateRequest = store.put(entry);
+
+      updateRequest.onsuccess = () => resolve();
+      updateRequest.onerror = () => reject(updateRequest.error);
+    };
   });
 }
 
-  // Get all Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
+// Get all Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
 export async function getAllEntries(): Promise<JournalEntry[]> {
-  const database = await initDB();
+  const db = await initDB();
+
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction([STORE_NAME], 'readonly');
+    const transaction = db.transaction(STORE_NAME, "readonly");
     const store = transaction.objectStore(STORE_NAME);
+
     const request = store.getAll();
 
-    request.onsuccess = () => resolve(request.result as JournalEntry[]);
+    request.onsuccess = () => {
+      const entries = request.result.filter(
+        entry => !entry.isDeleted
+      );
+
+      resolve(entries);
+    };
+
     request.onerror = () => reject(request.error);
   });
 }
@@ -248,14 +326,22 @@ export async function getEntriesByDate(date: string): Promise<JournalEntry[]> {
 }
 
 export async function getCustomers(): Promise<CustomerEntry[]> {
-  const database = await initDB();
+  const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([CUSTOMER_STORE_NAME], 'readonly');
-    const store = tx.objectStore(CUSTOMER_STORE_NAME);
+    const transaction = db.transaction(CUSTOMER_STORE_NAME, "readonly");
+    const store = transaction.objectStore(CUSTOMER_STORE_NAME);
+
     const request = store.getAll();
 
-    request.onsuccess = () => resolve(request.result as CustomerEntry[]);
+    request.onsuccess = () => {
+      const entries = request.result.filter(
+        entry => !entry.isDeleted
+      );
+
+      resolve(entries);
+    };
+
     request.onerror = () => reject(request.error);
   });
 }
@@ -287,14 +373,22 @@ export async function getEntriesByDateCs(date: string): Promise<CustomerEntry[]>
 }
 
 export async function getExpenses(): Promise<ExpensesEntry[]> {
-  const database = await initDB();
+  const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([EXPENSES_STORE_NAME], 'readonly');
-    const store = tx.objectStore(EXPENSES_STORE_NAME);
+    const transaction = db.transaction(EXPENSES_STORE_NAME, "readonly");
+    const store = transaction.objectStore(EXPENSES_STORE_NAME);
+
     const request = store.getAll();
 
-    request.onsuccess = () => resolve(request.result as ExpensesEntry[]);
+    request.onsuccess = () => {
+      const entries = request.result.filter(
+        entry => !entry.isDeleted
+      );
+
+      resolve(entries);
+    };
+
     request.onerror = () => reject(request.error);
   });
 }
@@ -326,14 +420,22 @@ export async function getEntriesByDateEx(date: string): Promise<ExpensesEntry[]>
 }
 
 export async function getPayments(): Promise<PaymentsEntry[]> {
-  const database = await initDB();
+  const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([PAYMENTS_STORE_NAME], 'readonly');
-    const store = tx.objectStore(PAYMENTS_STORE_NAME);
+    const transaction = db.transaction(PAYMENTS_STORE_NAME, "readonly");
+    const store = transaction.objectStore(PAYMENTS_STORE_NAME);
+
     const request = store.getAll();
 
-    request.onsuccess = () => resolve(request.result as PaymentsEntry[]);
+    request.onsuccess = () => {
+      const entries = request.result.filter(
+        entry => !entry.isDeleted
+      );
+
+      resolve(entries);
+    };
+
     request.onerror = () => reject(request.error);
   });
 }
@@ -364,6 +466,351 @@ export async function getEntriesByDatePy(date: string): Promise<PaymentsEntry[]>
   });
 }
 
+// Trash function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
+export async function getTrashEntries(): Promise<JournalEntry[]> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, "readonly");
+    const store = transaction.objectStore(STORE_NAME);
+
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const entries = request.result.filter(
+        entry => entry.isDeleted
+      );
+
+      resolve(entries);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function getTrashEntriesCs(): Promise<CustomerEntry[]> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CUSTOMER_STORE_NAME, "readonly");
+    const store = transaction.objectStore(CUSTOMER_STORE_NAME);
+
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const entries = request.result.filter(
+        entry => entry.isDeleted
+      );
+
+      resolve(entries);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function getTrashEntriesEx(): Promise<ExpensesEntry[]> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(EXPENSES_STORE_NAME, "readonly");
+    const store = transaction.objectStore(EXPENSES_STORE_NAME);
+
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const entries = request.result.filter(
+        entry => entry.isDeleted
+      );
+
+      resolve(entries);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function getTrashEntriesPy(): Promise<PaymentsEntry[]> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(PAYMENTS_STORE_NAME, "readonly");
+    const store = transaction.objectStore(PAYMENTS_STORE_NAME);
+
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const entries = request.result.filter(
+        entry => entry.isDeleted
+      );
+
+      resolve(entries);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Restore function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
+export async function restoreEntry(id: number): Promise<void> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+
+    const getRequest = store.get(id);
+
+    getRequest.onsuccess = () => {
+      const entry = getRequest.result;
+
+      if (!entry) {
+        reject(new Error("Entry not found"));
+        return;
+      }
+
+      entry.isDeleted = false;
+      delete entry.deletedAt;
+
+      const updateRequest = store.put(entry);
+
+      updateRequest.onsuccess = () => resolve();
+      updateRequest.onerror = () => reject(updateRequest.error);
+    };
+
+    getRequest.onerror = () => reject(getRequest.error);
+  });
+}
+
+export async function restoreEntryCs(id: number): Promise<void> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CUSTOMER_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(CUSTOMER_STORE_NAME);
+
+    const getRequest = store.get(id);
+
+    getRequest.onsuccess = () => {
+      const entry = getRequest.result;
+
+      if (!entry) {
+        reject(new Error("Entry not found"));
+        return;
+      }
+
+      entry.isDeleted = false;
+      delete entry.deletedAt;
+
+      const updateRequest = store.put(entry);
+
+      updateRequest.onsuccess = () => resolve();
+      updateRequest.onerror = () => reject(updateRequest.error);
+    };
+
+    getRequest.onerror = () => reject(getRequest.error);
+  });
+}
+
+export async function restoreEntryEx(id: number): Promise<void> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(EXPENSES_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(EXPENSES_STORE_NAME);
+
+    const getRequest = store.get(id);
+
+    getRequest.onsuccess = () => {
+      const entry = getRequest.result;
+
+      if (!entry) {
+        reject(new Error("Entry not found"));
+        return;
+      }
+
+      entry.isDeleted = false;
+      delete entry.deletedAt;
+
+      const updateRequest = store.put(entry);
+
+      updateRequest.onsuccess = () => resolve();
+      updateRequest.onerror = () => reject(updateRequest.error);
+    };
+
+    getRequest.onerror = () => reject(getRequest.error);
+  });
+}
+
+export async function restoreEntryPy(id: number): Promise<void> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(PAYMENTS_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(PAYMENTS_STORE_NAME);
+
+    const getRequest = store.get(id);
+
+    getRequest.onsuccess = () => {
+      const entry = getRequest.result;
+
+      if (!entry) {
+        reject(new Error("Entry not found"));
+        return;
+      }
+
+      entry.isDeleted = false;
+      delete entry.deletedAt;
+
+      const updateRequest = store.put(entry);
+
+      updateRequest.onsuccess = () => resolve();
+      updateRequest.onerror = () => reject(updateRequest.error);
+    };
+
+    getRequest.onerror = () => reject(getRequest.error);
+  });
+}
+
+// Permanent Delete function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
+export async function permanentlyDeleteEntry(id: number): Promise<void> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+
+    const request = store.delete(id);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function permanentlyDeleteEntryCs(id: number): Promise<void> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CUSTOMER_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(CUSTOMER_STORE_NAME);
+
+    const request = store.delete(id);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function permanentlyDeleteEntryEx(id: number): Promise<void> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(EXPENSES_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(EXPENSES_STORE_NAME);
+
+    const request = store.delete(id);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export async function permanentlyDeleteEntryPy(id: number): Promise<void> {
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(PAYMENTS_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(PAYMENTS_STORE_NAME);
+
+    const request = store.delete(id);
+
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+  });
+}
+
+// Empty Trash function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
+export async function emptyTrash(): Promise<void> {
+  const trashItems = await getTrashEntries();
+
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(STORE_NAME, "readwrite");
+    const store = transaction.objectStore(STORE_NAME);
+
+    trashItems.forEach(item => {
+      if (item.id !== undefined) {
+        store.delete(item.id);
+      }
+    });
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+export async function emptyTrashCs(): Promise<void> {
+  const trashItems = await getTrashEntries();
+
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(CUSTOMER_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(CUSTOMER_STORE_NAME);
+
+    trashItems.forEach(item => {
+      if (item.id !== undefined) {
+        store.delete(item.id);
+      }
+    });
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+export async function emptyTrashEx(): Promise<void> {
+  const trashItems = await getTrashEntries();
+
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(EXPENSES_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(EXPENSES_STORE_NAME);
+
+    trashItems.forEach(item => {
+      if (item.id !== undefined) {
+        store.delete(item.id);
+      }
+    });
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+export async function emptyTrashPy(): Promise<void> {
+  const trashItems = await getTrashEntries();
+
+  const db = await initDB();
+
+  return new Promise((resolve, reject) => {
+    const transaction = db.transaction(PAYMENTS_STORE_NAME, "readwrite");
+    const store = transaction.objectStore(PAYMENTS_STORE_NAME);
+
+    trashItems.forEach(item => {
+      if (item.id !== undefined) {
+        store.delete(item.id);
+      }
+    });
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+// This function returns the maximum serial number for a given date. If there are no entries for that date, it returns 0.
 export async function getMaxSerialNo(date: string): Promise<number> {
   const entries = await getEntriesByDate(date);
   if (entries.length === 0) return 0;

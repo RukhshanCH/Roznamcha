@@ -5,10 +5,10 @@ import {
   LayoutDashboard,
   Users,
   MinusCircle,
-  Building2,
   CloudUpload,
   CalendarDays,
   Wallet,
+  Trash,
 } from 'lucide-react';
 import { sidebarCollapsedAtom } from '@/store/atoms';
 import { useMemo } from 'react';
@@ -17,10 +17,11 @@ const menuItems = [
   { icon: LayoutDashboard, label: 'ڈیش بورڈ', path: '/dashboard' },
   // { icon: PenLine, label: 'روزانہ اندراج', path: '/daily-entry' },
   { icon: BookOpen, label: 'روزنامچہ رجسٹر', path: '/roznamcha' },
-  { icon: Users, label: 'گاہک (کسٹمرز)', path: '/customers' },
   { icon: MinusCircle, label: 'اخراجات', path: '/expenses' },
-  { icon: Building2, label: 'ادائیگیاں', path: '/payments' },
   { icon: Wallet, label: 'بقیہ جات', path: '/remainings' },
+  { icon: Users, label: 'گاہک (کسٹمرز)', path: '/customers' },
+  { icon: Trash, label: 'ری سائیکل بن', path: '/recycle' },
+  // { icon: Building2, label: 'ادائیگیاں', path: '/payments' },
   // { icon: UserCircle, label: 'صارفین', path: '/users' },
   { icon: CloudUpload, label: 'بیک اپ', path: '/backup' },
 ];

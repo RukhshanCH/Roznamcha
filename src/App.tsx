@@ -5,13 +5,13 @@ import DashboardPage from '@/pages/DashboardPage'
 import DailyEntryPage from '@/pages/DailyEntryPage'
 import CustomersPage from '@/pages/CustomersPage'
 import ExpensesPage from '@/pages/ExpensesPage'
-import PaymentsPage from '@/pages/PaymentsPage'
 import BackupPage from '@/pages/BackupPage'
 import { useEffect, useState } from 'react'
 import { checkWeeklyBackup, getEntriesByDateEx, initDB } from './db/indexedDB'
 import Remainings from './pages/Remainings'
 import { expensesAtom, selectedDateAtom } from './store/atoms'
 import { useAtom, useAtomValue } from 'jotai'
+import Trash from './pages/Trash'
 
 
 export default function App() {
@@ -55,7 +55,7 @@ export default function App() {
         <Route path="/roznamcha" element={<RoznamchaPage />} />
         <Route path="/customers" element={<CustomersPage />} />
         <Route path="/expenses" element={<ExpensesPage />} />
-        <Route path="/payments" element={<PaymentsPage />} />
+        <Route path="/recycle" element={<Trash />} />
         <Route path="/remainings" element={<Remainings />} />
         <Route path="/backup" element={<BackupPage />} />
       </Routes>

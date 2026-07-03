@@ -16,6 +16,9 @@ export interface JournalEntry {
    // NEW FIELDS
   isBackup?: boolean;
   backupId?: string; // identifies which backup it came from
+
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 export interface CustomerEntry {
@@ -25,6 +28,9 @@ export interface CustomerEntry {
   mobileNumber: string;
   date: string;
   createdAt: number;
+
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 export interface ExpensesEntry {
@@ -35,6 +41,9 @@ export interface ExpensesEntry {
   amount: number;
   date: string;
   createdAt: number;
+
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 export interface PaymentsEntry {
@@ -45,6 +54,23 @@ export interface PaymentsEntry {
   amount: number;
   date: string;
   createdAt: number;
+
+  isDeleted?: boolean;
+  deletedAt?: string;
+}
+
+export interface TrashItem {
+  id: number;
+  serialNo: number;
+  store: "journal" | "customers" | "expenses" | "payments";
+  type: "Journal" | "Customer" | "Expense" | "Payment";
+  name: string;
+  mobileNumber?: string;
+  description?: string;
+  amount?: number;
+  date: string;
+  deletedAt?: string;
+  original: JournalEntry | CustomerEntry | ExpensesEntry | PaymentsEntry;
 }
 
 export interface MenuItem {

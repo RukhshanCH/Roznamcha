@@ -136,6 +136,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                             className="action-btn"
                             onClick={() => handleRemaining(entry)}
                             title="بقیہ"
+                            aria-label="remaining"
                           >
                             <Pencil />
                           </button>
@@ -145,6 +146,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                         className="action-btn edit"
                         onClick={() => handleEdit(entry)}
                         title="ترمیم"
+                        aria-label="edit"
                       >
                         <Pencil />
                       </button>
@@ -152,6 +154,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                         className="action-btn delete"
                         onClick={() => handleEdit(entry)}
                         title="حذف"
+                        aria-label="delete"
                       >
                         <Trash2 />
                       </button>
