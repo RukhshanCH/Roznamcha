@@ -317,8 +317,10 @@ export async function getEntriesByDate(date: string): Promise<JournalEntry[]> {
     const request = index.getAll(date);
 
     request.onsuccess = () => {
-      const entries = request.result as JournalEntry[];
-      entries.sort((a, b) => a.serialNo - b.serialNo);
+      const entries = (request.result as JournalEntry[])
+        .filter(entry => !entry.isDeleted)
+        .sort((a, b) => a.serialNo - b.serialNo);
+
       resolve(entries);
     };
     request.onerror = () => reject(request.error);
@@ -350,7 +352,7 @@ export async function getEntriesByDateCs(date: string): Promise<CustomerEntry[]>
   const database = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction(CUSTOMER_STORE_NAME, 'readonly');
+    const tx = database.transaction(CUSTOMER_STORE_NAME, "readonly");
     const store = tx.objectStore(CUSTOMER_STORE_NAME);
 
     const request = store.getAll();
@@ -358,12 +360,9 @@ export async function getEntriesByDateCs(date: string): Promise<CustomerEntry[]>
     request.onsuccess = () => {
       const entries = request.result as CustomerEntry[];
 
-      const filtered = entries.filter(e =>
-        new Date(e.createdAt).toDateString() ===
-        new Date(date).toDateString()
-      );
-
-      filtered.sort((a, b) => a.serialNo - b.serialNo);
+      const filtered = entries
+        .filter(e => e.date === date && !e.isDeleted)
+        .sort((a, b) => a.serialNo - b.serialNo);
 
       resolve(filtered);
     };
@@ -397,7 +396,7 @@ export async function getEntriesByDateEx(date: string): Promise<ExpensesEntry[]>
   const database = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction(EXPENSES_STORE_NAME, 'readonly');
+    const tx = database.transaction(EXPENSES_STORE_NAME, "readonly");
     const store = tx.objectStore(EXPENSES_STORE_NAME);
 
     const request = store.getAll();
@@ -405,12 +404,9 @@ export async function getEntriesByDateEx(date: string): Promise<ExpensesEntry[]>
     request.onsuccess = () => {
       const entries = request.result as ExpensesEntry[];
 
-      const filtered = entries.filter(e =>
-        new Date(e.createdAt).toDateString() ===
-        new Date(date).toDateString()
-      );
-
-      filtered.sort((a, b) => a.serialNo - b.serialNo);
+      const filtered = entries
+        .filter(e => e.date === date && !e.isDeleted)
+        .sort((a, b) => a.serialNo - b.serialNo);
 
       resolve(filtered);
     };
@@ -444,7 +440,7 @@ export async function getEntriesByDatePy(date: string): Promise<PaymentsEntry[]>
   const database = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction(PAYMENTS_STORE_NAME, 'readonly');
+    const tx = database.transaction(PAYMENTS_STORE_NAME, "readonly");
     const store = tx.objectStore(PAYMENTS_STORE_NAME);
 
     const request = store.getAll();
@@ -452,12 +448,9 @@ export async function getEntriesByDatePy(date: string): Promise<PaymentsEntry[]>
     request.onsuccess = () => {
       const entries = request.result as PaymentsEntry[];
 
-      const filtered = entries.filter(e =>
-        new Date(e.createdAt).toDateString() ===
-        new Date(date).toDateString()
-      );
-
-      filtered.sort((a, b) => a.serialNo - b.serialNo);
+      const filtered = entries
+        .filter(e => e.date === date && !e.isDeleted)
+        .sort((a, b) => a.serialNo - b.serialNo);
 
       resolve(filtered);
     };

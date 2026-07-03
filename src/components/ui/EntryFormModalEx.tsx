@@ -63,7 +63,7 @@ export default function EntryFormModalEx() {
             name: formData.name,
             description: formData.description,
             amount: parseFloat(formData.amount) || 0,
-            date: selectedDate,
+            date: editingEntry?.date ?? selectedDate,
             createdAt: editingEntry?.createdAt || Date.now(),
         };
 
@@ -88,6 +88,8 @@ export default function EntryFormModalEx() {
                 });
             }
 
+            console.log("selectedDate =", selectedDate);
+console.log("entryData =", entryData);
             const updated = await getEntriesByDateEx(selectedDate);
             setExpenses(updated);
             handleClose();

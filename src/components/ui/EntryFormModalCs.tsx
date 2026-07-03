@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
 import { isModalOpenAtomCs, editingEntryAtomCs, customerAtom, selectedDateAtom } from '@/store/atoms';
-import { updateEntryCs, addEntryCs, deleteEntryCs, renumberEntriesCs, getEntriesByDateCs } from '@/db/indexedDB';
+import { updateEntryCs, addEntryCs, deleteEntryCs, renumberEntriesCs, getCustomers } from '@/db/indexedDB';
 
 const initialFormData = {
     name: '',
@@ -71,7 +71,7 @@ export default function EntryFormModalCs() {
                     serialNo: editingEntry.serialNo,
                 });
             } else {
-                const entriesForDate = await getEntriesByDateCs(selectedDate);
+                const entriesForDate = await getCustomers();
 
                 const nextSerial =
                     entriesForDate.length === 0
@@ -84,7 +84,7 @@ export default function EntryFormModalCs() {
                 });
             }
 
-            const updated = await getEntriesByDateCs(selectedDate);
+            const updated = await getCustomers();
             setCustomer(updated);
             handleClose();
         } catch (err) {
@@ -101,7 +101,7 @@ export default function EntryFormModalCs() {
         try {
             await deleteEntryCs(editingEntry.id);
             await renumberEntriesCs(selectedDate);
-            const updated = await getEntriesByDateCs(selectedDate);
+            const updated = await getCustomers();
             setCustomer(updated);
             handleClose();
         } catch (err) {
@@ -137,6 +137,7 @@ export default function EntryFormModalCs() {
                             value={formData.name}
                             onChange={(e) => handleChange('name', e.target.value)}
                             placeholder="گاہک کا نام"
+                            autoFocus
                             required
                         />
                     </div>
