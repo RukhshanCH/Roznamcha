@@ -549,29 +549,49 @@ export async function restoreEntry(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, "readwrite");
-    const store = transaction.objectStore(STORE_NAME);
+    const tx = db.transaction(STORE_NAME, "readwrite");
+    const store = tx.objectStore(STORE_NAME);
+    const dateIndex = store.index("date");
 
     const getRequest = store.get(id);
 
-    getRequest.onsuccess = () => {
-      const entry = getRequest.result;
+    getRequest.onerror = () => reject(getRequest.error);
 
-      if (!entry) {
+    getRequest.onsuccess = () => {
+      const deletedEntry = getRequest.result as JournalEntry;
+
+      if (!deletedEntry) {
         reject(new Error("Entry not found"));
         return;
       }
 
-      entry.isDeleted = false;
-      delete entry.deletedAt;
+      const dateRequest = dateIndex.getAll(deletedEntry.date);
 
-      const updateRequest = store.put(entry);
+      dateRequest.onerror = () => reject(dateRequest.error);
 
-      updateRequest.onsuccess = () => resolve();
-      updateRequest.onerror = () => reject(updateRequest.error);
+      dateRequest.onsuccess = () => {
+        const activeEntries = (dateRequest.result as JournalEntry[])
+          .filter(e => !e.isDeleted && e.id !== deletedEntry.id)
+          .sort((a, b) => a.serialNo - b.serialNo);
+
+        // Shift serial numbers to make space
+        activeEntries.forEach(entry => {
+          if (entry.serialNo >= deletedEntry.serialNo) {
+            entry.serialNo += 1;
+            store.put(entry);
+          }
+        });
+
+        // Restore entry
+        deletedEntry.isDeleted = false;
+        delete deletedEntry.deletedAt;
+
+        store.put(deletedEntry);
+      };
     };
 
-    getRequest.onerror = () => reject(getRequest.error);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }
 
@@ -579,29 +599,54 @@ export async function restoreEntryCs(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(CUSTOMER_STORE_NAME, "readwrite");
-    const store = transaction.objectStore(CUSTOMER_STORE_NAME);
+    const tx = db.transaction(CUSTOMER_STORE_NAME, "readwrite");
+    const store = tx.objectStore(CUSTOMER_STORE_NAME);
+
 
     const getRequest = store.get(id);
 
-    getRequest.onsuccess = () => {
-      const entry = getRequest.result;
+    getRequest.onerror = () => reject(getRequest.error);
 
-      if (!entry) {
+    getRequest.onsuccess = () => {
+      const deletedEntry = getRequest.result as CustomerEntry;
+
+      if (!deletedEntry) {
         reject(new Error("Entry not found"));
         return;
       }
 
-      entry.isDeleted = false;
-      delete entry.deletedAt;
+      const allRequest = store.getAll();
 
-      const updateRequest = store.put(entry);
+      allRequest.onerror = () => reject(allRequest.error);
 
-      updateRequest.onsuccess = () => resolve();
-      updateRequest.onerror = () => reject(updateRequest.error);
+      allRequest.onsuccess = () => {
+        const activeEntries = (allRequest.result as CustomerEntry[])
+          .filter(
+            e =>
+              e.date === deletedEntry.date &&
+              !e.isDeleted &&
+              e.id !== deletedEntry.id
+          )
+          .sort((a, b) => a.serialNo - b.serialNo);
+
+        // Shift entries to make room
+        activeEntries.forEach(entry => {
+          if (entry.serialNo >= deletedEntry.serialNo) {
+            entry.serialNo++;
+            store.put(entry);
+          }
+        });
+
+        // Restore the deleted entry
+        deletedEntry.isDeleted = false;
+        delete deletedEntry.deletedAt;
+
+        store.put(deletedEntry);
+      };
     };
 
-    getRequest.onerror = () => reject(getRequest.error);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }
 
@@ -609,29 +654,53 @@ export async function restoreEntryEx(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(EXPENSES_STORE_NAME, "readwrite");
-    const store = transaction.objectStore(EXPENSES_STORE_NAME);
+    const tx = db.transaction(EXPENSES_STORE_NAME, "readwrite");
+    const store = tx.objectStore(EXPENSES_STORE_NAME);
 
     const getRequest = store.get(id);
 
-    getRequest.onsuccess = () => {
-      const entry = getRequest.result;
+    getRequest.onerror = () => reject(getRequest.error);
 
-      if (!entry) {
+    getRequest.onsuccess = () => {
+      const deletedEntry = getRequest.result as ExpensesEntry;
+
+      if (!deletedEntry) {
         reject(new Error("Entry not found"));
         return;
       }
 
-      entry.isDeleted = false;
-      delete entry.deletedAt;
+      const allRequest = store.getAll();
 
-      const updateRequest = store.put(entry);
+      allRequest.onerror = () => reject(allRequest.error);
 
-      updateRequest.onsuccess = () => resolve();
-      updateRequest.onerror = () => reject(updateRequest.error);
+      allRequest.onsuccess = () => {
+        const activeEntries = (allRequest.result as ExpensesEntry[])
+          .filter(
+            e =>
+              e.date === deletedEntry.date &&
+              !e.isDeleted &&
+              e.id !== deletedEntry.id
+          )
+          .sort((a, b) => a.serialNo - b.serialNo);
+
+        // Shift entries to make room
+        activeEntries.forEach(entry => {
+          if (entry.serialNo >= deletedEntry.serialNo) {
+            entry.serialNo++;
+            store.put(entry);
+          }
+        });
+
+        // Restore the deleted entry
+        deletedEntry.isDeleted = false;
+        delete deletedEntry.deletedAt;
+
+        store.put(deletedEntry);
+      };
     };
 
-    getRequest.onerror = () => reject(getRequest.error);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }
 
@@ -639,29 +708,53 @@ export async function restoreEntryPy(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(PAYMENTS_STORE_NAME, "readwrite");
-    const store = transaction.objectStore(PAYMENTS_STORE_NAME);
+    const tx = db.transaction(PAYMENTS_STORE_NAME, "readwrite");
+    const store = tx.objectStore(PAYMENTS_STORE_NAME);
 
     const getRequest = store.get(id);
 
-    getRequest.onsuccess = () => {
-      const entry = getRequest.result;
+    getRequest.onerror = () => reject(getRequest.error);
 
-      if (!entry) {
+    getRequest.onsuccess = () => {
+      const deletedEntry = getRequest.result as PaymentsEntry;
+
+      if (!deletedEntry) {
         reject(new Error("Entry not found"));
         return;
       }
 
-      entry.isDeleted = false;
-      delete entry.deletedAt;
+      const allRequest = store.getAll();
 
-      const updateRequest = store.put(entry);
+      allRequest.onerror = () => reject(allRequest.error);
 
-      updateRequest.onsuccess = () => resolve();
-      updateRequest.onerror = () => reject(updateRequest.error);
+      allRequest.onsuccess = () => {
+        const activeEntries = (allRequest.result as PaymentsEntry[])
+          .filter(
+            e =>
+              e.date === deletedEntry.date &&
+              !e.isDeleted &&
+              e.id !== deletedEntry.id
+          )
+          .sort((a, b) => a.serialNo - b.serialNo);
+
+        // Shift entries to make room
+        activeEntries.forEach(entry => {
+          if (entry.serialNo >= deletedEntry.serialNo) {
+            entry.serialNo++;
+            store.put(entry);
+          }
+        });
+
+        // Restore the deleted entry
+        deletedEntry.isDeleted = false;
+        delete deletedEntry.deletedAt;
+
+        store.put(deletedEntry);
+      };
     };
 
-    getRequest.onerror = () => reject(getRequest.error);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
   });
 }
 
