@@ -216,11 +216,11 @@ export default function RoznamchaPage() {
               onChange={handleDateChange}
             />
           </div>
-          <button className="print-btn" onClick={handlegetAll}>
+          <button type="button" className="print-btn" onClick={handlegetAll}>
             <Files />
             <span>تمام ڈیٹا</span>
           </button>
-          <button className="print-btn" onClick={handlePrint}>
+          <button type="button" className="print-btn" onClick={handlePrint}>
             <Printer />
             <span>پرنٹ کریں</span>
           </button>
@@ -270,7 +270,7 @@ export default function RoznamchaPage() {
 
         {/* Add Entry Button */}
         <div className="actions-section">
-          <button className="add-entry-btn" onClick={handleAddNew}>
+          <button type="button" className="add-entry-btn" onClick={handleAddNew}>
             <Plus />
             <span>نیا اندراج</span>
           </button>
@@ -278,6 +278,7 @@ export default function RoznamchaPage() {
           <div className="pdf-actions">
             <button
               className="pdf-btn download-btn"
+              type="button"
               onClick={() => downloadPDF()}
             >
               <FileDown className="pdf-icon" size={18} />
@@ -286,6 +287,7 @@ export default function RoznamchaPage() {
 
             <button
               className="pdf-btn share-btn"
+              type="button"
               onClick={() => handleSharePDF()}
             >
               <Share2

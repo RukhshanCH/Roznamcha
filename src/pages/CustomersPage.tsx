@@ -132,7 +132,7 @@ export default function CustomersPage() {
 
       {/* Add Entry Button */}
       <div className="actions-section">
-        <button className="add-entry-btn" onClick={handleAddNew}>
+        <button type="button" className="add-entry-btn" onClick={handleAddNew}>
           <Plus />
           <span>نیا اندراج</span>
         </button>
@@ -140,6 +140,7 @@ export default function CustomersPage() {
         <div className="pdf-actions">
           <button
             className="pdf-btn download-btn"
+            type="button"
             onClick={() => downloadPDF()}
           >
             <FileDown className="pdf-icon" size={18} />
@@ -148,6 +149,7 @@ export default function CustomersPage() {
 
           <button
             className="pdf-btn share-btn"
+            type="button"
             onClick={() => handleSharePDF()}
           >
             <Share2

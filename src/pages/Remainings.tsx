@@ -133,7 +133,7 @@ export default function Remainings() {
                     </div>
                 </div>
                 <div className="page-title-right">
-                    <button className="print-btn" onClick={handlePrint}>
+                    <button type="button" className="print-btn" onClick={handlePrint}>
                         <Printer />
                         <span>پرنٹ کریں</span>
                     </button>
@@ -144,6 +144,7 @@ export default function Remainings() {
             <div className="actions-section" style={{ paddingBottom: "10px" }}>
                 <button
                     className="pdf-btn download-btn"
+                    type="button"
                     onClick={() => downloadPDF()}
                 >
                     <FileDown className="pdf-icon" size={18} />
@@ -152,6 +153,7 @@ export default function Remainings() {
 
                 <button
                     className="pdf-btn share-btn"
+                    type="button"
                     onClick={() => handleSharePDF()}
                 >
                     <Share2

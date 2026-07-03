@@ -11,6 +11,7 @@ export default function HeaderBar() {
       <div className="header-left">
         <button
           className="header-btn"
+          type="button"
           onClick={() => setCollapsed(!collapsed)}
           aria-label="Toggle sidebar"
         >
