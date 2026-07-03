@@ -143,6 +143,7 @@ console.log("entryData =", entryData);
                             value={formData.name}
                             onChange={(e) => handleChange('name', e.target.value)}
                             placeholder="گاہک کا نام"
+                            autoFocus
                             required
                         />
                     </div>
