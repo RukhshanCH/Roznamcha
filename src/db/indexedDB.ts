@@ -728,12 +728,19 @@ export async function emptyTrash(): Promise<void> {
 
   const db = await initDB();
 
+  // 15 days ago
+  const cutoff = Date.now() - 15 * 24 * 60 * 60 * 1000;
+
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE_NAME, "readwrite");
     const store = transaction.objectStore(STORE_NAME);
 
     trashItems.forEach(item => {
-      if (item.id !== undefined) {
+      if (
+        item.id !== undefined &&
+        item.deletedAt &&
+        new Date(item.deletedAt).getTime() <= cutoff
+      ) {
         store.delete(item.id);
       }
     });
@@ -748,12 +755,19 @@ export async function emptyTrashCs(): Promise<void> {
 
   const db = await initDB();
 
+  // 15 days ago
+  const cutoff = Date.now() - 15 * 24 * 60 * 60 * 1000;
+
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(CUSTOMER_STORE_NAME, "readwrite");
     const store = transaction.objectStore(CUSTOMER_STORE_NAME);
 
     trashItems.forEach(item => {
-      if (item.id !== undefined) {
+      if (
+        item.id !== undefined &&
+        item.deletedAt &&
+        new Date(item.deletedAt).getTime() <= cutoff
+      ) {
         store.delete(item.id);
       }
     });
@@ -768,12 +782,19 @@ export async function emptyTrashEx(): Promise<void> {
 
   const db = await initDB();
 
+  // 15 days ago
+  const cutoff = Date.now() - 15 * 24 * 60 * 60 * 1000;
+
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(EXPENSES_STORE_NAME, "readwrite");
     const store = transaction.objectStore(EXPENSES_STORE_NAME);
 
     trashItems.forEach(item => {
-      if (item.id !== undefined) {
+      if (
+        item.id !== undefined &&
+        item.deletedAt &&
+        new Date(item.deletedAt).getTime() <= cutoff
+      ) {
         store.delete(item.id);
       }
     });
@@ -788,12 +809,19 @@ export async function emptyTrashPy(): Promise<void> {
 
   const db = await initDB();
 
+  // 15 days ago
+  const cutoff = Date.now() - 15 * 24 * 60 * 60 * 1000;
+
   return new Promise((resolve, reject) => {
     const transaction = db.transaction(PAYMENTS_STORE_NAME, "readwrite");
     const store = transaction.objectStore(PAYMENTS_STORE_NAME);
 
     trashItems.forEach(item => {
-      if (item.id !== undefined) {
+      if (
+        item.id !== undefined &&
+        item.deletedAt &&
+        new Date(item.deletedAt).getTime() <= cutoff
+      ) {
         store.delete(item.id);
       }
     });
