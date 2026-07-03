@@ -4,16 +4,17 @@ import { X } from 'lucide-react';
 import { isModalOpenAtomPy, editingEntryAtomPy, paymentsAtom, selectedDateAtom } from '@/store/atoms';
 import { updateEntryPy, addEntryPy, deleteEntryPy, renumberEntriesPy, getEntriesByDatePy } from '@/db/indexedDB';
 
+const initialFormData = {
+    name: '',
+    description: '',
+    amount: '',
+};
+
 export default function EntryFormModalPy() {
     const [isOpen, setIsOpen] = useAtom(isModalOpenAtomPy);
     const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomPy);
     const [selectedDate] = useAtom(selectedDateAtom);
     const [, setPayments] = useAtom(paymentsAtom);
-    const initialFormData = {
-        name: '',
-        description: '',
-        amount: '',
-    };
     const [formData, setFormData] = useState(initialFormData);
 
     useEffect(() => {
@@ -30,7 +31,24 @@ export default function EntryFormModalPy() {
                 amount: '',
             });
         }
-    }, [editingEntry]);
+    }, [editingEntry, setFormData]);
+
+    const handleClose = () => {
+        setIsOpen(false);
+        setEditingEntry(null);
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setIsOpen(false);
+                setEditingEntry(null);
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [setIsOpen, setEditingEntry]);
 
     if (!isOpen) return null;
 
@@ -95,28 +113,30 @@ export default function EntryFormModalPy() {
         }
     };
 
-    const handleClose = () => {
-        setIsOpen(false);
-        setEditingEntry(null);
-    };
-
     return (
         <div className="modal-overlay" onClick={handleClose}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div
+                role="dialog"
+                aria-modal="true"
+                className="modal-content"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="modal-header">
                     <h2 className="modal-title">
                         {editingEntry ? 'اندراج میں ترمیم کریں' : 'نیا اندراج'}
                     </h2>
-                    <button className="modal-close" onClick={handleClose}>
+                    <button type="button" className="modal-close" onClick={handleClose} aria-label="Close Modal">
                         <X />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label className="form-label">نام</label>
+                        <label htmlFor="namePy" className="form-label">نام</label>
                         <input
                             type="text"
+                            aria-label="Customer Name"
+                            id="namePy"
                             className="form-input"
                             value={formData.name}
                             onChange={(e) => handleChange('name', e.target.value)}
@@ -126,9 +146,11 @@ export default function EntryFormModalPy() {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">تفصیل</label>
+                        <label htmlFor="descriptionPy" className="form-label">تفصیل</label>
                         <input
                             type="text"
+                            aria-label="Description"
+                            id="descriptionPy"
                             className="form-input"
                             value={formData.description}
                             onChange={(e) => handleChange('description', e.target.value)}
@@ -137,9 +159,11 @@ export default function EntryFormModalPy() {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">رقم</label>
+                        <label htmlFor="amountPy" className="form-label">رقم</label>
                         <input
                             type="number"
+                            aria-label="Amount"
+                            id="amountPy"
                             className="form-input"
                             value={formData.amount}
                             onChange={(e) => handleChange('amount', e.target.value)}
@@ -150,11 +174,11 @@ export default function EntryFormModalPy() {
 
                     <div className="form-actions">
                         {editingEntry && (
-                            <button type="button" className="btn btn-secondary" onClick={handleDelete}>
+                            <button type="button" className="btn btn-secondary" onClick={handleDelete} aria-label="Delete Entry">
                                 حذف کریں
                             </button>
                         )}
-                        <button type="button" className="btn btn-secondary" onClick={handleClose}>
+                        <button type="button" className="btn btn-secondary" onClick={handleClose} aria-label="Cancel">
                             منسوخ
                         </button>
                         <button type="submit" className="btn btn-primary">

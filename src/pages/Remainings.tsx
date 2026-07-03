@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
 import { Printer, FileDown, Share2 } from 'lucide-react';
@@ -24,18 +24,17 @@ export default function Remainings() {
     });
 
     // Load data
-    const loadData = async () => {
-        const allData = await getAllEntries();
-        setEntries(allData);
-    };
-
     useEffect(() => {
-        loadData();
-    }, []);
+        const loadData = async () => {
+            const allData = await getAllEntries();
+            setEntries(allData);
+        };
+        void loadData();
+    }, [setEntries]);
 
-    const handlePrint = () => {
+    const handlePrint = useCallback(() => {
         window.print();
-    };
+    }, []);
 
     const downloadPDF = async () => {
         if (!pdfRef.current) return;
@@ -133,7 +132,7 @@ export default function Remainings() {
                     </div>
                 </div>
                 <div className="page-title-right">
-                    <button type="button" className="print-btn" onClick={handlePrint}>
+                    <button type="button" aria-label="Print" className="print-btn" onClick={handlePrint}>
                         <Printer />
                         <span>پرنٹ کریں</span>
                     </button>
@@ -145,6 +144,7 @@ export default function Remainings() {
                 <button
                     className="pdf-btn download-btn"
                     type="button"
+                    aria-label="Download PDF"
                     onClick={() => downloadPDF()}
                 >
                     <FileDown className="pdf-icon" size={18} />
@@ -154,6 +154,7 @@ export default function Remainings() {
                 <button
                     className="pdf-btn share-btn"
                     type="button"
+                    aria-label="Share PDF"
                     onClick={() => handleSharePDF()}
                 >
                     <Share2

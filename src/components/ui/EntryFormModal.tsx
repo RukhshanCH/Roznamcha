@@ -8,21 +8,22 @@ interface Props {
   isRemaining: Boolean
 }
 
+const initialFormData = {
+  name: '',
+  mobileNumber: '',
+  total: '',
+  advance: '',
+  remaining: '',
+  remainingPlus: '',
+  note: '',
+};
+
 export default function EntryFormModal({ isRemaining }: Props) {
   const [isOpen, setIsOpen] = useAtom(isModalOpenAtom);
   const [editingEntry, setEditingEntry] = useAtom(editingEntryAtom);
   const [selectedDate] = useAtom(selectedDateAtom);
   const [, setEntries] = useAtom(entriesAtom);
   const [remainingPlusValue,] = useAtom(remainingPlusAtom);
-  const initialFormData = {
-    name: '',
-    mobileNumber: '',
-    total: '',
-    advance: '',
-    remaining: '',
-    remainingPlus: '',
-    note: '',
-  };
   const [formData, setFormData] = useState(initialFormData);
 
   const isDisabled = !formData.name || Number(formData.total) < 0 || Number(formData.advance) < 0 || Number(formData.advance) > Number(formData.total);
@@ -50,6 +51,23 @@ export default function EntryFormModal({ isRemaining }: Props) {
       });
     }
   }, [editingEntry]);
+
+  const handleClose = () => {
+    setIsOpen(false);
+    setEditingEntry(null);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsOpen(false);
+        setEditingEntry(null);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [setIsOpen, setEditingEntry]);
 
   if (!isOpen) return null;
 
@@ -101,10 +119,10 @@ export default function EntryFormModal({ isRemaining }: Props) {
             todayEntries.length === 0
               ? 1
               : Math.max(...todayEntries.map(e => e.serialNo)) + 1;
-          
+
           const newRemaining = editingEntry.remaining - remainingPlus;
           const isNill = newRemaining === 0;
-          
+
           await updateEntry({
             ...editingEntry,
             note: isNill ? "Nil" + "\nDated: " + todayStr : String(editingEntry.remaining) + '-' + String(remainingPlus) + '=' + String(editingEntry.remaining - remainingPlus) + "\nDated: " + todayStr,
@@ -165,28 +183,30 @@ export default function EntryFormModal({ isRemaining }: Props) {
     }
   };
 
-  const handleClose = () => {
-    setIsOpen(false);
-    setEditingEntry(null);
-  };
-
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="modal-content"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h2 className="modal-title">
             {editingEntry ? 'اندراج میں ترمیم کریں' : 'نیا اندراج'}
           </h2>
-          <button className="modal-close" onClick={handleClose}>
+          <button type="button" className="modal-close" onClick={handleClose} aria-label="Close Modal">
             <X />
           </button>
         </div>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label className="form-label">نام</label>
+            <label htmlFor="name" className="form-label">نام</label>
             <input
               type="text"
+              aria-label="Customer Name"
+              id="name"
               className="form-input"
               value={formData.name}
               onChange={(e) => handleChange('name', e.target.value)}
@@ -196,10 +216,15 @@ export default function EntryFormModal({ isRemaining }: Props) {
           </div>
 
           <div className="form-group">
-            <label className="form-label">موبائل نمبر</label>
+            <label className="form-label" htmlFor="mobileNumber">
+              موبائل نمبر
+            </label>
             <input
               type="tel"
+              aria-label="Customer Mobile Number"
+              id="mobileNumber"
               className="form-input"
+              pattern="[0-9]{4}-[0-9]{7}"
               value={formData.mobileNumber}
               onChange={(e) => handleChange('mobileNumber', e.target.value)}
               placeholder="0300-1234567"
@@ -210,9 +235,13 @@ export default function EntryFormModal({ isRemaining }: Props) {
             !remainingPlusValue ?
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label"> کل رقم</label>
+                  <label className="form-label" htmlFor="total">
+                    کل رقم
+                  </label>
                   <input
                     type="number"
+                    aria-label="Total Amount"
+                    id="total"
                     className="form-input"
                     value={formData.total}
                     onChange={(e) => handleChange('total', e.target.value)}
@@ -221,9 +250,13 @@ export default function EntryFormModal({ isRemaining }: Props) {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">ادائیگی</label>
+                  <label className="form-label" htmlFor="advance">
+                    ادائیگی
+                  </label>
                   <input
                     type="number"
+                    aria-label="Advance Payment"
+                    id="advance"
                     className="form-input"
                     value={formData.advance}
                     onChange={(e) => handleChange('advance', e.target.value)}
@@ -236,18 +269,26 @@ export default function EntryFormModal({ isRemaining }: Props) {
               :
               <div className="form-row">
                 <div className="form-group">
-                  <label className="form-label"> بقیہ رقم</label>
+                  <label className="form-label" htmlFor="remaining">
+                    بقیہ رقم
+                  </label>
                   <input
                     type="number"
+                    aria-label="Remaining Amount"
+                    id="remaining"
                     className="form-input"
                     value={editingEntry?.remaining ?? 0}
                     readOnly
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">ادائیگی</label>
+                  <label className="form-label" htmlFor="remainingPlus">
+                    ادائیگی
+                  </label>
                   <input
                     type="number"
+                    aria-label="Additional Payment"
+                    id="remainingPlus"
                     className="form-input"
                     onChange={(e) => handleChange('remainingPlus', e.target.value)}
                     placeholder="0"
@@ -259,9 +300,13 @@ export default function EntryFormModal({ isRemaining }: Props) {
           }
 
           <div className="form-group">
-            <label className="form-label">نوٹ</label>
+            <label className="form-label" htmlFor="note">
+              نوٹ
+            </label>
             <input
               type="text"
+              aria-label="Additional Note"
+              id="note"
               className="form-input"
               value={formData.note}
               onChange={(e) => handleChange('note', e.target.value)}
@@ -271,14 +316,14 @@ export default function EntryFormModal({ isRemaining }: Props) {
 
           <div className="form-actions">
             {editingEntry && (
-              <button type="button" className="btn btn-secondary" onClick={handleDelete}>
+              <button type="button" className="btn btn-secondary" onClick={handleDelete} aria-label="Delete Entry">
                 حذف کریں
               </button>
             )}
-            <button type="button" className="btn btn-secondary" onClick={handleClose}>
+            <button type="button" className="btn btn-secondary" onClick={handleClose} aria-label="Cancel">
               منسوخ
             </button>
-            <button disabled={isDisabled} type="submit" className={`btn ${isDisabled ? 'btn-disabled' : 'btn-primary'}`}>
+            <button disabled={isDisabled} type="submit" className={`btn ${isDisabled ? 'btn-disabled' : 'btn-primary'}`} aria-label={editingEntry ? 'Save Changes' : 'Add Entry'}>
               {editingEntry ? 'محفوظ کریں' : 'شامل کریں'}
             </button>
           </div>

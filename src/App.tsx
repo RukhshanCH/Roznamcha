@@ -36,17 +36,16 @@ export default function App() {
   useEffect(() => {
     if (!dbReady) return;
 
-    const load = async () => {
+    void (async () => {
       const data = await getEntriesByDateEx(selectedDate);
       setExpenses(data);
-    };
-
-    load();
-  }, [dbReady, selectedDate]);
+    })();
+  }, [dbReady, selectedDate, setExpenses]);
 
   useEffect(() => {
     checkWeeklyBackup();
   }, []);
+  
   return (
     <AppLayout>
       <Routes>

@@ -4,15 +4,16 @@ import { X } from 'lucide-react';
 import { isModalOpenAtomCs, editingEntryAtomCs, customerAtom, selectedDateAtom } from '@/store/atoms';
 import { updateEntryCs, addEntryCs, deleteEntryCs, renumberEntriesCs, getEntriesByDateCs } from '@/db/indexedDB';
 
+const initialFormData = {
+    name: '',
+    mobileNumber: '',
+};
+
 export default function EntryFormModalCs() {
     const [isOpen, setIsOpen] = useAtom(isModalOpenAtomCs);
     const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomCs);
     const [selectedDate] = useAtom(selectedDateAtom);
     const [, setCustomer] = useAtom(customerAtom);
-    const initialFormData = {
-        name: '',
-        mobileNumber: '',
-    };
     const [formData, setFormData] = useState(initialFormData);
 
     useEffect(() => {
@@ -28,6 +29,23 @@ export default function EntryFormModalCs() {
             });
         }
     }, [editingEntry]);
+
+    const handleClose = () => {
+        setIsOpen(false);
+        setEditingEntry(null);
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setIsOpen(false);
+                setEditingEntry(null);
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [setIsOpen, setEditingEntry]);
 
     if (!isOpen) return null;
 
@@ -91,28 +109,30 @@ export default function EntryFormModalCs() {
         }
     };
 
-    const handleClose = () => {
-        setIsOpen(false);
-        setEditingEntry(null);
-    };
-
     return (
         <div className="modal-overlay" onClick={handleClose}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div
+                role="dialog"
+                aria-modal="true"
+                className="modal-content"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="modal-header">
                     <h2 className="modal-title">
                         {editingEntry ? 'اندراج میں ترمیم کریں' : 'نیا اندراج'}
                     </h2>
-                    <button className="modal-close" onClick={handleClose}>
+                    <button type="button" aria-label="Close" className="modal-close" onClick={handleClose}>
                         <X />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label className="form-label">نام</label>
+                        <label htmlFor="nameCs" className="form-label">نام</label>
                         <input
                             type="text"
+                            aria-label="Customer Name"
+                            id="nameCs"
                             className="form-input"
                             value={formData.name}
                             onChange={(e) => handleChange('name', e.target.value)}
@@ -122,9 +142,12 @@ export default function EntryFormModalCs() {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">موبائل نمبر</label>
+                        <label htmlFor="mobileNumberCs" className="form-label">موبائل نمبر</label>
                         <input
                             type="tel"
+                            aria-label="Customer Mobile Number"
+                            pattern="[0-9]{4}-[0-9]{7}"
+                            id="mobileNumberCs"
                             className="form-input"
                             value={formData.mobileNumber}
                             onChange={(e) => handleChange('mobileNumber', e.target.value)}
@@ -134,14 +157,14 @@ export default function EntryFormModalCs() {
 
                     <div className="form-actions">
                         {editingEntry && (
-                            <button type="button" className="btn btn-secondary" onClick={handleDelete}>
+                            <button type="button" className="btn btn-secondary" onClick={handleDelete} aria-label="Delete Entry">
                                 حذف کریں
                             </button>
                         )}
-                        <button type="button" className="btn btn-secondary" onClick={handleClose}>
+                        <button type="button" className="btn btn-secondary" onClick={handleClose} aria-label="Cancel">
                             منسوخ
                         </button>
-                        <button type="submit" className="btn btn-primary">
+                        <button type="submit" className="btn btn-primary" aria-label={editingEntry ? 'Save Changes' : 'Add Entry'}>
                             {editingEntry ? 'محفوظ کریں' : 'شامل کریں'}
                         </button>
                     </div>

@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTableEx from "@/components/ui/TransactionTableEx";
 import EntryFormModalEx from "@/components/ui/EntryFormModalEx";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { getEntriesByDateEx, getExpenses } from "@/db/indexedDB";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -45,16 +45,16 @@ export default function ExpensesPage() {
     };
 
     loadEntries();
-  }, [selectedDate, showAll, search]);
+  }, [selectedDate, showAll, search, setExpenses]);
 
   const handleAddNew = () => {
     setEditingEntry(null);
     setIsModalOpen(true);
   };
 
-  const handlePrint = () => {
+  const handlePrint = useCallback(() => {
     window.print();
-  };
+  }, []);
 
   const handlegetAll = async () => {
     setShowAll(true);
@@ -163,18 +163,22 @@ export default function ExpensesPage() {
         </div>
         <div className="page-title-right">
           <div className="date-picker-btn">
-            <CalendarDays />
+            <label htmlFor="datePickerEx">
+              <CalendarDays />
+            </label>
             <input
               type="date"
+              aria-label="Select Date"
+              id="datePickerEx"
               value={selectedDate}
               onChange={handleDateChange}
             />
           </div>
-          <button type="button" className="print-btn" onClick={handlegetAll}>
+          <button type="button" aria-label="Download All Data" className="print-btn" onClick={handlegetAll}>
             <Files />
             <span>تمام ڈیٹا</span>
           </button>
-          <button type="button" className="print-btn" onClick={handlePrint}>
+          <button type="button" aria-label="Print" className="print-btn" onClick={handlePrint}>
             <Printer />
             <span>پرنٹ کریں</span>
           </button>
@@ -182,7 +186,7 @@ export default function ExpensesPage() {
       </div>
       {/* Add Entry Button */}
       <div className="actions-section">
-        <button type="button" className="add-entry-btn" onClick={handleAddNew}>
+        <button type="button" aria-label="Add New Entry" className="add-entry-btn" onClick={handleAddNew}>
           <Plus />
           <span>نیا اندراج</span>
         </button>
@@ -191,6 +195,7 @@ export default function ExpensesPage() {
           <button
             className="pdf-btn download-btn"
             type="button"
+            aria-label="Download PDF"
             onClick={() => downloadPDF()}
           >
             <FileDown className="pdf-icon" size={18} />
@@ -200,6 +205,7 @@ export default function ExpensesPage() {
           <button
             className="pdf-btn share-btn"
             type="button"
+            aria-label="Share PDF"
             onClick={() => handleSharePDF()}
           >
             <Share2

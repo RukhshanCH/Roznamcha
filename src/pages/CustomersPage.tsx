@@ -26,14 +26,13 @@ export default function CustomersPage() {
   });
 
   // Load data
-  const loadData = async () => {
-    const allData = await getCustomers();
-    setCustomers(allData);
-  };
-
   useEffect(() => {
-    loadData();
-  }, [selectedDate]);
+    const loadData = async () => {
+      const allData = await getCustomers();
+      setCustomers(allData);
+    };
+    void loadData();
+  }, [selectedDate, setCustomers]);
 
   const handleAddNew = () => {
     setEditingEntry(null);
@@ -141,6 +140,7 @@ export default function CustomersPage() {
           <button
             className="pdf-btn download-btn"
             type="button"
+            aria-label="Download PDF"
             onClick={() => downloadPDF()}
           >
             <FileDown className="pdf-icon" size={18} />
@@ -150,6 +150,7 @@ export default function CustomersPage() {
           <button
             className="pdf-btn share-btn"
             type="button"
+            aria-label="Share PDF"
             onClick={() => handleSharePDF()}
           >
             <Share2

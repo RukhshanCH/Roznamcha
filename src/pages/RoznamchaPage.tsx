@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
 import { CalendarDays, Printer, Plus, FileDown, Share2, Files } from 'lucide-react';
@@ -60,7 +60,7 @@ export default function RoznamchaPage() {
     };
 
     loadEntries();
-  }, [selectedDate, showAll, search]);
+  }, [selectedDate, showAll, search, setEntries]);
 
   const summary = useMemo(() => {
     const totalPayments = entries.reduce((sum, e) => sum + (e.total || 0), 0);
@@ -78,10 +78,10 @@ export default function RoznamchaPage() {
     };
   }, [entries, entriesEx]);
 
-  const handlePrint = () => {
+  const handlePrint = useCallback(() => {
     window.print();
-  };
-
+  }, []);
+  
   const handlegetAll = async () => {
     setShowAll(true);
     setEntries(await getAllEntries())
@@ -213,14 +213,15 @@ export default function RoznamchaPage() {
             <input
               type="date"
               value={selectedDate}
+              aria-label="Select Date"
               onChange={handleDateChange}
             />
           </div>
-          <button type="button" className="print-btn" onClick={handlegetAll}>
+          <button type="button" className="print-btn" onClick={handlegetAll} aria-label="Get All Data">
             <Files />
             <span>تمام ڈیٹا</span>
           </button>
-          <button type="button" className="print-btn" onClick={handlePrint}>
+          <button type="button" className="print-btn" onClick={handlePrint} aria-label="Print">
             <Printer />
             <span>پرنٹ کریں</span>
           </button>
@@ -270,7 +271,7 @@ export default function RoznamchaPage() {
 
         {/* Add Entry Button */}
         <div className="actions-section">
-          <button type="button" className="add-entry-btn" onClick={handleAddNew}>
+          <button type="button" className="add-entry-btn" onClick={handleAddNew} aria-label="Add New Entry">
             <Plus />
             <span>نیا اندراج</span>
           </button>
@@ -279,6 +280,7 @@ export default function RoznamchaPage() {
             <button
               className="pdf-btn download-btn"
               type="button"
+              aria-label="Download PDF"
               onClick={() => downloadPDF()}
             >
               <FileDown className="pdf-icon" size={18} />
@@ -288,6 +290,7 @@ export default function RoznamchaPage() {
             <button
               className="pdf-btn share-btn"
               type="button"
+              aria-label="Share PDF"
               onClick={() => handleSharePDF()}
             >
               <Share2

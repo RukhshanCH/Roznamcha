@@ -4,16 +4,17 @@ import { X } from 'lucide-react';
 import { isModalOpenAtomEx, editingEntryAtomEx, expensesAtom, selectedDateAtom } from '@/store/atoms';
 import { updateEntryEx, addEntryEx, deleteEntryEx, renumberEntriesEx, getEntriesByDateEx } from '@/db/indexedDB';
 
+const initialFormData = {
+    name: '',
+    description: '',
+    amount: '',
+};
+
 export default function EntryFormModalEx() {
     const [isOpen, setIsOpen] = useAtom(isModalOpenAtomEx);
     const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomEx);
     const [selectedDate] = useAtom(selectedDateAtom);
     const [, setExpenses] = useAtom(expensesAtom);
-    const initialFormData = {
-        name: '',
-        description: '',
-        amount: '',
-    };
     const [formData, setFormData] = useState(initialFormData);
 
     useEffect(() => {
@@ -31,6 +32,23 @@ export default function EntryFormModalEx() {
             });
         }
     }, [editingEntry]);
+
+    const handleClose = () => {
+        setIsOpen(false);
+        setEditingEntry(null);
+    };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setIsOpen(false);
+                setEditingEntry(null);
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [setIsOpen, setEditingEntry]);
 
     if (!isOpen) return null;
 
@@ -95,29 +113,31 @@ export default function EntryFormModalEx() {
         }
     };
 
-    const handleClose = () => {
-        setIsOpen(false);
-        setEditingEntry(null);
-    };
-
     return (
         <div className="modal-overlay" onClick={handleClose}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div
+                role="dialog"
+                aria-modal="true"
+                className="modal-content"
+                onClick={(e) => e.stopPropagation()}
+            >
                 <div className="modal-header">
                     <h2 className="modal-title">
                         {editingEntry ? 'اندراج میں ترمیم کریں' : 'نیا اندراج'}
                     </h2>
-                    <button className="modal-close" onClick={handleClose}>
+                    <button type="button" className="modal-close" onClick={handleClose}>
                         <X />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit}>
                     <div className="form-group">
-                        <label className="form-label">نام</label>
+                        <label htmlFor="nameEx" className="form-label">نام</label>
                         <input
                             type="text"
                             className="form-input"
+                            aria-label="Customer Name"
+                            id="nameEx"
                             value={formData.name}
                             onChange={(e) => handleChange('name', e.target.value)}
                             placeholder="گاہک کا نام"
@@ -126,10 +146,12 @@ export default function EntryFormModalEx() {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">تفصیل</label>
+                        <label htmlFor="descriptionEx" className="form-label">تفصیل</label>
                         <input
                             type="text"
                             className="form-input"
+                            aria-label="Description"
+                            id="descriptionEx"
                             value={formData.description}
                             onChange={(e) => handleChange('description', e.target.value)}
                             placeholder="تفصیل درج کریں"
@@ -137,10 +159,12 @@ export default function EntryFormModalEx() {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">رقم</label>
+                        <label htmlFor="amountEx" className="form-label">رقم</label>
                         <input
                             type="number"
                             className="form-input"
+                            aria-label="Amount"
+                            id="amountEx"
                             value={formData.amount}
                             onChange={(e) => handleChange('amount', e.target.value)}
                             placeholder="رقم درج کریں"
@@ -150,14 +174,14 @@ export default function EntryFormModalEx() {
 
                     <div className="form-actions">
                         {editingEntry && (
-                            <button type="button" className="btn btn-secondary" onClick={handleDelete}>
+                            <button type="button" className="btn btn-secondary" onClick={handleDelete} aria-label="Delete Entry">
                                 حذف کریں
                             </button>
                         )}
-                        <button type="button" className="btn btn-secondary" onClick={handleClose}>
+                        <button type="button" className="btn btn-secondary" onClick={handleClose} aria-label="Cancel">
                             منسوخ
                         </button>
-                        <button type="submit" className="btn btn-primary">
+                        <button type="submit" className="btn btn-primary" aria-label={editingEntry ? 'Save Changes' : 'Add Entry'}>
                             {editingEntry ? 'محفوظ کریں' : 'شامل کریں'}
                         </button>
                     </div>
