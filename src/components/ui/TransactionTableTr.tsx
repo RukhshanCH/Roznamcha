@@ -1,5 +1,5 @@
-import { useAtomValue } from 'jotai';
-import { searchAtom } from '@/store/atoms';
+import { useAtom, useAtomValue } from 'jotai';
+import { searchAtom, showModalAtom } from '@/store/atoms';
 import { useEffect, useState } from "react";
 import {
     getTrashEntries,
@@ -17,8 +17,12 @@ import {
 } from "@/db/indexedDB";
 import type { CustomerEntry, ExpensesEntry, JournalEntry, PaymentsEntry, TrashItem } from "@/types";
 import { RotateCcw, Undo2 } from "lucide-react";
+import Modal from './Modal';
 
 export default function TransactionTableTr() {
+    const [, setShowModal] = useAtom(showModalAtom);
+    const [editingEntry, setEditingEntry] = useState<TrashItem | null>(null);
+    const [handleState, setHandleState] = useState("");
     const [entries, setEntries] = useState<JournalEntry[]>([]);
     const [entriesCs, setEntriesCs] = useState<CustomerEntry[]>([]);
     const [entriesEx, setEntriesEx] = useState<ExpensesEntry[]>([]);
@@ -95,8 +99,13 @@ export default function TransactionTableTr() {
         })),
     ];
 
+    const handleClick = (entry: TrashItem) => {
+        setEditingEntry(entry);
+        setShowModal(true);
+    };
+
     const handleRestore = async (item: TrashItem) => {
-        if (!confirm('کیا آپ واقعی اس اندراج کو بحال کرنا چاہتے ہیں؟')) return;
+        if (!editingEntry?.id) return;
 
         switch (item.store) {
             case "journal":
@@ -121,8 +130,8 @@ export default function TransactionTableTr() {
     };
 
     const handlePermanentDelete = async (item: TrashItem) => {
-        if (!confirm('کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟')) return;
-
+        if (!editingEntry?.id) return;
+        
         switch (item.store) {
             case "journal":
                 await permanentlyDeleteEntry(item.id);
@@ -170,6 +179,15 @@ export default function TransactionTableTr() {
 
     return (
         <div className="table-container">
+
+            <Modal
+                title={handleState === "restore" ? "کیا آپ واقعی اس اندراج کو بحال کرنا چاہتے ہیں؟" : "کیا آپ واقعی اس اندراج کو مستقل طور پر حذف کرنا چاہتے ہیں؟"}
+                submitText={handleState === "restore" ? "بحال کریں" : "حذف کریں"}
+                handleSubmit={() => handleState === "restore" ? handleRestore(editingEntry!) : handlePermanentDelete(editingEntry!)}
+                type="button"
+                aria-label="Delete Entry"
+            />
+
             <table className="data-table">
                 <thead>
                     <tr>
@@ -223,7 +241,10 @@ export default function TransactionTableTr() {
                                 </td>
                                 <td className='action-btns'>
                                     <button
-                                        onClick={() => handleRestore(entry)}
+                                        onClick={() => {
+                                            setHandleState("restore");
+                                            handleClick(entry);
+                                        }}
                                         className="action-btn edit"
                                         title="بحال کریں"
                                         aria-label="restore"
@@ -232,7 +253,10 @@ export default function TransactionTableTr() {
                                     </button>
 
                                     <button
-                                        onClick={() => handlePermanentDelete(entry)}
+                                        onClick={() => {
+                                            setHandleState("permanent-delete");
+                                            handleClick(entry);
+                                        }}
                                         className="action-btn delete"
                                         title="مستقل حذف کریں"
                                         aria-label="permanent-delete"

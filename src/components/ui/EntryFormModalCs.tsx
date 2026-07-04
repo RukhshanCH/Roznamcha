@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
 import { isModalOpenAtomCs, editingEntryAtomCs, customerAtom, selectedDateAtom } from '@/store/atoms';
-import { updateEntryCs, addEntryCs, deleteEntryCs, renumberEntriesCs, getCustomers } from '@/db/indexedDB';
+import { updateEntryCs, addEntryCs, getCustomers } from '@/db/indexedDB';
 
 const initialFormData = {
     name: '',
@@ -94,21 +94,6 @@ export default function EntryFormModalCs() {
         setFormData(initialFormData);
     };
 
-    const handleDelete = async () => {
-        if (!editingEntry?.id) return;
-        if (!confirm('کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟')) return;
-
-        try {
-            await deleteEntryCs(editingEntry.id);
-            await renumberEntriesCs(selectedDate);
-            const updated = await getCustomers();
-            setCustomer(updated);
-            handleClose();
-        } catch (err) {
-            console.error('Error deleting entry:', err);
-        }
-    };
-
     return (
         <div className="modal-overlay" onClick={handleClose}>
             <div
@@ -157,11 +142,6 @@ export default function EntryFormModalCs() {
                     </div>
 
                     <div className="form-actions">
-                        {editingEntry && (
-                            <button type="button" className="btn btn-secondary" onClick={handleDelete} aria-label="Delete Entry">
-                                حذف کریں
-                            </button>
-                        )}
                         <button type="button" className="btn btn-secondary" onClick={handleClose} aria-label="Cancel">
                             منسوخ
                         </button>

@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx, searchAtom } from '@/store/atoms';
+import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx, searchAtom, showModalAtom } from '@/store/atoms';
 import type { ExpensesEntry } from '@/types';
 import { forwardRef, useMemo } from "react";
 
@@ -13,12 +13,19 @@ const TransactionTableEx = forwardRef<HTMLTableElement, Props>(({ transactions, 
     const [entries] = useAtom(expensesAtom);
     const [, setEditingEntry] = useAtom(editingEntryAtomEx);
     const [, setIsModalOpen] = useAtom(isModalOpenAtomEx);
+    const [, setShowModal] = useAtom(showModalAtom);
     const search = useAtomValue(searchAtom);
 
     const handleEdit = (entry: ExpensesEntry) => {
         setEditingEntry(entry);
         setIsModalOpen(true);
     };
+
+    const onDeleteClick = (entry: ExpensesEntry) => {
+        setEditingEntry(entry);
+        setShowModal(true);
+    };
+
     const formatAmount = (value?: number): string => {
         if (value === 0 || value == null) return '---';
         return value.toLocaleString('en-US') + '/-';
@@ -92,7 +99,7 @@ const TransactionTableEx = forwardRef<HTMLTableElement, Props>(({ transactions, 
                                         </button>
                                         <button
                                             className="action-btn delete"
-                                            onClick={() => handleEdit(entry)}
+                                            onClick={() => onDeleteClick(entry)}
                                             title="حذف"
                                         >
                                             <Trash2 />

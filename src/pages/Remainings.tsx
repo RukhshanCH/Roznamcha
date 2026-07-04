@@ -3,16 +3,19 @@ import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
 import { Printer, FileDown, Share2 } from 'lucide-react';
 import TransactionTable from '@/components/ui/TransactionTable';
-import { entriesAtom, searchAtom } from '@/store/atoms';
-import { getAllEntries } from '@/db/indexedDB';
+import { editingEntryAtom, entriesAtom, searchAtom, selectedDateAtom } from '@/store/atoms';
+import { deleteEntry, getAllEntries, renumberEntries } from '@/db/indexedDB';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import EntryFormModal from '@/components/ui/EntryFormModal';
+import Modal from '@/components/ui/Modal';
 
 export default function Remainings() {
     const [entries, setEntries] = useAtom(entriesAtom);
     const pdfRef = useRef<HTMLTableElement | null>(null);
     const search = useAtomValue(searchAtom);
+    const [selectedDate,] = useAtom(selectedDateAtom);
+    const editingEntry = useAtomValue(editingEntryAtom);
 
     const filteredRemainings = entries.filter((e) => {
 
@@ -120,8 +123,30 @@ export default function Remainings() {
         }
     };
 
+    const handleDelete = async () => {
+        if (!editingEntry?.id) return;
+
+        try {
+            await deleteEntry(editingEntry.id);
+            await renumberEntries(selectedDate);
+            const updated = await getAllEntries();
+            setEntries(updated);
+        } catch (err) {
+            console.error('Error deleting entry:', err);
+        }
+    };
+
     return (
         <div>
+
+            <Modal
+                title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
+                submitText="حذف کریں"
+                handleSubmit={() => handleDelete()}
+                type="button"
+                aria-label="Delete Entry"
+            />
+
             <h1 className="page-title">بقیہ جات</h1>
             {/* Page Title Section */}
             <div className="page-title-section">

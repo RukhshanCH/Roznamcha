@@ -4,13 +4,14 @@ import { FileDown, Plus, Share2 } from "lucide-react";
 import TransactionTableCs from "@/components/ui/TransactionTableCs";
 import EntryFormModalCs from "@/components/ui/EntryFormModalCs";
 import { useEffect, useRef } from "react";
-import { getCustomers } from "@/db/indexedDB";
+import { deleteEntryCs, getCustomers, renumberEntriesCs } from "@/db/indexedDB";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import Modal from "@/components/ui/Modal";
 
 export default function CustomersPage() {
   const [, setIsModalOpen] = useAtom(isModalOpenAtomCs);
-  const [, setEditingEntry] = useAtom(editingEntryAtomCs);
+  const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomCs);
   const [customers, setCustomers] = useAtom(customerAtom);
   const [selectedDate] = useAtom(selectedDateAtom);
   const search = useAtomValue(searchAtom);
@@ -123,8 +124,30 @@ export default function CustomersPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!editingEntry?.id) return;
+
+    try {
+      await deleteEntryCs(editingEntry.id);
+      await renumberEntriesCs(selectedDate);
+      const updated = await getCustomers();
+      setCustomers(updated);
+    } catch (err) {
+      console.error('Error deleting entry:', err);
+    }
+  };
+
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
+
+      <Modal
+        title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
+        submitText="حذف کریں"
+        handleSubmit={() => handleDelete()}
+        type="button"
+        aria-label="Delete Entry"
+      />
+
       <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: '2rem', marginBottom: '16px' }}>
         گاہک (کسٹمرز)
       </h1>

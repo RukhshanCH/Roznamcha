@@ -5,13 +5,14 @@ import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-rea
 import TransactionTablePy from "@/components/ui/TransactionTablePy";
 import EntryFormModalPy from "@/components/ui/EntryFormModalPy";
 import { useCallback, useEffect, useRef } from "react";
-import { getEntriesByDatePy, getPayments } from "@/db/indexedDB";
+import { deleteEntryPy, getEntriesByDatePy, getPayments, renumberEntriesPy } from "@/db/indexedDB";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import Modal from "@/components/ui/Modal";
 
 export default function PaymentsPage() {
   const [, setIsModalOpen] = useAtom(isModalOpenAtomPy);
-  const [, setEditingEntry] = useAtom(editingEntryAtomPy);
+  const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomPy);
   const [, setPayments] = useAtom(paymentsAtom);
   const [selectedDate, setSelectedDate] = useAtom(selectedDateAtom);
   const payments = useAtomValue(paymentsAtom);
@@ -151,8 +152,30 @@ export default function PaymentsPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!editingEntry?.id) return;
+
+    try {
+      await deleteEntryPy(editingEntry.id);
+      await renumberEntriesPy(selectedDate);
+      const updated = await getEntriesByDatePy(selectedDate);
+      setPayments(updated);
+    } catch (err) {
+      console.error('Error deleting entry:', err);
+    }
+  };
+
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
+
+      <Modal
+        title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
+        submitText="حذف کریں"
+        handleSubmit={() => handleDelete()}
+        type="button"
+        aria-label="Delete Entry"
+      />
+
       <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: '2rem', marginBottom: '16px' }}>
         ادائیگیاں
       </h1>

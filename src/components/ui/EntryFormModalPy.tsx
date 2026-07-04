@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
 import { isModalOpenAtomPy, editingEntryAtomPy, paymentsAtom, selectedDateAtom } from '@/store/atoms';
-import { updateEntryPy, addEntryPy, deleteEntryPy, renumberEntriesPy, getEntriesByDatePy } from '@/db/indexedDB';
+import { updateEntryPy, addEntryPy, getEntriesByDatePy } from '@/db/indexedDB';
 
 const initialFormData = {
     name: '',
@@ -98,21 +98,6 @@ export default function EntryFormModalPy() {
         setFormData(initialFormData);
     };
 
-    const handleDelete = async () => {
-        if (!editingEntry?.id) return;
-        if (!confirm('کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟')) return;
-
-        try {
-            await deleteEntryPy(editingEntry.id);
-            await renumberEntriesPy(selectedDate);
-            const updated = await getEntriesByDatePy(selectedDate);
-            setPayments(updated);
-            handleClose();
-        } catch (err) {
-            console.error('Error deleting entry:', err);
-        }
-    };
-
     return (
         <div className="modal-overlay" onClick={handleClose}>
             <div
@@ -174,11 +159,6 @@ export default function EntryFormModalPy() {
                     </div>
 
                     <div className="form-actions">
-                        {editingEntry && (
-                            <button type="button" className="btn btn-secondary" onClick={handleDelete} aria-label="Delete Entry">
-                                حذف کریں
-                            </button>
-                        )}
                         <button type="button" className="btn btn-secondary" onClick={handleClose} aria-label="Cancel">
                             منسوخ
                         </button>

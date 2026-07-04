@@ -206,7 +206,6 @@ export default function RoznamchaPage() {
       await renumberEntries(selectedDate);
       const updated = await getEntriesByDate(selectedDate);
       setEntries(updated);
-      // handleClose();
     } catch (err) {
       console.error('Error deleting entry:', err);
     }
@@ -214,15 +213,15 @@ export default function RoznamchaPage() {
 
   return (
     <div>
+
       <Modal
         title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
         submitText="حذف کریں"
         handleSubmit={() => handleDelete()}
         type="button"
         aria-label="Delete Entry"
-      >
-        {/* form fields */}
-      </Modal>
+      />
+
       <h1 className="page-title">روزنامچہ رجسٹر</h1>
       {/* Page Title Section */}
       <div className="page-title-section">

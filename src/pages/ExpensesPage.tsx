@@ -5,14 +5,15 @@ import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-rea
 import TransactionTableEx from "@/components/ui/TransactionTableEx";
 import EntryFormModalEx from "@/components/ui/EntryFormModalEx";
 import { useCallback, useEffect, useRef } from "react";
-import { getEntriesByDateEx, getExpenses } from "@/db/indexedDB";
+import { deleteEntryEx, getEntriesByDateEx, getExpenses, renumberEntriesEx } from "@/db/indexedDB";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import Modal from "@/components/ui/Modal";
 
 export default function ExpensesPage() {
   const [, setExpenses] = useAtom(expensesAtom);
   const [, setIsModalOpen] = useAtom(isModalOpenAtomEx);
-  const [, setEditingEntry] = useAtom(editingEntryAtomEx);
+  const [editingEntry, setEditingEntry] = useAtom(editingEntryAtomEx);
   const [selectedDate, setSelectedDate] = useAtom(selectedDateAtom);
   const [search] = useAtom(searchAtom);
   const expenses = useAtomValue(expensesAtom);
@@ -148,9 +149,31 @@ export default function ExpensesPage() {
       pdf.save("اخراجات__" + selectedDate + ".pdf");
     }
   };
+  
+    const handleDelete = async () => {
+      if (!editingEntry?.id) return;
+  
+      try {
+        await deleteEntryEx(editingEntry.id);
+        await renumberEntriesEx(selectedDate);
+        const updated = await getEntriesByDateEx(selectedDate);
+        setExpenses(updated);
+      } catch (err) {
+        console.error('Error deleting entry:', err);
+      }
+    };
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
+      
+      <Modal
+        title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
+        submitText="حذف کریں"
+        handleSubmit={() => handleDelete()}
+        type="button"
+        aria-label="Delete Entry"
+      />
+
       <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: '2rem', marginBottom: '16px' }}>
         اخراجات
       </h1>
