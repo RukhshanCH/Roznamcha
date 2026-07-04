@@ -1,21 +1,51 @@
 import { exportAllData, exportByDateRange, exportMonthlyData, exportWeeklyData, importBackup } from "@/db/indexedDB";
+import { alertAtom, alertTypeAtom, alertMessageAtom } from "@/store/atoms";
+import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
-import "../styles/backup.css";
 
 export default function BackupPage() {
   const [showModal, setShowModal] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [, setAlert] = useAtom(alertAtom);
+  const [, setType] = useAtom(alertTypeAtom);
+  const [, setMessage] = useAtom(alertMessageAtom);
+
+  const isDisabled = (!startDate || !endDate) || startDate > endDate;
 
   const handleExport = async () => {
     if (!startDate || !endDate) {
-      alert("Please select both dates");
+      setType("error");
+      setMessage("براہ کرم دونوں تاریخیں منتخب کریں۔");
+
+      setAlert(true);
+      setTimeout(() => {
+        setAlert(false);
+      }, 3000);
+      return;
+    }
+
+    if (startDate > endDate) {
+      setType("error");
+      setMessage("آغاز کی تاریخ، اختتامی تاریخ سے پہلے کی ہونی چاہیے۔");
+
+      setAlert(true);
+      setTimeout(() => {
+        setAlert(false);
+      }, 3000);
       return;
     }
 
     await exportByDateRange(startDate, endDate);
 
-    alert("Custom backup exported!");
+    setType("success");
+    setMessage("Custom backup exported successfully!");
+
+    setAlert(true);
+    setTimeout(() => {
+      setAlert(false);
+    }, 3000);
+
     setShowModal(false);
     setStartDate("");
     setEndDate("");
@@ -34,19 +64,22 @@ export default function BackupPage() {
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
-      <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: '2rem', marginBottom: '16px' }}>
+      <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: '2rem', marginBottom: '50px' }}>
         بیک اپ
       </h1>
-      <p style={{ fontFamily: 'var(--font-primary)', color: 'var(--text-secondary)' }}>
-        یہاں ڈیٹا کا بیک اپ لیا جا سکتا ہے۔
-      </p>
 
       <div className="actions">
         <button
           className="btn export-btn"
           onClick={async () => {
             await exportWeeklyData();
-            alert("Weekly backup exported successfully!");
+            setType("success");
+            setMessage("Weekly backup exported successfully!")
+
+            setAlert(true)
+            setTimeout(() => {
+              setAlert(false);
+            }, 3000)
           }}
         >
           Weekly Backup
@@ -56,7 +89,13 @@ export default function BackupPage() {
           className="btn export-btn"
           onClick={async () => {
             await exportMonthlyData();
-            alert("Monthly backup exported successfully!");
+            setType("success");
+            setMessage("Monthly backup exported successfully!")
+
+            setAlert(true)
+            setTimeout(() => {
+              setAlert(false);
+            }, 3000)
           }}
         >
           Monthly Backup
@@ -66,7 +105,13 @@ export default function BackupPage() {
           className="btn export-btn"
           onClick={async () => {
             await exportAllData();
-            alert("Full backup exported successfully!");
+            setType("success");
+            setMessage("Full backup exported successfully!")
+
+            setAlert(true)
+            setTimeout(() => {
+              setAlert(false);
+            }, 3000)
           }}
         >
           All Backup
@@ -89,18 +134,22 @@ export default function BackupPage() {
                 <h2>Export Custom Range</h2>
 
                 <div className="date-group">
-                  <label>Start Date</label>
+                  <label htmlFor="startDate">Start Date</label>
                   <input
+                    id="startDate"
                     type="date"
+                    aria-label="Select start date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                   />
                 </div>
 
                 <div className="date-group">
-                  <label>End Date</label>
+                  <label htmlFor="endDate">End Date</label>
                   <input
+                    id="endDate"
                     type="date"
+                    aria-label="Select end date"
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                   />
@@ -110,13 +159,18 @@ export default function BackupPage() {
                   <button
                     className="btn cancel-btn"
                     onClick={() => setShowModal(false)}
+                    type="button"
+                    aria-label="Cancel"
                   >
                     Cancel
                   </button>
 
                   <button
-                    className="btn export-btn"
+                    className={`btn ${isDisabled ? "btn-disabled" : "export-btn"}`}
                     onClick={handleExport}
+                    type="button"
+                    aria-label="Export"
+                    autoFocus
                   >
                     Export
                   </button>
@@ -134,6 +188,7 @@ export default function BackupPage() {
           hidden
           id="file"
           type="file"
+          aria-label="Import Backup"
           accept=".json,application/json"
           onChange={async (e) => {
             const file = e.target.files?.[0];
@@ -143,12 +198,19 @@ export default function BackupPage() {
             try {
               const result = await importBackup(file);
 
-              alert(
+              setType("success");
+              setMessage(
                 `Imported: ${result.imported}, Skipped: ${result.skipped}`
               );
             } catch (error) {
-              alert("Failed to import backup.\n" + error);
+              setType("error");
+              setMessage("Failed to import backup.\n" + error);
             }
+
+            setAlert(true);
+            setTimeout(() => {
+              setAlert(false);
+            }, 3000);
 
             e.target.value = "";
           }}

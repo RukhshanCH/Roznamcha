@@ -18,7 +18,6 @@ import {
 import type { CustomerEntry, ExpensesEntry, JournalEntry, PaymentsEntry, TrashItem } from "@/types";
 import { RotateCcw, Undo2 } from "lucide-react";
 import Modal from './Modal';
-import AlertItem from './AlertItem';
 
 export default function TransactionTableTr() {
     const [, setShowModal] = useAtom(showModalAtom);
@@ -29,8 +28,8 @@ export default function TransactionTableTr() {
     const [entriesEx, setEntriesEx] = useState<ExpensesEntry[]>([]);
     const [entriesPy, setEntriesPy] = useState<PaymentsEntry[]>([]);
     const [, setAlert] = useAtom(alertAtom);
-    const [type, setType] = useAtom(alertTypeAtom);
-    const [message, setMessage] = useAtom(alertMessageAtom);
+    const [, setType] = useAtom(alertTypeAtom);
+    const [, setMessage] = useAtom(alertMessageAtom);
 
     const loadTrash = async () => {
         const [data, dataCs, dataEx, dataPy] = await Promise.all([
@@ -198,8 +197,6 @@ export default function TransactionTableTr() {
 
     return (
         <div className="table-container">
-
-            <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
             <Modal
                 title={handleState === "restore" ? "کیا آپ واقعی اس اندراج کو بحال کرنا چاہتے ہیں؟" : "کیا آپ واقعی اس اندراج کو مستقل طور پر حذف کرنا چاہتے ہیں؟"}

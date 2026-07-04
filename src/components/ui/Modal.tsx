@@ -60,6 +60,7 @@ const Modal = ({ title, submitText, handleSubmit, children, type = "button", ari
                                 onClick={onSubmit}
                                 type={type}
                                 aria-label={ariaLabel}
+                                autoFocus
                             >
                                 {submitText}
                             </button>

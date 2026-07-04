@@ -9,7 +9,6 @@ import { deleteEntryPy, getEntriesByDatePy, getPayments, renumberEntriesPy } fro
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Modal from "@/components/ui/Modal";
-import AlertItem from "@/components/ui/AlertItem";
 
 export default function PaymentsPage() {
   const [, setIsModalOpen] = useAtom(isModalOpenAtomPy);
@@ -20,8 +19,8 @@ export default function PaymentsPage() {
   const pdfRef = useRef<HTMLTableElement | null>(null);
   const [showAll, setShowAll] = useAtom(showAllAtom);
   const [, setAlert] = useAtom(alertAtom);
-  const [type, setType] = useAtom(alertTypeAtom);
-  const [message, setMessage] = useAtom(alertMessageAtom);
+  const [, setType] = useAtom(alertTypeAtom);
+  const [, setMessage] = useAtom(alertMessageAtom);
 
 
   const search = useAtomValue(searchAtom);
@@ -186,8 +185,6 @@ export default function PaymentsPage() {
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
-
-      <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
       <Modal
         title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"

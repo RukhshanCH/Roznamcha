@@ -11,7 +11,6 @@ import html2canvas from "html2canvas";
 import TransactionTableEx from '@/components/ui/TransactionTableEx';
 import Modal from '@/components/ui/Modal';
 import { deleteEntry, getAllEntries, getEntriesByDate, renumberEntries } from '@/db/indexedDB';
-import AlertItem from '@/components/ui/AlertItem';
 
 export default function RoznamchaPage() {
   const [entries, setEntries] = useAtom(entriesAtom);
@@ -27,8 +26,8 @@ export default function RoznamchaPage() {
   const search = useAtomValue(searchAtom);
   const editingEntry = useAtomValue(editingEntryAtom);
   const [, setAlert] = useAtom(alertAtom);
-  const [type, setType] = useAtom(alertTypeAtom);
-  const [message, setMessage] = useAtom(alertMessageAtom);
+  const [, setType] = useAtom(alertTypeAtom);
+  const [, setMessage] = useAtom(alertMessageAtom);
 
   const filteredTransactions = entries.filter((t) => {
     const query = search.toLowerCase();
@@ -232,8 +231,6 @@ export default function RoznamchaPage() {
 
   return (
     <div>
-
-      <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
       <Modal
         title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"

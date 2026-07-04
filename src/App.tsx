@@ -9,14 +9,17 @@ import BackupPage from '@/pages/BackupPage'
 import { useEffect, useState } from 'react'
 import { checkWeeklyBackup, getEntriesByDateEx, initDB } from './db/indexedDB'
 import Remainings from './pages/Remainings'
-import { expensesAtom, selectedDateAtom } from './store/atoms'
+import { alertMessageAtom, alertTypeAtom, expensesAtom, selectedDateAtom } from './store/atoms'
 import { useAtom, useAtomValue } from 'jotai'
 import Trash from './pages/Trash'
+import AlertItem from './components/ui/AlertItem'
 
 export default function App() {
   const [, setExpenses] = useAtom(expensesAtom);
   const selectedDate = useAtomValue(selectedDateAtom);
   const [dbReady, setDbReady] = useState(false);
+  const [type, ] = useAtom(alertTypeAtom);
+  const [message, ] = useAtom(alertMessageAtom);
 
   // Initialize DB once
   useEffect(() => {
@@ -44,9 +47,12 @@ export default function App() {
   useEffect(() => {
     checkWeeklyBackup();
   }, []);
-  
+
   return (
     <AppLayout>
+
+      <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
+
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />

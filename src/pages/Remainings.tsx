@@ -9,7 +9,6 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import EntryFormModal from '@/components/ui/EntryFormModal';
 import Modal from '@/components/ui/Modal';
-import AlertItem from '@/components/ui/AlertItem';
 
 export default function Remainings() {
     const [entries, setEntries] = useAtom(entriesAtom);
@@ -18,8 +17,8 @@ export default function Remainings() {
     const [selectedDate,] = useAtom(selectedDateAtom);
     const editingEntry = useAtomValue(editingEntryAtom);
     const [, setAlert] = useAtom(alertAtom);
-    const [type, setType] = useAtom(alertTypeAtom);
-    const [message, setMessage] = useAtom(alertMessageAtom);
+    const [, setType] = useAtom(alertTypeAtom);
+    const [, setMessage] = useAtom(alertMessageAtom);
 
     const filteredRemainings = entries.filter((e) => {
 
@@ -152,8 +151,6 @@ export default function Remainings() {
 
     return (
         <div>
-
-            <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
             <Modal
                 title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"

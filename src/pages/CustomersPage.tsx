@@ -8,7 +8,6 @@ import { deleteEntryCs, getCustomers, renumberEntriesCs } from "@/db/indexedDB";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Modal from "@/components/ui/Modal";
-import AlertItem from "@/components/ui/AlertItem";
 
 export default function CustomersPage() {
   const [, setIsModalOpen] = useAtom(isModalOpenAtomCs);
@@ -18,8 +17,8 @@ export default function CustomersPage() {
   const search = useAtomValue(searchAtom);
   const pdfRef = useRef<HTMLTableElement | null>(null);
   const [, setAlert] = useAtom(alertAtom);
-  const [type, setType] = useAtom(alertTypeAtom);
-  const [message, setMessage] = useAtom(alertMessageAtom);
+  const [, setType] = useAtom(alertTypeAtom);
+  const [, setMessage] = useAtom(alertMessageAtom);
 
   const filteredTransactions = customers.filter((t) => {
     const query = search.toLowerCase();
@@ -155,8 +154,6 @@ export default function CustomersPage() {
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
-
-      <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
       <Modal
         title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
