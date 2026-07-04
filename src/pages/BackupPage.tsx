@@ -71,6 +71,9 @@ export default function BackupPage() {
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
+      <span style={{position: "fixed", bottom: "10px", left: "10px", color: "var(--text-secondary)"}}>
+        Note: Refresh Page once after a Download
+      </span>
       <h1 style={{ fontFamily: 'var(--font-primary)', fontSize: '2rem', marginBottom: '50px' }}>
         بیک اپ
       </h1>
