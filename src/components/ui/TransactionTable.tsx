@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue } from 'jotai';
 import { Pencil, Trash2 } from 'lucide-react';
-import { entriesAtom, editingEntryAtom, isModalOpenAtom, remainingPlusAtom, searchAtom } from '@/store/atoms';
+import { entriesAtom, editingEntryAtom, isModalOpenAtom, remainingPlusAtom, searchAtom, showModalAtom } from '@/store/atoms';
 import type { JournalEntry } from '@/types';
 import { useMemo } from 'react';
 import { forwardRef } from "react";
@@ -18,16 +18,23 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
     const [, setEditingEntry] = useAtom(editingEntryAtom);
     const [, setIsModalOpen] = useAtom(isModalOpenAtom);
     const [, setRemainigPlus] = useAtom(remainingPlusAtom);
+    const [, setShowModal] = useAtom(showModalAtom);
     const search = useAtomValue(searchAtom);
 
     const today = new Date();
     today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
 
     const todayStr = today.toISOString().split('T')[0];
+
     const handleEdit = (entry: JournalEntry) => {
       setEditingEntry(entry);
       setIsModalOpen(true);
       setRemainigPlus(false)
+    };
+
+    const onDeleteClick = (entry: JournalEntry) => {
+      setEditingEntry(entry);
+      setShowModal(true);
     };
 
     const handleRemaining = (entry: JournalEntry) => {
@@ -152,7 +159,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                       </button>
                       <button
                         className="action-btn delete"
-                        onClick={() => handleEdit(entry)}
+                        onClick={() => onDeleteClick(entry)}
                         title="حذف"
                         aria-label="delete"
                       >

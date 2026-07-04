@@ -31,3 +31,7 @@ export const searchAtom = atom("");
 export const showAllAtom = atom(false);
 
 export const remainingPlusAtom = atom(false);
+
+export const showModalAtom = atom(false);
+
+export const isLoadingAtom = atom(false);

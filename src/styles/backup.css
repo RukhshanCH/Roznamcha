@@ -13,6 +13,7 @@
 
 /* Modal */
 .modal {
+  text-align: center;
   width: 400px;
   max-width: 90%;
   background: #fff;
@@ -23,7 +24,7 @@
   animation: slideUp .25s ease;
 }
 
-.modal h2 {
+.modal h4 {
   margin-top: 0;
   margin-bottom: 20px;
 }
@@ -46,6 +47,10 @@
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.modal-actions.urdu {
+  justify-content: flex-start;
 }
 
 .cancel-btn {

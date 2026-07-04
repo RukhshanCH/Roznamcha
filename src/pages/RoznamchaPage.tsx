@@ -6,10 +6,11 @@ import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom, showAllAtom, remainingPlusAtom } from '@/store/atoms';
-import { getAllEntries, getEntriesByDate } from '@/db/indexedDB';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import TransactionTableEx from '@/components/ui/TransactionTableEx';
+import Modal from '@/components/ui/Modal';
+import { deleteEntry, getAllEntries, getEntriesByDate, renumberEntries } from '@/db/indexedDB';
 
 export default function RoznamchaPage() {
   const [entries, setEntries] = useAtom(entriesAtom);
@@ -23,6 +24,7 @@ export default function RoznamchaPage() {
   const [showAll, setShowAll] = useAtom(showAllAtom);
   const [, setRemainigPlus] = useAtom(remainingPlusAtom);
   const search = useAtomValue(searchAtom);
+  const editingEntry = useAtomValue(editingEntryAtom);
 
   const filteredTransactions = entries.filter((t) => {
     const query = search.toLowerCase();
@@ -81,7 +83,7 @@ export default function RoznamchaPage() {
   const handlePrint = useCallback(() => {
     window.print();
   }, []);
-  
+
   const handlegetAll = async () => {
     setShowAll(true);
     setEntries(await getAllEntries())
@@ -196,8 +198,31 @@ export default function RoznamchaPage() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!editingEntry?.id) return;
+
+    try {
+      await deleteEntry(editingEntry.id);
+      await renumberEntries(selectedDate);
+      const updated = await getEntriesByDate(selectedDate);
+      setEntries(updated);
+      // handleClose();
+    } catch (err) {
+      console.error('Error deleting entry:', err);
+    }
+  };
+
   return (
     <div>
+      <Modal
+        title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
+        submitText="حذف کریں"
+        handleSubmit={() => handleDelete()}
+        type="button"
+        aria-label="Delete Entry"
+      >
+        {/* form fields */}
+      </Modal>
       <h1 className="page-title">روزنامچہ رجسٹر</h1>
       {/* Page Title Section */}
       <div className="page-title-section">

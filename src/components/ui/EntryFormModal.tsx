@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, remainingPlusAtom } from '@/store/atoms';
-import { addEntry, updateEntry, deleteEntry, getEntriesByDate, renumberEntries, getAllEntries } from '@/db/indexedDB';
+import { addEntry, updateEntry, getEntriesByDate, getAllEntries } from '@/db/indexedDB';
 
 interface Props {
   isRemaining: Boolean
@@ -168,21 +168,6 @@ export default function EntryFormModal({ isRemaining }: Props) {
     setFormData(initialFormData);
   };
 
-  const handleDelete = async () => {
-    if (!editingEntry?.id) return;
-    if (!confirm('کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟')) return;
-
-    try {
-      await deleteEntry(editingEntry.id);
-      await renumberEntries(selectedDate);
-      const updated = isRemaining ? await getAllEntries() : await getEntriesByDate(selectedDate);
-      setEntries(updated);
-      handleClose();
-    } catch (err) {
-      console.error('Error deleting entry:', err);
-    }
-  };
-
   return (
     <div className="modal-overlay" onClick={handleClose}>
       <div
@@ -316,11 +301,6 @@ export default function EntryFormModal({ isRemaining }: Props) {
           </div>
 
           <div className="form-actions">
-            {editingEntry && (
-              <button type="button" className="btn btn-secondary" onClick={handleDelete} aria-label="Delete Entry">
-                حذف کریں
-              </button>
-            )}
             <button type="button" className="btn btn-secondary" onClick={handleClose} aria-label="Cancel">
               منسوخ
             </button>

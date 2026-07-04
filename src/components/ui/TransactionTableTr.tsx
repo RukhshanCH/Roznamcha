@@ -40,7 +40,7 @@ export default function TransactionTableTr() {
 
     useEffect(() => {
         loadTrash();
-    }, []);
+    }, [setEntries, setEntriesCs, setEntriesEx, setEntriesPy]);
 
     const allTrash: TrashItem[] = [
         ...entries.map(item => ({
