@@ -5,12 +5,13 @@ import { CalendarDays, Printer, Plus, FileDown, Share2, Files } from 'lucide-rea
 import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
-import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom, showAllAtom, remainingPlusAtom } from '@/store/atoms';
+import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom, showAllAtom, remainingPlusAtom, alertAtom, alertMessageAtom, alertTypeAtom } from '@/store/atoms';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import TransactionTableEx from '@/components/ui/TransactionTableEx';
 import Modal from '@/components/ui/Modal';
 import { deleteEntry, getAllEntries, getEntriesByDate, renumberEntries } from '@/db/indexedDB';
+import AlertItem from '@/components/ui/AlertItem';
 
 export default function RoznamchaPage() {
   const [entries, setEntries] = useAtom(entriesAtom);
@@ -25,6 +26,9 @@ export default function RoznamchaPage() {
   const [, setRemainigPlus] = useAtom(remainingPlusAtom);
   const search = useAtomValue(searchAtom);
   const editingEntry = useAtomValue(editingEntryAtom);
+  const [, setAlert] = useAtom(alertAtom);
+  const [type, setType] = useAtom(alertTypeAtom);
+  const [message, setMessage] = useAtom(alertMessageAtom);
 
   const filteredTransactions = entries.filter((t) => {
     const query = search.toLowerCase();
@@ -204,16 +208,29 @@ export default function RoznamchaPage() {
     try {
       await deleteEntry(editingEntry.id);
       await renumberEntries(selectedDate);
+
       const updated = await getEntriesByDate(selectedDate);
       setEntries(updated);
+
+      setType("success");
+      setMessage("اندراج حذف کر دیا گیا ہے۔");
     } catch (err) {
-      console.error('Error deleting entry:', err);
+      setType("error");
+      setMessage("اندراج حذف کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
     }
+
+    setAlert(true);
+
+    setTimeout(() => {
+      setAlert(false);
+    }, 3000);
   };
 
   return (
     <div>
 
+      <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
+      
       <Modal
         title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
         submitText="حذف کریں"

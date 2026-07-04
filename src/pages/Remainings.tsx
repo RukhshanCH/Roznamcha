@@ -3,12 +3,13 @@ import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
 import { Printer, FileDown, Share2 } from 'lucide-react';
 import TransactionTable from '@/components/ui/TransactionTable';
-import { editingEntryAtom, entriesAtom, searchAtom, selectedDateAtom } from '@/store/atoms';
+import { alertAtom, alertMessageAtom, alertTypeAtom, editingEntryAtom, entriesAtom, searchAtom, selectedDateAtom } from '@/store/atoms';
 import { deleteEntry, getAllEntries, renumberEntries } from '@/db/indexedDB';
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import EntryFormModal from '@/components/ui/EntryFormModal';
 import Modal from '@/components/ui/Modal';
+import AlertItem from '@/components/ui/AlertItem';
 
 export default function Remainings() {
     const [entries, setEntries] = useAtom(entriesAtom);
@@ -16,6 +17,9 @@ export default function Remainings() {
     const search = useAtomValue(searchAtom);
     const [selectedDate,] = useAtom(selectedDateAtom);
     const editingEntry = useAtomValue(editingEntryAtom);
+    const [, setAlert] = useAtom(alertAtom);
+    const [type, setType] = useAtom(alertTypeAtom);
+    const [message, setMessage] = useAtom(alertMessageAtom);
 
     const filteredRemainings = entries.filter((e) => {
 
@@ -129,15 +133,27 @@ export default function Remainings() {
         try {
             await deleteEntry(editingEntry.id);
             await renumberEntries(selectedDate);
+
             const updated = await getAllEntries();
             setEntries(updated);
+            setType("success");
+            setMessage("اندراج حذف کر دیا گیا ہے۔");
         } catch (err) {
-            console.error('Error deleting entry:', err);
+            setType("error");
+            setMessage("اندراج حذف کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
         }
+
+        setAlert(true);
+
+        setTimeout(() => {
+            setAlert(false);
+        }, 3000);
     };
 
     return (
         <div>
+
+            <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
             <Modal
                 title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"

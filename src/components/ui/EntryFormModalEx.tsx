@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
-import { isModalOpenAtomEx, editingEntryAtomEx, expensesAtom, selectedDateAtom } from '@/store/atoms';
+import { isModalOpenAtomEx, editingEntryAtomEx, expensesAtom, selectedDateAtom, alertAtom, alertMessageAtom, alertTypeAtom } from '@/store/atoms';
 import { updateEntryEx, addEntryEx, getEntriesByDateEx } from '@/db/indexedDB';
 
 const initialFormData = {
@@ -16,6 +16,9 @@ export default function EntryFormModalEx() {
     const [selectedDate] = useAtom(selectedDateAtom);
     const [, setExpenses] = useAtom(expensesAtom);
     const [formData, setFormData] = useState(initialFormData);
+    const [, setType] = useAtom(alertTypeAtom);
+    const [, setMessage] = useAtom(alertMessageAtom);
+    const [, setAlert] = useAtom(alertAtom);
 
     useEffect(() => {
         if (editingEntry) {
@@ -74,6 +77,9 @@ export default function EntryFormModalEx() {
                     id: editingEntry.id,
                     serialNo: editingEntry.serialNo,
                 });
+
+                setType('success');
+                setMessage('اندراج میں ترمیم کر دی گئی۔');
             } else {
                 const entriesForDate = await getEntriesByDateEx(selectedDate);
 
@@ -86,18 +92,26 @@ export default function EntryFormModalEx() {
                     ...entryData,
                     serialNo: nextSerial,
                 });
+
+                setType('success');
+                setMessage('نیا اندراج شامل کر دیا گیا ہے۔');
             }
 
-            console.log("selectedDate =", selectedDate);
-console.log("entryData =", entryData);
             const updated = await getEntriesByDateEx(selectedDate);
             setExpenses(updated);
             handleClose();
         } catch (err) {
-            console.error('Error saving entry:', err);
-            alert('اندراج محفوظ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔');
+            setType('error');
+            setMessage(err instanceof Error ? err.message : editingEntry?.id ? 'اندراج محفوظ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔' : 'اندراج شامل کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔');
         }
+
         setFormData(initialFormData);
+
+        setAlert(true);
+
+        setTimeout(() => {
+            setAlert(false);
+        }, 3000);
     };
 
     return (

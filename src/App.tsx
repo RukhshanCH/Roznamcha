@@ -13,7 +13,6 @@ import { expensesAtom, selectedDateAtom } from './store/atoms'
 import { useAtom, useAtomValue } from 'jotai'
 import Trash from './pages/Trash'
 
-
 export default function App() {
   const [, setExpenses] = useAtom(expensesAtom);
   const selectedDate = useAtomValue(selectedDateAtom);

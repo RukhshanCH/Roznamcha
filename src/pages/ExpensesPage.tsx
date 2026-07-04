@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from "jotai";
-import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx, selectedDateAtom, searchAtom, showAllAtom } from "@/store/atoms";
+import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx, selectedDateAtom, searchAtom, showAllAtom, alertAtom, alertMessageAtom, alertTypeAtom } from "@/store/atoms";
 import { Link } from 'react-router-dom';
 import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTableEx from "@/components/ui/TransactionTableEx";
@@ -9,6 +9,7 @@ import { deleteEntryEx, getEntriesByDateEx, getExpenses, renumberEntriesEx } fro
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Modal from "@/components/ui/Modal";
+import AlertItem from "@/components/ui/AlertItem";
 
 export default function ExpensesPage() {
   const [, setExpenses] = useAtom(expensesAtom);
@@ -19,6 +20,9 @@ export default function ExpensesPage() {
   const expenses = useAtomValue(expensesAtom);
   const pdfRef = useRef<HTMLTableElement | null>(null);
   const [showAll, setShowAll] = useAtom(showAllAtom);
+  const [, setAlert] = useAtom(alertAtom);
+  const [type, setType] = useAtom(alertTypeAtom);
+  const [message, setMessage] = useAtom(alertMessageAtom);
 
   const filteredTransactions = expenses.filter((t) => {
     const query = search.toLowerCase();
@@ -149,23 +153,36 @@ export default function ExpensesPage() {
       pdf.save("اخراجات__" + selectedDate + ".pdf");
     }
   };
-  
-    const handleDelete = async () => {
-      if (!editingEntry?.id) return;
-  
-      try {
-        await deleteEntryEx(editingEntry.id);
-        await renumberEntriesEx(selectedDate);
-        const updated = await getEntriesByDateEx(selectedDate);
-        setExpenses(updated);
-      } catch (err) {
-        console.error('Error deleting entry:', err);
-      }
-    };
+
+  const handleDelete = async () => {
+    if (!editingEntry?.id) return;
+
+    try {
+      await deleteEntryEx(editingEntry.id);
+      await renumberEntriesEx(selectedDate);
+
+      const updated = await getEntriesByDateEx(selectedDate);
+      setExpenses(updated);
+
+      setType("success");
+      setMessage("اندراج حذف کر دیا گیا ہے۔");
+    } catch (err) {
+      setType("error");
+      setMessage("اندراج حذف کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
+    }
+
+    setAlert(true);
+
+    setTimeout(() => {
+      setAlert(false);
+    }, 3000);
+  };
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
-      
+
+      <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
+
       <Modal
         title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
         submitText="حذف کریں"

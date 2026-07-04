@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
-import { isModalOpenAtomCs, editingEntryAtomCs, customerAtom, selectedDateAtom } from '@/store/atoms';
+import { isModalOpenAtomCs, editingEntryAtomCs, customerAtom, selectedDateAtom, alertMessageAtom, alertTypeAtom, alertAtom } from '@/store/atoms';
 import { updateEntryCs, addEntryCs, getCustomers } from '@/db/indexedDB';
 
 const initialFormData = {
@@ -15,6 +15,9 @@ export default function EntryFormModalCs() {
     const [selectedDate] = useAtom(selectedDateAtom);
     const [, setCustomer] = useAtom(customerAtom);
     const [formData, setFormData] = useState(initialFormData);
+    const [, setType] = useAtom(alertTypeAtom);
+    const [, setMessage] = useAtom(alertMessageAtom);
+    const [, setAlert] = useAtom(alertAtom);
 
     useEffect(() => {
         if (editingEntry) {
@@ -70,6 +73,8 @@ export default function EntryFormModalCs() {
                     id: editingEntry.id,
                     serialNo: editingEntry.serialNo,
                 });
+                setType('success');
+                setMessage('اندراج میں ترمیم کر دی گئی۔');
             } else {
                 const entriesForDate = await getCustomers();
 
@@ -82,16 +87,25 @@ export default function EntryFormModalCs() {
                     ...entryData,
                     serialNo: nextSerial,
                 });
+                setType('success');
+                setMessage('نیا اندراج شامل کر دیا گیا ہے۔');
             }
 
             const updated = await getCustomers();
             setCustomer(updated);
             handleClose();
         } catch (err) {
-            console.error('Error saving entry:', err);
-            alert('اندراج محفوظ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔');
+            setType('error');
+            setMessage(err instanceof Error ? err.message : editingEntry?.id ? 'اندراج محفوظ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔' : 'اندراج شامل کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔');
         }
+
         setFormData(initialFormData);
+
+        setAlert(true);
+
+        setTimeout(() => {
+            setAlert(false);
+        }, 3000);
     };
 
     return (

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
-import { isModalOpenAtomPy, editingEntryAtomPy, paymentsAtom, selectedDateAtom } from '@/store/atoms';
+import { isModalOpenAtomPy, editingEntryAtomPy, paymentsAtom, selectedDateAtom, alertAtom, alertMessageAtom, alertTypeAtom } from '@/store/atoms';
 import { updateEntryPy, addEntryPy, getEntriesByDatePy } from '@/db/indexedDB';
 
 const initialFormData = {
@@ -16,6 +16,9 @@ export default function EntryFormModalPy() {
     const [selectedDate] = useAtom(selectedDateAtom);
     const [, setPayments] = useAtom(paymentsAtom);
     const [formData, setFormData] = useState(initialFormData);
+    const [, setType] = useAtom(alertTypeAtom);
+    const [, setMessage] = useAtom(alertMessageAtom);
+    const [, setAlert] = useAtom(alertAtom);
 
     useEffect(() => {
         if (editingEntry) {
@@ -74,6 +77,9 @@ export default function EntryFormModalPy() {
                     id: editingEntry.id,
                     serialNo: editingEntry.serialNo,
                 });
+
+                setType('success');
+                setMessage('اندراج میں ترمیم کر دی گئی۔');
             } else {
                 const entriesForDate = await getEntriesByDatePy(selectedDate);
 
@@ -86,16 +92,25 @@ export default function EntryFormModalPy() {
                     ...entryData,
                     serialNo: nextSerial,
                 });
+
+                setType('success');
+                setMessage('نیا اندراج شامل کر دیا گیا ہے۔');
             }
 
             const updated = await getEntriesByDatePy(selectedDate);
             setPayments(updated);
             handleClose();
         } catch (err) {
-            console.error('Error saving entry:', err);
-            alert('اندراج محفوظ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔');
+            setType('error');
+            setMessage(err instanceof Error ? err.message : editingEntry?.id ? 'اندراج محفوظ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔' : 'اندراج شامل کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔');
         }
         setFormData(initialFormData);
+
+        setAlert(true);
+
+        setTimeout(() => {
+            setAlert(false);
+        }, 3000);
     };
 
     return (

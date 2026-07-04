@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
-import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, remainingPlusAtom } from '@/store/atoms';
+import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, remainingPlusAtom, alertAtom, alertMessageAtom, alertTypeAtom } from '@/store/atoms';
 import { addEntry, updateEntry, getEntriesByDate, getAllEntries } from '@/db/indexedDB';
 
 interface Props {
@@ -25,6 +25,9 @@ export default function EntryFormModal({ isRemaining }: Props) {
   const [, setEntries] = useAtom(entriesAtom);
   const [remainingPlusValue,] = useAtom(remainingPlusAtom);
   const [formData, setFormData] = useState(initialFormData);
+  const [, setAlert] = useAtom(alertAtom);
+  const [, setType] = useAtom(alertTypeAtom);
+  const [, setMessage] = useAtom(alertMessageAtom);
 
   const isDisabled = !formData.name || Number(formData.total) < 0 || Number(formData.advance) < 0 || Number(formData.advance) > Number(formData.total);
 
@@ -106,6 +109,9 @@ export default function EntryFormModal({ isRemaining }: Props) {
 
         await updateEntry(updatedEntry);
 
+        setType('success');
+        setMessage('اندراج میں ترمیم کر دی گئی۔');
+
         // Create automatic entry only when updating remaining payment
         if (remainingPlusValue && remainingPlus > 0) {
           const today = new Date();
@@ -128,6 +134,9 @@ export default function EntryFormModal({ isRemaining }: Props) {
             note: isNill ? "Nil" + "\nDated: " + todayStr : String(editingEntry.remaining) + '-' + String(remainingPlus) + '=' + String(editingEntry.remaining - remainingPlus) + "\nDated: " + todayStr,
           });
 
+          setType('success');
+          setMessage('اندراج میں ترمیم کر دی گئی۔');
+
           await addEntry({
             serialNo: nextSerial,
             name: editingEntry.name,
@@ -143,6 +152,9 @@ export default function EntryFormModal({ isRemaining }: Props) {
             createdAt: Date.now(),
           });
         }
+
+        setType('success');
+        setMessage('اندراج میں ترمیم کر دی گئی۔');
       }
       else {
         const entriesForDate = await getEntriesByDate(selectedDate);
@@ -156,16 +168,26 @@ export default function EntryFormModal({ isRemaining }: Props) {
           ...entryData,
           serialNo: nextSerial,
         });
+
+        setType('success');
+        setMessage('اندراج محفوظ کر دیا گیا ہے۔');
       }
 
       const updated = isRemaining ? await getAllEntries() : await getEntriesByDate(selectedDate);
       setEntries(updated);
       handleClose();
+
     } catch (err) {
-      console.error('Error saving entry:', err);
-      alert('اندراج محفوظ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔');
+      setType('error');
+      setMessage(err instanceof Error ? err.message : editingEntry?.id ? 'اندراج محفوظ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔' : 'اندراج شامل کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔');
     }
     setFormData(initialFormData);
+
+    setAlert(true);
+
+    setTimeout(() => {
+      setAlert(false);
+    }, 3000);
   };
 
   return (

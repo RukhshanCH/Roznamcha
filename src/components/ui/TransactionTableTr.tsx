@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from 'jotai';
-import { searchAtom, showModalAtom } from '@/store/atoms';
+import { alertAtom, alertMessageAtom, alertTypeAtom, searchAtom, showModalAtom } from '@/store/atoms';
 import { useEffect, useState } from "react";
 import {
     getTrashEntries,
@@ -18,6 +18,7 @@ import {
 import type { CustomerEntry, ExpensesEntry, JournalEntry, PaymentsEntry, TrashItem } from "@/types";
 import { RotateCcw, Undo2 } from "lucide-react";
 import Modal from './Modal';
+import AlertItem from './AlertItem';
 
 export default function TransactionTableTr() {
     const [, setShowModal] = useAtom(showModalAtom);
@@ -27,6 +28,9 @@ export default function TransactionTableTr() {
     const [entriesCs, setEntriesCs] = useState<CustomerEntry[]>([]);
     const [entriesEx, setEntriesEx] = useState<ExpensesEntry[]>([]);
     const [entriesPy, setEntriesPy] = useState<PaymentsEntry[]>([]);
+    const [, setAlert] = useAtom(alertAtom);
+    const [type, setType] = useAtom(alertTypeAtom);
+    const [message, setMessage] = useAtom(alertMessageAtom);
 
     const loadTrash = async () => {
         const [data, dataCs, dataEx, dataPy] = await Promise.all([
@@ -125,13 +129,20 @@ export default function TransactionTableTr() {
                 break;
         }
 
-        // Refresh the table
+        setType("success");
+        setMessage("اندراج بحال کر دیا گیا ہے۔");
+
         loadTrash();
+
+        setAlert(true)
+        setTimeout(() => {
+            setAlert(false);
+        }, 3000);
     };
 
     const handlePermanentDelete = async (item: TrashItem) => {
         if (!editingEntry?.id) return;
-        
+
         switch (item.store) {
             case "journal":
                 await permanentlyDeleteEntry(item.id);
@@ -150,7 +161,15 @@ export default function TransactionTableTr() {
                 break;
         }
 
+        setType("success");
+        setMessage("اندراج مستقل طور پر حذف کر دیا گیا ہے۔");
+
         loadTrash();
+
+        setAlert(true)
+        setTimeout(() => {
+            setAlert(false);
+        }, 3000);
     };
 
     const search = useAtomValue(searchAtom);
@@ -179,6 +198,8 @@ export default function TransactionTableTr() {
 
     return (
         <div className="table-container">
+
+            <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
             <Modal
                 title={handleState === "restore" ? "کیا آپ واقعی اس اندراج کو بحال کرنا چاہتے ہیں؟" : "کیا آپ واقعی اس اندراج کو مستقل طور پر حذف کرنا چاہتے ہیں؟"}

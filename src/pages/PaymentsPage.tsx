@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue } from "jotai";
 import { Link } from 'react-router-dom';
-import { paymentsAtom, editingEntryAtomPy, isModalOpenAtomPy, selectedDateAtom, searchAtom, showAllAtom } from "@/store/atoms";
+import { paymentsAtom, editingEntryAtomPy, isModalOpenAtomPy, selectedDateAtom, searchAtom, showAllAtom, alertAtom, alertMessageAtom, alertTypeAtom } from "@/store/atoms";
 import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTablePy from "@/components/ui/TransactionTablePy";
 import EntryFormModalPy from "@/components/ui/EntryFormModalPy";
@@ -9,6 +9,7 @@ import { deleteEntryPy, getEntriesByDatePy, getPayments, renumberEntriesPy } fro
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import Modal from "@/components/ui/Modal";
+import AlertItem from "@/components/ui/AlertItem";
 
 export default function PaymentsPage() {
   const [, setIsModalOpen] = useAtom(isModalOpenAtomPy);
@@ -18,6 +19,9 @@ export default function PaymentsPage() {
   const payments = useAtomValue(paymentsAtom);
   const pdfRef = useRef<HTMLTableElement | null>(null);
   const [showAll, setShowAll] = useAtom(showAllAtom);
+  const [, setAlert] = useAtom(alertAtom);
+  const [type, setType] = useAtom(alertTypeAtom);
+  const [message, setMessage] = useAtom(alertMessageAtom);
 
 
   const search = useAtomValue(searchAtom);
@@ -158,15 +162,28 @@ export default function PaymentsPage() {
     try {
       await deleteEntryPy(editingEntry.id);
       await renumberEntriesPy(selectedDate);
+
       const updated = await getEntriesByDatePy(selectedDate);
       setPayments(updated);
+
+      setType("success");
+      setMessage("اندراج حذف کر دیا گیا ہے۔");
     } catch (err) {
-      console.error('Error deleting entry:', err);
+      setType("error");
+      setMessage("اندراج حذف کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
     }
+
+    setAlert(true);
+
+    setTimeout(() => {
+      setAlert(false);
+    }, 3000);
   };
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
+
+      <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
       <Modal
         title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"

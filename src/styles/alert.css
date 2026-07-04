@@ -1,0 +1,53 @@
+.custom-alert {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+
+  width: 320px;
+  padding: 16px;
+  text-align: center;
+
+  background: #ffffff;
+  border: 1px solid #22c55e;
+  border-left: 5px solid #22c55e;
+  border-radius: 10px;
+
+  color: #1f2937;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+
+  z-index: 9999;
+
+  animation: slideIn 0.3s ease;
+}
+
+.custom-alert.success {
+  border-color: #22c55e;
+  border-left-color: #22c55e;
+}
+
+.custom-alert.error {
+  border-color: #ef4444;
+  border-left-color: #ef4444;
+}
+
+.custom-alert .alert-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.custom-alert .alert-description {
+  font-size: 16px;
+  color: #6b7280;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

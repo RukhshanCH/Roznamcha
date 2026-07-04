@@ -34,4 +34,6 @@ export const remainingPlusAtom = atom(false);
 
 export const showModalAtom = atom(false);
 
-export const isLoadingAtom = atom(false);
+export const alertAtom = atom(false);
+export const alertTypeAtom = atom("");
+export const alertMessageAtom = atom("");

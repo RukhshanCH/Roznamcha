@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from "jotai";
-import { customerAtom, editingEntryAtomCs, isModalOpenAtomCs, searchAtom, selectedDateAtom } from "@/store/atoms";
+import { alertAtom, alertMessageAtom, alertTypeAtom, customerAtom, editingEntryAtomCs, isModalOpenAtomCs, searchAtom, selectedDateAtom } from "@/store/atoms";
 import { FileDown, Plus, Share2 } from "lucide-react";
 import TransactionTableCs from "@/components/ui/TransactionTableCs";
 import EntryFormModalCs from "@/components/ui/EntryFormModalCs";
@@ -8,6 +8,7 @@ import { deleteEntryCs, getCustomers, renumberEntriesCs } from "@/db/indexedDB";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import Modal from "@/components/ui/Modal";
+import AlertItem from "@/components/ui/AlertItem";
 
 export default function CustomersPage() {
   const [, setIsModalOpen] = useAtom(isModalOpenAtomCs);
@@ -16,6 +17,9 @@ export default function CustomersPage() {
   const [selectedDate] = useAtom(selectedDateAtom);
   const search = useAtomValue(searchAtom);
   const pdfRef = useRef<HTMLTableElement | null>(null);
+  const [, setAlert] = useAtom(alertAtom);
+  const [type, setType] = useAtom(alertTypeAtom);
+  const [message, setMessage] = useAtom(alertMessageAtom);
 
   const filteredTransactions = customers.filter((t) => {
     const query = search.toLowerCase();
@@ -130,15 +134,29 @@ export default function CustomersPage() {
     try {
       await deleteEntryCs(editingEntry.id);
       await renumberEntriesCs(selectedDate);
+
       const updated = await getCustomers();
       setCustomers(updated);
+
+      setType("success");
+      setMessage("اندراج حذف کر دیا گیا ہے۔");
+      
     } catch (err) {
-      console.error('Error deleting entry:', err);
+      setType("error");
+      setMessage(err instanceof Error ? err.message : "اندراج حذف کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
     }
+
+    setAlert(true);
+
+    setTimeout(() => {
+      setAlert(false);
+    }, 3000);
   };
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
+
+      <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
       <Modal
         title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
