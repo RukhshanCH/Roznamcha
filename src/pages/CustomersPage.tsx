@@ -46,84 +46,106 @@ export default function CustomersPage() {
   const downloadPDF = async () => {
     if (!pdfRef.current) return;
 
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: window.devicePixelRatio > 1 ? 2 : 1,
-      useCORS: true,
-      backgroundColor: "#F5F0E8",
-    });
+    try {
+      const canvas = await html2canvas(pdfRef.current, {
+        scale: window.devicePixelRatio > 1 ? 2 : 1,
+        useCORS: true,
+        backgroundColor: "#F5F0E8",
+      });
 
-    const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/png");
 
-    const pdf = new jsPDF("p", "mm", "a4");
+      const pdf = new jsPDF("p", "mm", "a4");
 
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    let heightLeft = imgHeight;
-    let position = 0;
+      let heightLeft = imgHeight;
+      let position = 0;
 
-    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-    heightLeft -= pdfHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-
-      pdf.addPage();
       pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-
       heightLeft -= pdfHeight;
-    }
 
-    pdf.save("گاہک.pdf");
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save("گاہک.pdf");
+    }
+    catch {
+      setType("error");
+      setMessage("PDF ڈاؤن لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
+
+      setAlert(true);
+      setTimeout(() => {
+        setAlert(false);
+      }, 3000);
+    }
   };
 
   const handleSharePDF = async () => {
     if (!pdfRef.current) return;
 
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: window.devicePixelRatio > 1 ? 2 : 1,
-      useCORS: true,
-      backgroundColor: "#F5F0E8",
-    });
-
-    const imgData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-    heightLeft -= pdfHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-
-      heightLeft -= pdfHeight;
-    }
-
-    const pdfBlob = pdf.output("blob");
-    const file = new File([pdfBlob], "Customers.pdf", {
-      type: "application/pdf",
-    });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        title: "Customers",
-        files: [file],
+    try {
+      const canvas = await html2canvas(pdfRef.current, {
+        scale: window.devicePixelRatio > 1 ? 2 : 1,
+        useCORS: true,
+        backgroundColor: "#F5F0E8",
       });
-    } else {
-      pdf.save("گاہک.pdf");
+
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+        heightLeft -= pdfHeight;
+      }
+
+      const pdfBlob = pdf.output("blob");
+      const file = new File([pdfBlob], "Customers.pdf", {
+        type: "application/pdf",
+      });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: "Customers",
+          files: [file],
+        });
+      } else {
+        pdf.save("گاہک.pdf");
+      }
+    }
+    catch {
+      setType("error");
+      setMessage("PDF  شیئر  کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
+
+      setAlert(true);
+      setTimeout(() => {
+        setAlert(false);
+      }, 3000);
     }
   };
 
@@ -139,7 +161,7 @@ export default function CustomersPage() {
 
       setType("success");
       setMessage("اندراج حذف کر دیا گیا ہے۔");
-      
+
     } catch (err) {
       setType("error");
       setMessage(err instanceof Error ? err.message : "اندراج حذف کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");

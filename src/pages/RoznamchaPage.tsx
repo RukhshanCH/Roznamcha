@@ -110,98 +110,120 @@ export default function RoznamchaPage() {
   const downloadPDF = async () => {
     if (!pdfRef.current) return;
 
-    setIsGeneratingPdf(true);
+    try {
+      setIsGeneratingPdf(true);
 
-    // Wait for React to render TransactionTableEx
-    await new Promise((resolve) => setTimeout(resolve, 300));
+      // Wait for React to render TransactionTableEx
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: window.devicePixelRatio > 1 ? 2 : 1,
-      useCORS: true,
-      backgroundColor: "#F5F0E8",
-    });
+      const canvas = await html2canvas(pdfRef.current, {
+        scale: window.devicePixelRatio > 1 ? 2 : 1,
+        useCORS: true,
+        backgroundColor: "#F5F0E8",
+      });
 
-    setIsGeneratingPdf(false);
+      setIsGeneratingPdf(false);
 
-    const imgData = canvas.toDataURL("image/png");
+      const imgData = canvas.toDataURL("image/png");
 
-    const pdf = new jsPDF("p", "mm", "a4");
+      const pdf = new jsPDF("p", "mm", "a4");
 
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-    let heightLeft = imgHeight;
-    let position = 0;
+      let heightLeft = imgHeight;
+      let position = 0;
 
-    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-    heightLeft -= pdfHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-
-      pdf.addPage();
       pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-
       heightLeft -= pdfHeight;
-    }
 
-    pdf.save("روزنامچہ__" + selectedDate + ".pdf");
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+        heightLeft -= pdfHeight;
+      }
+
+      pdf.save("روزنامچہ__" + selectedDate + ".pdf");
+    }
+    catch (error) {
+      setType("error");
+      setMessage(error instanceof Error ? error.message : "PDF ڈاؤن لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
+
+      setAlert(true);
+      setTimeout(() => {
+        setAlert(false);
+      }, 3000);
+    }
   };
 
   const handleSharePDF = async () => {
     if (!pdfRef.current) return;
 
-    setIsGeneratingPdf(true);
+    try {
+      setIsGeneratingPdf(true);
 
-    // Wait for React to render TransactionTableEx
-    await new Promise((resolve) => setTimeout(resolve, 100));
+      // Wait for React to render TransactionTableEx
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
-    const canvas = await html2canvas(pdfRef.current, {
-      scale: window.devicePixelRatio > 1 ? 2 : 1,
-      useCORS: true,
-      backgroundColor: "#F5F0E8",
-    });
-
-    setIsGeneratingPdf(false);
-
-    const imgData = canvas.toDataURL("image/png");
-
-    const pdf = new jsPDF("p", "mm", "a4");
-
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = pdf.internal.pageSize.getHeight();
-
-    const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-    let heightLeft = imgHeight;
-    let position = 0;
-
-    pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-    heightLeft -= pdfHeight;
-
-    while (heightLeft > 0) {
-      position = heightLeft - imgHeight;
-
-      pdf.addPage();
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-
-      heightLeft -= pdfHeight;
-    }
-
-    const pdfBlob = pdf.output("blob");
-    const file = new File([pdfBlob], "Roznamcha.pdf", {
-      type: "application/pdf",
-    });
-
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({
-        title: "Roznamcha",
-        files: [file],
+      const canvas = await html2canvas(pdfRef.current, {
+        scale: window.devicePixelRatio > 1 ? 2 : 1,
+        useCORS: true,
+        backgroundColor: "#F5F0E8",
       });
-    } else {
-      pdf.save("روزنامچہ__" + selectedDate + ".pdf");
+
+      setIsGeneratingPdf(false);
+
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF("p", "mm", "a4");
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+
+      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+        heightLeft -= pdfHeight;
+      }
+
+      const pdfBlob = pdf.output("blob");
+      const file = new File([pdfBlob], "Roznamcha.pdf", {
+        type: "application/pdf",
+      });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: "Roznamcha",
+          files: [file],
+        });
+      } else {
+        pdf.save("روزنامچہ__" + selectedDate + ".pdf");
+      }
+    }
+    catch (error) {
+      setType("error");
+      setMessage(error instanceof Error ? error.message : "PDF ڈاؤن لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
+
+      setAlert(true);
+      setTimeout(() => {
+        setAlert(false);
+      }, 3000);
     }
   };
 

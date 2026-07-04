@@ -45,84 +45,106 @@ export default function Remainings() {
     const downloadPDF = async () => {
         if (!pdfRef.current) return;
 
-        const canvas = await html2canvas(pdfRef.current, {
-            scale: window.devicePixelRatio > 1 ? 2 : 1,
-            useCORS: true,
-            backgroundColor: "#F5F0E8",
-        });
+        try {
+            const canvas = await html2canvas(pdfRef.current, {
+                scale: window.devicePixelRatio > 1 ? 2 : 1,
+                useCORS: true,
+                backgroundColor: "#F5F0E8",
+            });
 
-        const imgData = canvas.toDataURL("image/png");
+            const imgData = canvas.toDataURL("image/png");
 
-        const pdf = new jsPDF("p", "mm", "a4");
+            const pdf = new jsPDF("p", "mm", "a4");
 
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
 
-        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+            const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
-        let heightLeft = imgHeight;
-        let position = 0;
+            let heightLeft = imgHeight;
+            let position = 0;
 
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdfHeight;
-
-        while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-
-            pdf.addPage();
             pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-
             heightLeft -= pdfHeight;
-        }
 
-        pdf.save("بقیہ جات.pdf");
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+
+                pdf.addPage();
+                pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+                heightLeft -= pdfHeight;
+            }
+
+            pdf.save("بقیہ جات.pdf");
+        }
+        catch (error) {
+            setType("error");
+            setMessage(error instanceof Error ? error.message : "PDF ڈاؤن لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
+
+            setAlert(true);
+            setTimeout(() => {
+                setAlert(false);
+            }, 3000);
+        }
     };
 
     const handleSharePDF = async () => {
         if (!pdfRef.current) return;
 
-        const canvas = await html2canvas(pdfRef.current, {
-            scale: window.devicePixelRatio > 1 ? 2 : 1,
-            useCORS: true,
-            backgroundColor: "#F5F0E8",
-        });
-
-        const imgData = canvas.toDataURL("image/png");
-
-        const pdf = new jsPDF("p", "mm", "a4");
-
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-
-        const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-        let heightLeft = imgHeight;
-        let position = 0;
-
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-        heightLeft -= pdfHeight;
-
-        while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-
-            pdf.addPage();
-            pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-
-            heightLeft -= pdfHeight;
-        }
-
-        const pdfBlob = pdf.output("blob");
-        const file = new File([pdfBlob], "Remainings.pdf", {
-            type: "application/pdf",
-        });
-
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-            await navigator.share({
-                title: "Remainings",
-                files: [file],
+        try {
+            const canvas = await html2canvas(pdfRef.current, {
+                scale: window.devicePixelRatio > 1 ? 2 : 1,
+                useCORS: true,
+                backgroundColor: "#F5F0E8",
             });
-        } else {
-            pdf.save("بقیہ جات.pdf");
+
+            const imgData = canvas.toDataURL("image/png");
+
+            const pdf = new jsPDF("p", "mm", "a4");
+
+            const pdfWidth = pdf.internal.pageSize.getWidth();
+            const pdfHeight = pdf.internal.pageSize.getHeight();
+
+            const imgHeight = (canvas.height * pdfWidth) / canvas.width;
+
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+            heightLeft -= pdfHeight;
+
+            while (heightLeft > 0) {
+                position = heightLeft - imgHeight;
+
+                pdf.addPage();
+                pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
+
+                heightLeft -= pdfHeight;
+            }
+
+            const pdfBlob = pdf.output("blob");
+            const file = new File([pdfBlob], "Remainings.pdf", {
+                type: "application/pdf",
+            });
+
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                await navigator.share({
+                    title: "Remainings",
+                    files: [file],
+                });
+            } else {
+                pdf.save("بقیہ جات.pdf");
+            }
+        }
+        catch (error) {
+            setType("error");
+            setMessage(error instanceof Error ? error.message : "PDF ڈاؤن لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
+
+            setAlert(true);
+            setTimeout(() => {
+                setAlert(false);
+            }, 3000);
         }
     };
 
