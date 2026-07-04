@@ -1,6 +1,7 @@
 import { useAtom } from 'jotai';
 import { showModalAtom } from '@/store/atoms';
 import "@/styles/backup.css"
+import { useEffect } from 'react';
 
 interface ModalProps {
     title: string;
@@ -18,6 +19,17 @@ const Modal = ({ title, submitText, handleSubmit, children, type = "button", ari
         await handleSubmit();
         setShowModal(false);
     };
+
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") {
+                setShowModal(false);
+            }
+        };
+
+        document.addEventListener("keydown", handleKeyDown);
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [setShowModal]);
 
     return (
         <>

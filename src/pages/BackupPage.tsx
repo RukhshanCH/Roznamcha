@@ -1,5 +1,5 @@
 import { exportAllData, exportByDateRange, exportMonthlyData, exportWeeklyData, importBackup } from "@/db/indexedDB";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "../styles/backup.css";
 
 export default function BackupPage() {
@@ -20,6 +20,17 @@ export default function BackupPage() {
     setStartDate("");
     setEndDate("");
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setShowModal(false);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [setShowModal]);
 
   return (
     <div style={{ padding: '40px', textAlign: 'center' }}>
