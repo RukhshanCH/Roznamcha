@@ -12,7 +12,7 @@ interface SummaryCardProps {
   label: string;
   value: string;
   icon: 'wallet' | 'arrowDown' | 'scale' | 'fileText' | 'receipt' | 'fileWarning';
-  variant: 'blue' | 'green' | 'gold' | 'white' | 'red';
+  variant: 'blue' | 'green' | 'gold' | 'white' | 'red' | 'purple';
 }
 
 const iconMap: Record<string, LucideIcon> = {

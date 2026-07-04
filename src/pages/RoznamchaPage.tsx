@@ -289,7 +289,7 @@ export default function RoznamchaPage() {
             label="کل ادائیگی - کل اخراجات (بقایا رقم)"
             value={summary.remainingBalance}
             icon="fileWarning"
-            variant="green"
+            variant="purple"
           />
         </div>
 
