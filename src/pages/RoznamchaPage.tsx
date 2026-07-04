@@ -50,6 +50,14 @@ export default function RoznamchaPage() {
     );
   });
 
+  const refreshEntries = async () => {
+    if (showAll) {
+      setEntries(await getAllEntries());
+    } else {
+      setEntries(await getEntriesByDate(selectedDate));
+    }
+  };
+
   // Load data
   useEffect(() => {
     const loadEntries = async () => {
@@ -58,15 +66,11 @@ export default function RoznamchaPage() {
         return;
       }
 
-      if (showAll) {
-        setEntries(await getAllEntries());
-      } else {
-        setEntries(await getEntriesByDate(selectedDate));
-      }
+      await refreshEntries();
     };
 
     loadEntries();
-  }, [selectedDate, showAll, search, setEntries]);
+  }, [selectedDate, showAll, search, setEntries, refreshEntries]);
 
   const summary = useMemo(() => {
     const totalPayments = entries.reduce((sum, e) => sum + (e.total || 0), 0);
@@ -230,7 +234,7 @@ export default function RoznamchaPage() {
     <div>
 
       <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
-      
+
       <Modal
         title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
         submitText="حذف کریں"

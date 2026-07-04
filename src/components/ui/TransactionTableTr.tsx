@@ -216,7 +216,7 @@ export default function TransactionTableTr() {
                     </tr>
                     <tr>
                         <th>نمبر شمار</th>
-                        <th>نمبر</th>
+                        <th>سیریل نمبر</th>
                         <th>قسم</th>
                         <th>نام</th>
                         <th>موبائل نمبر</th>

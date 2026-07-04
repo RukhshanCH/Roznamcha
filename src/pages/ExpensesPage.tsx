@@ -34,6 +34,14 @@ export default function ExpensesPage() {
     );
   });
 
+  const refreshEntries = async () => {
+    if (showAll) {
+      setExpenses(await getExpenses());
+    } else {
+      setExpenses(await getEntriesByDateEx(selectedDate));
+    }
+  };
+
   // Load data
   useEffect(() => {
     const loadEntries = async () => {
@@ -42,15 +50,11 @@ export default function ExpensesPage() {
         return;
       }
 
-      if (showAll) {
-        setExpenses(await getExpenses());
-      } else {
-        setExpenses(await getEntriesByDateEx(selectedDate));
-      }
+      await refreshEntries();
     };
 
     loadEntries();
-  }, [selectedDate, showAll, search, setExpenses]);
+  }, [selectedDate, showAll, search, setExpenses, refreshEntries]);
 
   const handleAddNew = () => {
     setEditingEntry(null);

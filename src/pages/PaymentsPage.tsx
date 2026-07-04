@@ -36,6 +36,14 @@ export default function PaymentsPage() {
     );
   });
 
+  const refreshEntries = async () => {
+    if (showAll) {
+      setPayments(await getPayments());
+    } else {
+      setPayments(await getEntriesByDatePy(selectedDate));
+    }
+  };
+
   // Load data
   useEffect(() => {
     const loadEntries = async () => {
@@ -44,15 +52,11 @@ export default function PaymentsPage() {
         return;
       }
 
-      if (showAll) {
-        setPayments(await getPayments());
-      } else {
-        setPayments(await getEntriesByDatePy(selectedDate));
-      }
+      await refreshEntries();
     };
 
     loadEntries();
-  }, [selectedDate, showAll, search, setPayments]);
+  }, [selectedDate, showAll, search, setPayments, refreshEntries]);
 
   const handleAddNew = () => {
     setEditingEntry(null);
