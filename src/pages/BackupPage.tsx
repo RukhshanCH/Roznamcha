@@ -36,19 +36,26 @@ export default function BackupPage() {
       return;
     }
 
-    await exportByDateRange(startDate, endDate);
+    try {
+      await exportByDateRange(startDate, endDate);
 
-    setType("success");
-    setMessage("Custom backup exported successfully!");
+      setType("success");
+      setMessage("Custom backup exported successfully!");
+
+      setShowModal(false);
+
+      setStartDate("");
+      setEndDate("");
+
+    } catch (error) {
+      setType("error");
+      setMessage(error instanceof Error ? error.message : "Something went wrong!");
+    }
 
     setAlert(true);
     setTimeout(() => {
       setAlert(false);
     }, 3000);
-
-    setShowModal(false);
-    setStartDate("");
-    setEndDate("");
   };
 
   useEffect(() => {
@@ -72,9 +79,15 @@ export default function BackupPage() {
         <button
           className="btn export-btn"
           onClick={async () => {
-            await exportWeeklyData();
-            setType("success");
-            setMessage("Weekly backup exported successfully!")
+            try {
+              await exportWeeklyData();
+              setType("success");
+              setMessage("Weekly backup exported successfully!")
+
+            } catch (error) {
+              setType("error");
+              setMessage(error instanceof Error ? error.message : "Something went wrong!");
+            }
 
             setAlert(true)
             setTimeout(() => {
@@ -88,9 +101,15 @@ export default function BackupPage() {
         <button
           className="btn export-btn"
           onClick={async () => {
-            await exportMonthlyData();
-            setType("success");
-            setMessage("Monthly backup exported successfully!")
+            try {
+              await exportMonthlyData();
+              setType("success");
+              setMessage("Monthly backup exported successfully!")
+
+            } catch (error) {
+              setType("error");
+              setMessage(error instanceof Error ? error.message : "Something went wrong!");
+            }
 
             setAlert(true)
             setTimeout(() => {
@@ -104,9 +123,15 @@ export default function BackupPage() {
         <button
           className="btn export-btn"
           onClick={async () => {
-            await exportAllData();
-            setType("success");
-            setMessage("Full backup exported successfully!")
+            try {
+              await exportAllData();
+              setType("success");
+              setMessage("Full backup exported successfully!")
+
+            } catch (error) {
+              setType("error");
+              setMessage(error instanceof Error ? error.message : "Something went wrong!");
+            }
 
             setAlert(true)
             setTimeout(() => {
