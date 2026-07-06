@@ -150,6 +150,8 @@ export default function EntryFormModal({ isRemaining }: Props) {
             note: " بقیہ رقم۔ تاریخ: " + editingEntry.date,
             date: todayStr,
             createdAt: Date.now(),
+
+            debtId: editingEntry.debtId,
           });
         }
 
@@ -167,6 +169,7 @@ export default function EntryFormModal({ isRemaining }: Props) {
         await addEntry({
           ...entryData,
           serialNo: nextSerial,
+          debtId: crypto.randomUUID(),
         });
 
         setType('success');

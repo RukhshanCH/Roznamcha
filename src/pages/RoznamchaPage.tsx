@@ -11,6 +11,7 @@ import html2canvas from "html2canvas";
 import TransactionTableEx from '@/components/ui/TransactionTableEx';
 import Modal from '@/components/ui/Modal';
 import { deleteEntry, getAllEntries, getEntriesByDate, renumberEntries } from '@/db/indexedDB';
+import type { JournalEntry } from '@/types';
 
 export default function RoznamchaPage() {
   const [entries, setEntries] = useAtom(entriesAtom);
@@ -72,10 +73,27 @@ export default function RoznamchaPage() {
   }, [selectedDate, showAll, search, setEntries, refreshEntries]);
 
   const summary = useMemo(() => {
-    const totalPayments = entries.reduce((sum, e) => sum + (e.total || 0), 0);
-    const totalAdvance = entries.reduce((sum, e) => sum + (e.advance || 0), 0);
-    const totalRemaining = entries.reduce((sum, e) => sum + (e.remaining || 0), 0);
-    const totalExpense = entriesEx.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const totalPayments = search.trim() !== "" ? filteredTransactions.reduce((sum, e) => sum + (e.total || 0), 0) : entries.reduce((sum, e) => sum + (e.total || 0), 0);
+    const totalAdvance = search.trim() !== "" ? filteredTransactions.reduce((sum, e) => sum + (e.advance || 0), 0) : entries.reduce((sum, e) => sum + (e.advance || 0), 0);
+
+    const latestEntries = new Map<string, JournalEntry>();
+
+    for (const entry of search.trim() !== "" ? filteredTransactions : entries) {
+      const key = entry.debtId || `old-${entry.id}`;
+
+      const existing = latestEntries.get(key);
+
+      if (!existing || entry.createdAt > existing.createdAt) {
+        latestEntries.set(key, entry);
+      }
+    }
+
+    const totalRemaining = [...latestEntries.values()].reduce(
+      (sum, e) => sum + (Number(e.remaining) || 0),
+      0
+    );
+
+    const totalExpense = search.trim() !== "" ? filteredTransactionsEx.reduce((sum, e) => sum + (e.amount || 0), 0) : entriesEx.reduce((sum, e) => sum + (e.amount || 0), 0);
     const remainingBalance = totalAdvance - totalExpense;
     return {
       totalPayments: totalPayments.toLocaleString('en-US') + '/-',
@@ -85,7 +103,7 @@ export default function RoznamchaPage() {
       remainingBalance: remainingBalance.toLocaleString('en-US') + '/-',
       totalEntries: String(entries.length),
     };
-  }, [entries, entriesEx]);
+  }, [entries, filteredTransactionsEx, filteredTransactions, entriesEx]);
 
   const handlePrint = useCallback(() => {
     window.print();

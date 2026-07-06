@@ -13,6 +13,8 @@ export interface JournalEntry {
   date: string;
   createdAt: number;
   
+  debtId: string; 
+  
    // NEW FIELDS
   isBackup?: boolean;
   backupId?: string; // identifies which backup it came from

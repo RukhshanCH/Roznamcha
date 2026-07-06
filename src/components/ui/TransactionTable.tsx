@@ -48,16 +48,33 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
     };
 
     const summary = useMemo(() => {
-      const totalPayments = entries.reduce((sum, e) => sum + (e.total || 0), 0);
-      const totalAdvance = entries.reduce((sum, e) => sum + (e.advance || 0), 0);
-      const totalRemaining = entries.reduce((sum, e) => sum + (e.remaining || 0), 0);
+      const totalPayments = search.trim() !== "" ? transactions.reduce((sum, e) => sum + (e.total || 0), 0) : entries.reduce((sum, e) => sum + (e.total || 0), 0);
+      const totalAdvance = search.trim() !== "" ? transactions.reduce((sum, e) => sum + (e.advance || 0), 0) : entries.reduce((sum, e) => sum + (e.advance || 0), 0);
+
+      const latestEntries = new Map<string, JournalEntry>();
+
+      for (const entry of search.trim() !== "" ? transactions : entries) {
+        const key = entry.debtId || `old-${entry.id}`;
+
+        const existing = latestEntries.get(key);
+
+        if (!existing || entry.createdAt > existing.createdAt) {
+          latestEntries.set(key, entry);
+        }
+      }
+
+      const totalRemaining = [...latestEntries.values()].reduce(
+        (sum, e) => sum + (Number(e.remaining) || 0),
+        0
+      );
+
       return {
-        totalPayments: totalPayments,
-        totalAdvance: totalAdvance,
-        totalRemaining: totalRemaining,
+        totalPayments,
+        totalAdvance,
+        totalRemaining,
         totalEntries: String(entries.length),
       };
-    }, [entries]);
+    }, [entries, transactions]);
 
     const highlightText = (text = "", query = "") => {
       if (!query.trim()) return text;

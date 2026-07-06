@@ -7,7 +7,7 @@ import CustomersPage from '@/pages/CustomersPage'
 import ExpensesPage from '@/pages/ExpensesPage'
 import BackupPage from '@/pages/BackupPage'
 import { useEffect, useState } from 'react'
-import { checkWeeklyBackup, getEntriesByDateEx, initDB } from './db/indexedDB'
+import { checkWeeklyBackup, getAllEntries, getEntriesByDateEx, initDB, updateEntry } from './db/indexedDB'
 import Remainings from './pages/Remainings'
 import { alertMessageAtom, alertTypeAtom, expensesAtom, selectedDateAtom } from './store/atoms'
 import { useAtom, useAtomValue } from 'jotai'
@@ -18,8 +18,8 @@ export default function App() {
   const [, setExpenses] = useAtom(expensesAtom);
   const selectedDate = useAtomValue(selectedDateAtom);
   const [dbReady, setDbReady] = useState(false);
-  const [type, ] = useAtom(alertTypeAtom);
-  const [message, ] = useAtom(alertMessageAtom);
+  const [type,] = useAtom(alertTypeAtom);
+  const [message,] = useAtom(alertMessageAtom);
 
   // Initialize DB once
   useEffect(() => {
@@ -27,6 +27,16 @@ export default function App() {
       try {
         await initDB();
         setDbReady(true);
+        const entries = await getAllEntries();
+
+        for (const entry of entries) {
+          if (!entry.debtId) {
+            await updateEntry({
+              ...entry,
+              debtId: crypto.randomUUID(),
+            });
+          }
+        }
       } catch (err) {
         console.error("Error initializing DB:", err);
       }
