@@ -16,8 +16,8 @@ import { useMemo } from 'react';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'ڈیش بورڈ', path: '/dashboard' },
-  { icon: BookOpen, label: 'روزنامچہ رجسٹر', path: '/roznamcha' },
   { icon: ReceiptText, label: 'انوائس', path: '/invoice' },
+  { icon: BookOpen, label: 'روزنامچہ رجسٹر', path: '/roznamcha' },
   { icon: MinusCircle, label: 'اخراجات', path: '/expenses' },
   { icon: Wallet, label: 'بقیہ جات', path: '/remainings' },
   { icon: Users, label: 'گاہک (کسٹمرز)', path: '/customers' },

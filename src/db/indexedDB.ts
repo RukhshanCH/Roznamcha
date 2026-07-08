@@ -1,7 +1,7 @@
 import type { CustomerEntry, JournalEntry, ExpensesEntry, PaymentsEntry } from '@/types';
 
 const DB_NAME = 'RoznamchaDB';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const STORE_NAME = 'entries';
 const CUSTOMER_STORE_NAME = 'customers';
 const EXPENSES_STORE_NAME = 'expenses';
@@ -23,6 +23,7 @@ export async function initDB(): Promise<IDBDatabase> {
 
     request.onupgradeneeded = (event) => {
       const database = (event.target as IDBOpenDBRequest).result;
+
       if (!database.objectStoreNames.contains(STORE_NAME)) {
         const store = database.createObjectStore(STORE_NAME, {
           keyPath: 'id',
@@ -54,6 +55,11 @@ export async function initDB(): Promise<IDBDatabase> {
         });
         paymentsStore.createIndex('date', 'date', { unique: false });
         paymentsStore.createIndex('serialNo', 'serialNo', { unique: false });
+      }
+      if (!database.objectStoreNames.contains("settings")) {
+        database.createObjectStore("settings", {
+          keyPath: "key",
+        });
       }
     };
   });
@@ -1383,4 +1389,59 @@ export async function getWeeklyStats() {
   }
 
   return stats;
+}
+
+export function getInvoiceCounter(): Promise<any> {
+  return new Promise((resolve, reject) => {
+    const transaction = db!.transaction("settings", "readonly");
+    const store = transaction.objectStore("settings");
+
+    const request = store.get("invoiceCounter");
+
+    request.onsuccess = () => {
+      resolve(request.result);
+    };
+
+    request.onerror = () => reject(request.error);
+  });
+}
+
+export function saveInvoiceCounter(
+  date: string,
+  sequence: number
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const transaction = db!.transaction("settings", "readwrite");
+    const store = transaction.objectStore("settings");
+
+    store.put({
+      key: "invoiceCounter",
+      date,
+      sequence,
+    });
+
+    transaction.oncomplete = () => resolve();
+    transaction.onerror = () => reject(transaction.error);
+  });
+}
+
+export async function generateInvoiceNumber() {
+  const today = new Date()
+    .toISOString()
+    .slice(0, 10)
+    .replace(/-/g, "");
+
+  const counter = await getInvoiceCounter();
+
+  let sequence = 1;
+
+  if (counter && counter.date === today) {
+    sequence = counter.sequence + 1;
+  }
+
+  return {
+    invoiceNo: `INV-${today}-${String(sequence).padStart(3, "0")}`,
+    date: today,
+    sequence,
+  };
 }

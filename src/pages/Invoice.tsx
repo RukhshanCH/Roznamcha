@@ -1,5 +1,10 @@
 import React, { useState, useCallback } from 'react';
 import Logo from "../assets/Logo.png"
+import { generateInvoiceNumber, initDB, saveInvoiceCounter } from '@/db/indexedDB';
+
+// ── Invoice number ──────────────────────────────────────────
+await initDB();
+const next = await generateInvoiceNumber();
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
@@ -42,16 +47,17 @@ const FLEX_GROUPS: FlexGroup[] = [
     group: 'Star Flex',
     options: [
       { value: 'star-300', label: '300 gram', price: 40 },
-      { value: 'star-400', label: '350 gram', price: 50 },
-      { value: 'star-300', label: '400 gram', price: 70 },
+      { value: 'star-350', label: '350 gram', price: 50 },
+      { value: 'star-400', label: '400 gram', price: 70 },
     ],
   },
   {
     group: 'Others',
     options: [
-      { value: 'One Vision', label: 'One Vision', price: 150 },
+      { value: 'One Way Vision', label: 'One Way Vision', price: 150 },
       { value: 'Vinyl', label: 'Vinyl', price: 150 },
       { value: 'Back Light', label: 'Back Light', price: 150 },
+      { value: 'Reflector', label: 'Reflector', price: 150 },
     ],
   },
 ];
@@ -68,27 +74,33 @@ const DEFAULT_FLEX = 'china-220';
 // ═══════════════════════════════════════════════════════════════
 
 const Invoice: React.FC = () => {
+
   const today = new Date();
+
   today.setMinutes(today.getMinutes() - today.getTimezoneOffset());
 
   const todayStr = today.toISOString().split('T')[0];
+
   // ── Header state ───────────────────────────────────────────
-  const [invoiceNo, setInvoiceNo] = useState<string>('2022020');
+  const [invoiceNo, setInvoiceNo] = useState<string>('0');
   const [issueDate, setIssueDate] = useState<string>(todayStr);
   const [clientName, setClientName] = useState<string>('');
   const [contactNo, setContactNo] = useState<string>('');
+  const [designing, setDesigning] = useState<string>('0');
+  const [paid, setPaid] = useState<string>('0');
 
   // ── Items state ────────────────────────────────────────────
   const [items, setItems] = useState<InvoiceItem[]>([
     {
       id: 1,
       description: DEFAULT_FLEX,
-      quantity: 0,
+      quantity: 1,
       unitPrice: PRICE_MAP[DEFAULT_FLEX],
       measure1: 0,
       measure2: 0,
     },
   ]);
+
   const [nextId, setNextId] = useState<number>(2);
 
   // ── Derived totals ─────────────────────────────────────────
@@ -99,6 +111,8 @@ const Invoice: React.FC = () => {
   }, []);
 
   const grandTotal = items.reduce((sum, item) => sum + calculateRowAmount(item), 0);
+  const TotalSum = Number(grandTotal) + Number(designing)
+  const Remaining = Number(TotalSum) - Number(paid)
 
   // ── Handlers ───────────────────────────────────────────────
   const addRow = () => {
@@ -107,7 +121,7 @@ const Invoice: React.FC = () => {
       {
         id: nextId,
         description: DEFAULT_FLEX,
-        quantity: 0,
+        quantity: 1,
         unitPrice: PRICE_MAP[DEFAULT_FLEX],
         measure1: 0,
         measure2: 0,
@@ -158,18 +172,29 @@ const Invoice: React.FC = () => {
 
   const handlePrint = () => window.print();
 
+  const handleDownload = async () => {
+    setInvoiceNo(next.invoiceNo);
+    await saveInvoiceCounter(next.date, next.sequence);
+    handleReset();
+  }
+
   const handleReset = () => {
     setItems([
       {
         id: nextId,
         description: DEFAULT_FLEX,
-        quantity: 0,
+        quantity: 1,
         unitPrice: PRICE_MAP[DEFAULT_FLEX],
         measure1: 0,
         measure2: 0,
       },
     ]);
     setNextId((prev) => prev + 1);
+    setIssueDate(todayStr);
+    setClientName('');
+    setContactNo('');
+    setDesigning('0');
+    setPaid('0');
   };
 
   // ── Render ─────────────────────────────────────────────────
@@ -195,7 +220,7 @@ const Invoice: React.FC = () => {
             <input
               type="text"
               value={invoiceNo}
-              onChange={(e) => setInvoiceNo(e.target.value)}
+              readOnly
             />
           </div>
           <div>
@@ -255,7 +280,7 @@ const Invoice: React.FC = () => {
                       <optgroup key={group.group} label={group.group}>
                         {group.options.map((opt) => (
                           <option key={opt.value} value={opt.value}>
-                            {opt.label}
+                            {opt.label}&nbsp;&nbsp;&nbsp;&nbsp;
                           </option>
                         ))}
                       </optgroup>
@@ -347,9 +372,30 @@ const Invoice: React.FC = () => {
 
         {/* Summary */}
         <div className="summary">
+          <div className="summary-row">
+            <span>SubTotal (Rs.):</span>
+            <input type="number" value={grandTotal} readOnly tabIndex={-1} />
+          </div>
+          <div className="summary-row">
+            <span>Designing (Rs.):</span>
+            <input type="number" value={designing} tabIndex={-1}
+              onChange={(e) => setDesigning(e.target.value)} />
+          </div>
+        </div>
+
+        <div className="summary">
           <div className="summary-row total">
             <span>Total (Rs.):</span>
-            <input type="number" value={grandTotal.toFixed(2)} readOnly tabIndex={-1} />
+            <input type="number" value={TotalSum.toFixed(2)} readOnly tabIndex={-1} />
+          </div>
+          <div className="summary-row">
+            <span>Paid (Rs.):</span>
+            <input type="number" value={paid} tabIndex={-1}
+              onChange={(e) => setPaid(e.target.value)} />
+          </div>
+          <div className="summary-row total">
+            <span>Remaining (Rs.):</span>
+            <input type="number" value={Remaining.toFixed(2)} readOnly tabIndex={-1} />
           </div>
         </div>
 
@@ -357,6 +403,9 @@ const Invoice: React.FC = () => {
         <div className="actions">
           <button className="btn-print" onClick={handlePrint}>
             Print / Save PDF
+          </button>
+          <button className="btn-print" onClick={handleDownload}>
+            Download PDF
           </button>
           <button className="btn-reset" onClick={handleReset}>
             Reset
