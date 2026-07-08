@@ -2,17 +2,17 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from '@/components/layout/AppLayout'
 import RoznamchaPage from '@/pages/RoznamchaPage'
 import DashboardPage from '@/pages/DashboardPage'
-import DailyEntryPage from '@/pages/DailyEntryPage'
 import CustomersPage from '@/pages/CustomersPage'
 import ExpensesPage from '@/pages/ExpensesPage'
 import BackupPage from '@/pages/BackupPage'
-import { useEffect, useState } from 'react'
-import { checkWeeklyBackup, getAllEntries, getEntriesByDateEx, initDB, updateEntry } from './db/indexedDB'
 import Remainings from './pages/Remainings'
-import { alertMessageAtom, alertTypeAtom, expensesAtom, selectedDateAtom } from './store/atoms'
-import { useAtom, useAtomValue } from 'jotai'
+import Invoice from './pages/Invoice'
 import Trash from './pages/Trash'
 import AlertItem from './components/ui/AlertItem'
+import { useEffect, useState } from 'react'
+import { checkWeeklyBackup, getAllEntries, getEntriesByDateEx, initDB, updateEntry } from './db/indexedDB'
+import { alertMessageAtom, alertTypeAtom, expensesAtom, selectedDateAtom } from './store/atoms'
+import { useAtom, useAtomValue } from 'jotai'
 
 export default function App() {
   const [, setExpenses] = useAtom(expensesAtom);
@@ -66,10 +66,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/daily-entry" element={<DailyEntryPage />} />
         <Route path="/roznamcha" element={<RoznamchaPage />} />
-        <Route path="/customers" element={<CustomersPage />} />
+        <Route path="/invoice" element={<Invoice />} />
         <Route path="/expenses" element={<ExpensesPage />} />
+        <Route path="/customers" element={<CustomersPage />} />
         <Route path="/recycle" element={<Trash />} />
         <Route path="/remainings" element={<Remainings />} />
         <Route path="/backup" element={<BackupPage />} />

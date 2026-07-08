@@ -2,6 +2,7 @@ import { useAtom } from 'jotai';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpen,
+  ReceiptText,
   LayoutDashboard,
   Users,
   MinusCircle,
@@ -15,14 +16,12 @@ import { useMemo } from 'react';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'ڈیش بورڈ', path: '/dashboard' },
-  // { icon: PenLine, label: 'روزانہ اندراج', path: '/daily-entry' },
   { icon: BookOpen, label: 'روزنامچہ رجسٹر', path: '/roznamcha' },
+  { icon: ReceiptText, label: 'انوائس', path: '/invoice' },
   { icon: MinusCircle, label: 'اخراجات', path: '/expenses' },
   { icon: Wallet, label: 'بقیہ جات', path: '/remainings' },
   { icon: Users, label: 'گاہک (کسٹمرز)', path: '/customers' },
   { icon: Trash, label: 'ری سائیکل بن', path: '/recycle' },
-  // { icon: Building2, label: 'ادائیگیاں', path: '/payments' },
-  // { icon: UserCircle, label: 'صارفین', path: '/users' },
   { icon: CloudUpload, label: 'بیک اپ', path: '/backup' },
 ];
 

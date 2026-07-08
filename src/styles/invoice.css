@@ -1,0 +1,342 @@
+/* Base */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.invoice-wrapper {
+    font-family: Arial, Helvetica, sans-serif;
+    background-color: #f5f5f5;
+    color: #333;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.invoice-container {
+    max-width: 900px;
+    margin: 0 auto;
+    background: #fff;
+    padding: 40px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Logo */
+.logo {
+    width: 120px;
+    height: 120px;
+    border: 3px solid #333;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 40px;
+    overflow: hidden;
+}
+
+.logo img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+.invoice {
+    padding: 10px 14px;
+    background: #4a5568;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+/* Header bar */
+.header-bar-in {
+    background-color: #4a5568;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.header-bar-in input {
+    background: transparent;
+    border: 1px solid transparent;
+    color: white;
+    font-size: 13px;
+    width: 120px;
+    margin-left: 8px;
+    font-weight: normal;
+    font-family: inherit;
+}
+
+.header-bar-in input:focus {
+    border-bottom: 1px solid white;
+    outline: none;
+}
+
+/* Addresses */
+.addresses {
+    display: flex;
+    border-bottom: 1px solid #ccc;
+}
+
+.address-box {
+    flex: 1;
+    padding: 20px;
+    border-right: 1px solid #ccc;
+    display: flex;
+    flex-direction: column;
+}
+
+.address-box:last-child {
+    border-right: none;
+}
+
+.address-box h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+}
+
+.address-box input {
+    width: 100%;
+    border: 1px solid transparent;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    font-family: Arial, Helvetica, sans-serif;
+    background: transparent;
+    padding: 4px 0;
+}
+
+.address-box input:focus {
+    border: 1px solid #ccc;
+    outline: none;
+    background: #fafafa;
+}
+
+/* Table */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    text-align: left;
+    padding: 15px 20px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #ccc;
+}
+
+td {
+    padding: 12px 20px;
+    font-size: 14px;
+    border-bottom: 1px solid #e0e0e0;
+    vertical-align: middle;
+}
+
+td input,
+td select {
+    width: 100%;
+    border: 1px solid transparent;
+    font-size: 14px;
+    font-family: Arial, Helvetica, sans-serif;
+    background: transparent;
+    padding: 4px;
+}
+
+td input:focus,
+td select:focus {
+    border: 1px solid #ccc;
+    outline: none;
+    background: #fafafa;
+}
+
+select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.qty {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.amount-col,
+.price-col,
+.qty-col {
+    text-align: right;
+}
+
+.amount-col input,
+.price-col input,
+.qty-col input {
+    text-align: right;
+}
+
+.measure-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.measure-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 6px;
+}
+
+.measure-row input {
+    width: 60px;
+    text-align: right;
+}
+
+.measure-icon {
+    width: 16px;
+    height: 16px;
+    color: #666;
+}
+
+/* Summary */
+.summary {
+    margin-top: 0;
+}
+
+.summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 20px;
+    font-size: 14px;
+    align-items: center;
+}
+
+.summary-row.total {
+    font-size: 20px;
+    font-weight: bold;
+    padding: 12px 20px;
+}
+
+.summary-row input {
+    border: 1px solid transparent;
+    font-size: 14px;
+    text-align: right;
+    width: 120px;
+    background: transparent;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.summary-row.total input {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+/* Buttons */
+.add-row-btn {
+    margin: 10px 20px;
+    padding: 6px 16px;
+    background: #4a5568;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.add-row-btn:hover {
+    background: #2d3748;
+}
+
+.delete-btn {
+    background: #e53e3e;
+    color: white;
+    border: none;
+    padding: 2px 10px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.delete-btn:hover {
+    background: #c53030;
+}
+
+.actions {
+    margin-top: 30px;
+    text-align: center;
+}
+
+.actions button {
+    padding: 10px 24px;
+    margin: 0 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-print {
+    background: #4a5568;
+    color: white;
+}
+
+.btn-print:hover {
+    background: #2d3748;
+}
+
+.btn-reset {
+    background: #e2e8f0;
+    color: #4a5568;
+}
+
+.btn-reset:hover {
+    background: #cbd5e0;
+}
+
+/* Print */
+@media print {
+    .invoice-wrapper {
+        background: #fff;
+        padding: 0;
+    }
+
+    .invoice-container {
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+    }
+
+    .actions,
+    .add-row-btn,
+    .delete-btn {
+        display: none !important;
+    }
+
+    input,
+    select {
+        border: none !important;
+        background: transparent !important;
+    }
+
+    input:focus,
+    select:focus {
+        outline: none !important;
+    }
+}
