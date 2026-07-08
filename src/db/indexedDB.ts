@@ -1085,7 +1085,9 @@ function downloadBackup(
   a.download = filename;
   a.click();
 
-  URL.revokeObjectURL(url);
+  setTimeout(() => {
+    URL.revokeObjectURL(url);
+  }, 500);
 }
 
 // Export functions for backup and import
