@@ -80,20 +80,20 @@ export default function DashboardPage() {
     scales: {
       x: {
         ticks: {
-          color: "#fff",
+          color: "#000",
         },
         grid: {
-          color: "#333",
+          color: "#000",
         },
       },
 
       y: {
         beginAtZero: true,
         ticks: {
-          color: "#fff",
+          color: "#000",
         },
         grid: {
-          color: "#333",
+          color: "#000",
         },
       },
     },
@@ -157,6 +157,7 @@ export default function DashboardPage() {
           style={{
             maxWidth: "800px",
             margin: "0 auto",
+            color: "#000"
           }}
         >
           <Bar data={chartData} options={options} />

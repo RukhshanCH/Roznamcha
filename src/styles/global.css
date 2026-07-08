@@ -298,20 +298,36 @@ input[type="number"] {
 
 .search-bar {
   position: relative;
-  width: 200px;
+  width: 37px;
   padding: 8px 12px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
   font-family: var(--font-ui);
   font-size: 0.875rem;
   color: var(--text-primary);
-  transition: border-color 150ms ease;
-  cursor: text;
+  transition: all 150ms ease;
 }
 
 .search-bar:focus {
+  width: 200px;
   border-color: var(--accent-blue);
   outline: none;
+}
+ 
+.header-right input {
+  cursor: pointer;
+}
+ 
+.header-right input:focus {
+  cursor: text;
+}
+
+.header-right input::placeholder {
+  opacity: 0;
+}
+ 
+.header-right input:focus::placeholder {
+  opacity: 1;
 }
 
 .search-icon {
