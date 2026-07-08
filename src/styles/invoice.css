@@ -346,3 +346,44 @@ input[type="number"]::-webkit-inner-spin-button {
         outline: none !important;
     }
 }
+
+@media print {
+  @page {
+    margin: 10mm;
+    size: A4 portrait;
+  }
+
+  .no-print,
+  .actions,
+  .add-row-btn,
+  .delete-btn {
+    display: none !important;
+  }
+
+  .invoice-container {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    background: #fff !important;
+  }
+
+  input,
+  select {
+    border: none !important;
+    background: transparent !important;
+    outline: none !important;
+    appearance: none !important;
+    padding: 2px 0 !important;
+    color: #000 !important;
+  }
+
+  tr {
+    page-break-inside: avoid;
+  }
+
+  .summary {
+    page-break-inside: avoid;
+  }
+}
