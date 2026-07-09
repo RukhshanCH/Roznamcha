@@ -217,7 +217,9 @@ const Invoice: React.FC = () => {
     setPaid("0");
   }, [nextId, todayStr]);
 
-  const handlePrint = () => window.print();
+  const handlePrint = useCallback(() => {
+    window.print()
+  }, [])
 
   const [downloading, setDownloading] = useState(false);
 
@@ -354,12 +356,13 @@ const Invoice: React.FC = () => {
         <div className="header-bar-in">
           <div>
             INVOICE NO.
-            <input type="text" value={invoiceNo} readOnly />
+            <input type="text" aria-label="Invoice Number" value={invoiceNo} readOnly />
           </div>
           <div>
             ISSUE DATE
             <input
               type="text"
+              aria-label="Issue Date"
               value={issueDate}
               onChange={(e) => setIssueDate(e.target.value)}
             />
@@ -372,6 +375,7 @@ const Invoice: React.FC = () => {
             <h3>NAME</h3>
             <input
               type="text"
+              aria-label="Client Name"
               value={clientName}
               onChange={(e) => setClientName(e.target.value)}
               placeholder="Enter client name"
@@ -381,6 +385,7 @@ const Invoice: React.FC = () => {
             <h3>CONTACT NO.</h3>
             <input
               type="text"
+              aria-label="Contact Number"
               value={contactNo}
               onChange={(e) => setContactNo(e.target.value)}
               placeholder="Enter contact number"
@@ -406,6 +411,7 @@ const Invoice: React.FC = () => {
                 <td>
                   <select
                     value={item.description}
+                    aria-label="Select Category"
                     onChange={(e) =>
                       updateItem(item.id, "description", e.target.value)
                     }
@@ -426,6 +432,7 @@ const Invoice: React.FC = () => {
                   <div className="qty">
                     <input
                       type="number"
+                      aria-label="Quantity"
                       min={0}
                       step={1}
                       value={item.quantity}
@@ -440,6 +447,7 @@ const Invoice: React.FC = () => {
                 <td className="price-col">
                   <input
                     type="number"
+                    aria-label="Unit Price"
                     value={item.unitPrice}
                     onChange={(e) =>
                       updateItem(item.id, "unitPrice", e.target.value)
@@ -463,6 +471,7 @@ const Invoice: React.FC = () => {
                       </svg>
                       <input
                         type="number"
+                        aria-label="Height"
                         min={0}
                         step={1}
                         placeholder="H"
@@ -484,6 +493,7 @@ const Invoice: React.FC = () => {
                       </svg>
                       <input
                         type="number"
+                        aria-label="Width"
                         min={0}
                         step={1}
                         placeholder="W"
@@ -499,6 +509,7 @@ const Invoice: React.FC = () => {
                 <td className="amount-col">
                   <input
                     type="number"
+                    aria-label="amount"
                     value={calculateRowAmount(item).toFixed(2)}
                     readOnly
                     tabIndex={-1}
@@ -508,6 +519,8 @@ const Invoice: React.FC = () => {
                 <td>
                   <button
                     className="delete-btn"
+                    type="button"
+                    aria-label="Delete Row"
                     onClick={() => deleteRow(item.id)}
                   >
                     ×
@@ -518,7 +531,7 @@ const Invoice: React.FC = () => {
           </tbody>
         </table>
 
-        <button className="add-row-btn" onClick={addRow}>
+        <button className="add-row-btn" type="button" aria-label="Add Row" onClick={addRow}>
           + Add Item
         </button>
 
@@ -526,12 +539,13 @@ const Invoice: React.FC = () => {
         <div className="summary">
           <div className="summary-row">
             <span>SubTotal (Rs.):</span>
-            <input type="number" value={grandTotal} readOnly tabIndex={-1} />
+            <input type="number" aria-label="Subtotal" value={grandTotal} readOnly tabIndex={-1} />
           </div>
           <div className="summary-row">
             <span>Designing (Rs.):</span>
             <input
               type="number"
+              aria-label="designing fee"
               value={designing}
               tabIndex={-1}
               onChange={(e) => setDesigning(e.target.value)}
@@ -544,6 +558,7 @@ const Invoice: React.FC = () => {
             <span>Total (Rs.):</span>
             <input
               type="number"
+              aria-label="Total"
               value={TotalSum.toFixed(2)}
               readOnly
               tabIndex={-1}
@@ -553,6 +568,7 @@ const Invoice: React.FC = () => {
             <span>Paid (Rs.):</span>
             <input
               type="number"
+              aria-label="Paid"
               value={paid}
               tabIndex={-1}
               onChange={(e) => setPaid(e.target.value)}
@@ -562,6 +578,7 @@ const Invoice: React.FC = () => {
             <span>Remaining (Rs.):</span>
             <input
               type="number"
+              aria-label="Remaining"
               value={Remaining.toFixed(2)}
               readOnly
               tabIndex={-1}
@@ -574,17 +591,19 @@ const Invoice: React.FC = () => {
       {/* ACTION BUTTONS — OUTSIDE pdfRef, never captured         */}
       {/* ═══════════════════════════════════════════════════════ */}
       <div className="actions no-print">
-        <button className="btn-print" onClick={handlePrint}>
+        <button className="btn-print" type="button" aria-label="Print" onClick={handlePrint}>
           Print / Save PDF
         </button>
         <button
           className="btn-print"
+          type="button"
+          aria-label="Download PDF"
           onClick={handleDownload}
           disabled={downloading}
         >
           {downloading ? "Generating PDF..." : "Download PDF"}
         </button>
-        <button className="btn-reset" onClick={handleReset}>
+        <button className="btn-reset" type="reset" aria-label="Reset" onClick={handleReset}>
           Reset
         </button>
       </div>
