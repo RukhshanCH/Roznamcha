@@ -46,17 +46,17 @@ const FLEX_GROUPS: FlexGroup[] = [
   {
     group: "China Flex",
     options: [
-      { value: "china-200", label: "200 gram", price: 22 },
-      { value: "china-220", label: "220 gram", price: 25 },
       { value: "china-240", label: "240 gram", price: 30 },
+      { value: "china-220", label: "220 gram", price: 25 },
+      { value: "china-200", label: "200 gram", price: 22 },
     ],
   },
   {
     group: "Star Flex",
     options: [
-      { value: "star-300", label: "300 gram", price: 40 },
-      { value: "star-350", label: "350 gram", price: 50 },
       { value: "star-400", label: "400 gram", price: 70 },
+      { value: "star-350", label: "350 gram", price: 50 },
+      { value: "star-300", label: "300 gram", price: 40 },
     ],
   },
   {
