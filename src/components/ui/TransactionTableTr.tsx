@@ -229,7 +229,7 @@ export default function TransactionTableTr() {
                 <tbody>
                     {allTrash.length === 0 ? (
                         <tr>
-                            <td style={{ textAlign: "center" }}>
+                            <td colSpan={8} style={{ textAlign: "center" }}>
                                 ری سائیکل بن خالی ہے۔
                             </td>
                         </tr>
