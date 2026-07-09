@@ -1,6 +1,7 @@
 @import './alert.css';
 @import './backup.css';
 @import './invoice.css';
+@import './title.css';
 
 /* ===== CSS Variables (Design Tokens) ===== */
 :root {
@@ -413,16 +414,6 @@ input[type="number"] {
   display: flex;
   flex-direction: column;
   gap: 4px;
-}
-
-.page-title {
-  text-align: center;
-  margin-bottom: 16px;
-  font-family: var(--font-primary);
-  font-size: 2rem;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.4;
 }
 
 .breadcrumb {

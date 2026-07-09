@@ -65,6 +65,35 @@ export async function initDB(): Promise<IDBDatabase> {
   });
 }
 
+// Get and Set Settings
+export async function getSetting<T = string>(key: string): Promise<T | undefined> {
+  const database = await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction("settings", "readonly");
+    const store = tx.objectStore("settings");
+    const req = store.get(key);
+
+    req.onsuccess = () => {
+      // req.result is { key: "companyName", value: "..." } or undefined
+      resolve(req.result?.value);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+export async function setSetting<T = string>(key: string, value: T): Promise<void> {
+  const database = await initDB();
+  return new Promise((resolve, reject) => {
+    const tx = database.transaction("settings", "readwrite");
+    const store = tx.objectStore("settings");
+    // Because keyPath is "key", we pass the whole object
+    const req = store.put({ key, value });
+
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
 // CRUD operations for Journal Entries
 
 // Add Entries function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry

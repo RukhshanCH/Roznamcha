@@ -1,0 +1,63 @@
+.header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.title-icon {
+    width: 24px;
+    height: 24px;
+    color: #2563eb;
+    margin-left: 8px;
+}
+
+.page-title {
+    text-align: center;
+    margin-bottom: 16px;
+    font-family: var(--font-primary);
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+.title-text-wrapper {
+    position: relative;
+}
+
+.edit-icon-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    transition: all 0.2s ease;
+}
+
+.edit-icon-wrapper.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.edit-icon-wrapper.hidden {
+    opacity: 0;
+    transform: translateX(-8px);
+}
+
+.edit-icon {
+    width: 16px;
+    height: 16px;
+    color: #666;
+    transition: color 0.2s ease;
+}
+
+.edit-icon:hover {
+    color: #2563eb;
+}
+
+.subtitle {
+    color: #666;
+    font-weight: 600;
+    font-size: 1.2rem;
+}
