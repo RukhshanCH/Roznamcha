@@ -467,28 +467,6 @@ const Invoice: React.FC = () => {
                         stroke="currentColor"
                         strokeWidth="2"
                       >
-                        <rect x="6" y="4" width="12" height="16" rx="2" />
-                      </svg>
-                      <input
-                        type="number"
-                        aria-label="Height"
-                        min={0}
-                        step={1}
-                        placeholder="H"
-                        value={item.measure1 || ""}
-                        onChange={(e) =>
-                          updateItem(item.id, "measure1", e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="measure-row">
-                      <svg
-                        className="measure-icon"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      >
                         <rect x="4" y="6" width="16" height="12" rx="2" />
                       </svg>
                       <input
@@ -500,6 +478,28 @@ const Invoice: React.FC = () => {
                         value={item.measure2 || ""}
                         onChange={(e) =>
                           updateItem(item.id, "measure2", e.target.value)
+                        }
+                      />
+                    </div>
+                    <div className="measure-row">
+                      <svg
+                        className="measure-icon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <rect x="6" y="4" width="12" height="16" rx="2" />
+                      </svg>
+                      <input
+                        type="number"
+                        aria-label="Height"
+                        min={0}
+                        step={1}
+                        placeholder="H"
+                        value={item.measure1 || ""}
+                        onChange={(e) =>
+                          updateItem(item.id, "measure1", e.target.value)
                         }
                       />
                     </div>
