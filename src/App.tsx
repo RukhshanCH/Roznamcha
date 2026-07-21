@@ -14,6 +14,7 @@ import { checkWeeklyBackup, getAllEntries, getEntriesByDateEx, initDB, updateEnt
 import { alertMessageAtom, alertTypeAtom, expensesAtom, selectedDateAtom } from './store/atoms'
 import { useAtom, useAtomValue } from 'jotai'
 import { SpeedInsights } from '@vercel/speed-insights/react'
+import { Analytics } from '@vercel/analytics/react'
 
 export default function App() {
   const [, setExpenses] = useAtom(expensesAtom);
@@ -62,6 +63,7 @@ export default function App() {
   return (
     <AppLayout>
       <SpeedInsights />
+      <Analytics />
 
       <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
