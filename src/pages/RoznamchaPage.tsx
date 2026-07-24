@@ -7,11 +7,12 @@ import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom, showAllAtom, remainingPlusAtom, alertAtom, alertMessageAtom, alertTypeAtom } from '@/store/atoms';
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
-import TransactionTableEx from '@/components/ui/TransactionTableEx';
+import * as htmlToImage from 'html-to-image';
+import PrintableRoznamcha from '@/components/ui/PrintableRoznamcha';
 import Modal from '@/components/ui/Modal';
 import { deleteEntry, getAllEntries, getEntriesByDate, renumberEntries } from '@/db/indexedDB';
 import { useSetting } from "@/hooks/useSetting";
+import { urduFontBase64 } from "@/fonts/urduFonts";
 import type { JournalEntry } from '@/types';
 
 export default function RoznamchaPage() {
@@ -20,8 +21,6 @@ export default function RoznamchaPage() {
   const [selectedDate, setSelectedDate] = useAtom(selectedDateAtom);
   const [, setIsModalOpen] = useAtom(isModalOpenAtom);
   const [, setEditingEntry] = useAtom(editingEntryAtom);
-  const pdfRef = useRef<HTMLTableElement | null>(null);
-  const expenses = useAtomValue(expensesAtom);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
   const [showAll, setShowAll] = useAtom(showAllAtom);
   const [, setRemainigPlus] = useAtom(remainingPlusAtom);
@@ -35,6 +34,34 @@ export default function RoznamchaPage() {
     "companyName",
     "Company Name"
   );
+  const printRef = useRef<HTMLDivElement>(null);
+
+  // ─── Inject Urdu font globally ───
+  useEffect(() => {
+    const styleId = 'urdu-pdf-font';
+    if (document.getElementById(styleId)) return;
+
+    const style = document.createElement('style');
+    style.id = styleId;
+    style.textContent = `
+      @font-face {
+        font-family: 'UrduPrintFont';
+        src: url(data:font/truetype;charset=utf-8;base64,${urduFontBase64}) format('truetype');
+        font-weight: normal;
+        font-style: normal;
+      }
+    `;
+    document.head.appendChild(style);
+
+    const preload = document.createElement('div');
+    preload.style.cssText = 'position:absolute;left:-9999px;font-family:UrduPrintFont;font-size:24px;';
+    preload.textContent = 'روزنامچہ';
+    document.body.appendChild(preload);
+
+    document.fonts.load("24px UrduPrintFont").then(() => {
+      document.body.removeChild(preload);
+    });
+  }, []);
 
   function askQuestion(question: string): Promise<string> {
     return new Promise((resolve) => {
@@ -45,7 +72,6 @@ export default function RoznamchaPage() {
 
   const filteredTransactions = entries.filter((t) => {
     const query = search.toLowerCase();
-
     return (
       t.name.toLowerCase().includes(query) ||
       t.mobileNumber.toLowerCase().includes(query) ||
@@ -53,9 +79,8 @@ export default function RoznamchaPage() {
     );
   });
 
-  const filteredTransactionsEx = expenses.filter((t) => {
+  const filteredTransactionsEx = entriesEx.filter((t) => {
     const query = search.toLowerCase();
-
     return (
       t.name.toLowerCase().includes(query) ||
       t.description.toLowerCase().includes(query) ||
@@ -71,31 +96,30 @@ export default function RoznamchaPage() {
     }
   };
 
-  // Load data
   useEffect(() => {
     const loadEntries = async () => {
       if (search.trim() !== "") {
         setEntries(await getAllEntries());
         return;
       }
-
       await refreshEntries();
     };
-
     loadEntries();
   }, [selectedDate, showAll, search, setEntries, refreshEntries]);
 
   const summary = useMemo(() => {
-    const totalPayments = search.trim() !== "" ? filteredTransactions.reduce((sum, e) => sum + (e.total || 0), 0) : entries.reduce((sum, e) => sum + (e.total || 0), 0);
-    const totalAdvance = search.trim() !== "" ? filteredTransactions.reduce((sum, e) => sum + (e.advance || 0), 0) : entries.reduce((sum, e) => sum + (e.advance || 0), 0);
+    const totalPayments = search.trim() !== ""
+      ? filteredTransactions.reduce((sum, e) => sum + (e.total || 0), 0)
+      : entries.reduce((sum, e) => sum + (e.total || 0), 0);
+
+    const totalAdvance = search.trim() !== ""
+      ? filteredTransactions.reduce((sum, e) => sum + (e.advance || 0), 0)
+      : entries.reduce((sum, e) => sum + (e.advance || 0), 0);
 
     const latestEntries = new Map<string, JournalEntry>();
-
     for (const entry of search.trim() !== "" ? filteredTransactions : entries) {
       const key = entry.debtId || `old-${entry.id}`;
-
       const existing = latestEntries.get(key);
-
       if (!existing || entry.createdAt > existing.createdAt) {
         latestEntries.set(key, entry);
       }
@@ -106,8 +130,12 @@ export default function RoznamchaPage() {
       0
     );
 
-    const totalExpense = search.trim() !== "" ? filteredTransactionsEx.reduce((sum, e) => sum + (e.amount || 0), 0) : entriesEx.reduce((sum, e) => sum + (e.amount || 0), 0);
+    const totalExpense = search.trim() !== ""
+      ? filteredTransactionsEx.reduce((sum, e) => sum + (e.amount || 0), 0)
+      : entriesEx.reduce((sum, e) => sum + (e.amount || 0), 0);
+
     const remainingBalance = totalAdvance - totalExpense;
+
     return {
       totalPayments: totalPayments.toLocaleString('en-US') + '/-',
       totalAdvance: totalAdvance.toLocaleString('en-US') + '/-',
@@ -124,13 +152,13 @@ export default function RoznamchaPage() {
 
   const handlegetAll = async () => {
     setShowAll(true);
-    setEntries(await getAllEntries())
-  }
+    setEntries(await getAllEntries());
+  };
 
   const handleAddNew = () => {
     setEditingEntry(null);
     setIsModalOpen(true);
-    setRemainigPlus(false)
+    setRemainigPlus(false);
   };
 
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -138,150 +166,154 @@ export default function RoznamchaPage() {
     setSelectedDate(e.target.value);
   };
 
-  const downloadPDF = async () => {
-    if (!pdfRef.current) return;
+  const generatePDFBlob = async (): Promise<Blob> => {
+    if (!printRef.current) throw new Error("Print element not found");
 
+    // ─── Check expenses loaded ───
+    if (entriesEx.length === 0 && filteredTransactionsEx.length === 0) {
+      throw new Error("اخراجات کا ڈیٹا لوڈ نہیں ہوا۔ براہ کرم پہلے اخراجات دیکھیں یا ریفریش کریں۔");
+    }
+
+    // Ensure font is ready
+    await document.fonts.load("24px UrduPrintFont");
+    await document.fonts.load("16px UrduPrintFont");
+    await document.fonts.load("14px UrduPrintFont");
+    await document.fonts.load("12px UrduPrintFont");
+    await document.fonts.ready;
+
+    // Small buffer for layout
+    await new Promise((r) => setTimeout(r, 300));
+
+    const element = printRef.current;
+
+    // ─── Use html-to-image instead of html2canvas ───
+    const dataUrl = await htmlToImage.toPng(element, {
+      pixelRatio: 3,
+      backgroundColor: "#F5F0E8",
+      // Ensure we capture the full scrollable area
+      width: element.scrollWidth,
+      height: element.scrollHeight,
+      style: {
+        margin: '0',
+      },
+      // Cache-bust fonts by including the font CSS in the SVG
+      fontEmbedCSS: `
+        @font-face {
+          font-family: 'UrduPrintFont';
+          src: url(data:font/truetype;charset=utf-8;base64,${urduFontBase64}) format('truetype');
+        }
+      `,
+    });
+
+    const pdf = new jsPDF("p", "mm", "a4");
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = pdf.internal.pageSize.getHeight();
+
+    // Create temp image to get dimensions
+    const img = new Image();
+    img.src = dataUrl;
+    await new Promise((resolve) => { img.onload = resolve; });
+
+    const imgWidth = img.width;
+    const imgHeight = img.height;
+    const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+    const imgX = (pdfWidth - imgWidth * ratio) / 2;
+
+    let heightLeft = imgHeight * ratio;
+    let position = 0;
+
+    pdf.addImage(dataUrl, "PNG", imgX, 0, imgWidth * ratio, imgHeight * ratio);
+    heightLeft -= pdfHeight;
+
+    while (heightLeft > 0) {
+      position = heightLeft - imgHeight * ratio;
+      pdf.addPage();
+      pdf.addImage(dataUrl, "PNG", imgX, position, imgWidth * ratio, imgHeight * ratio);
+      heightLeft -= pdfHeight;
+    }
+
+    return pdf.output("blob");
+  };
+
+  const downloadPDF = async () => {
     try {
       setIsGeneratingPdf(true);
-
-      // Wait for React to render TransactionTableEx
-      await new Promise((resolve) => setTimeout(resolve, 300));
-
-      const canvas = await html2canvas(pdfRef.current, {
-        scale: window.devicePixelRatio > 1 ? 2 : 1,
-        useCORS: true,
-        backgroundColor: "#F5F0E8",
-      });
-
+      const blob = await generatePDFBlob();
       setIsGeneratingPdf(false);
 
-      const imgData = canvas.toDataURL("image/png");
-
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-      heightLeft -= pdfHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-
-        heightLeft -= pdfHeight;
-      }
-
-      pdf.save("روزنامچہ__" + selectedDate + ".pdf");
-    }
-    catch (error) {
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `روزنامچہ__${selectedDate}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      setIsGeneratingPdf(false);
       setType("error");
-      setMessage(error instanceof Error ? error.message : "PDF ڈاؤن لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
-
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "PDF ڈاؤن لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔"
+      );
       setAlert(true);
-      setTimeout(() => {
-        setAlert(false);
-      }, 3000);
+      setTimeout(() => setAlert(false), 3000);
     }
   };
 
   const handleSharePDF = async () => {
-    if (!pdfRef.current) return;
-
     try {
       setIsGeneratingPdf(true);
-
-      // Wait for React to render TransactionTableEx
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      const canvas = await html2canvas(pdfRef.current, {
-        scale: window.devicePixelRatio > 1 ? 2 : 1,
-        useCORS: true,
-        backgroundColor: "#F5F0E8",
-      });
-
+      const blob = await generatePDFBlob();
       setIsGeneratingPdf(false);
 
-      const imgData = canvas.toDataURL("image/png");
-
-      const pdf = new jsPDF("p", "mm", "a4");
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-
-      const imgHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      let heightLeft = imgHeight;
-      let position = 0;
-
-      pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-      heightLeft -= pdfHeight;
-
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, pdfWidth, imgHeight);
-
-        heightLeft -= pdfHeight;
-      }
-
-      const pdfBlob = pdf.output("blob");
-      const file = new File([pdfBlob], "Roznamcha.pdf", {
+      const file = new File([blob], `روزنامچہ__${selectedDate}.pdf`, {
         type: "application/pdf",
       });
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          title: "Roznamcha",
-          files: [file],
-        });
+        await navigator.share({ title: "روزنامچہ", files: [file] });
       } else {
-        pdf.save("روزنامچہ__" + selectedDate + ".pdf");
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `روزنامچہ__${selectedDate}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
       }
-    }
-    catch (error) {
+    } catch (error) {
+      setIsGeneratingPdf(false);
       setType("error");
-      setMessage(error instanceof Error ? error.message : "PDF ڈاؤن لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
-
+      setMessage(
+        error instanceof Error
+          ? error.message
+          : "PDF شیئر کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔"
+      );
       setAlert(true);
-      setTimeout(() => {
-        setAlert(false);
-      }, 3000);
+      setTimeout(() => setAlert(false), 3000);
     }
   };
 
   const handleDelete = async () => {
     if (!editingEntry?.id) return;
-
     try {
       await deleteEntry(editingEntry.id);
       await renumberEntries(selectedDate);
-
       const updated = await getEntriesByDate(selectedDate);
       setEntries(updated);
-
       setType("success");
       setMessage("اندراج حذف کر دیا گیا ہے۔");
     } catch (err) {
       setType("error");
       setMessage("اندراج حذف کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔");
     }
-
     setAlert(true);
-
-    setTimeout(() => {
-      setAlert(false);
-    }, 3000);
+    setTimeout(() => setAlert(false), 3000);
   };
-  
+
   if (loading) {
     return (
       <h1 className="page-title">
@@ -293,7 +325,6 @@ export default function RoznamchaPage() {
 
   return (
     <div>
-
       <Modal
         title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
         submitText="حذف کریں"
@@ -312,20 +343,14 @@ export default function RoznamchaPage() {
             if (name.trim()) await setCompanyName(name);
           }}
         >
-          <span
-            className={`edit-icon-wrapper ${isHovered ? "visible" : "hidden"}`}
-          >
+          <span className={`edit-icon-wrapper ${isHovered ? "visible" : "hidden"}`}>
             <Pencil className="edit-icon" />
           </span>
-
-          <span className="title-text-wrapper">
-            {companyName}
-          </span> &nbsp;
-
+          <span className="title-text-wrapper">{companyName}</span> &nbsp;
           <span className="subtitle">روزنامچہ رجسٹر</span>
         </h1>
       </div>
-      {/* Page Title Section */}
+
       <div className="page-title-section">
         <div className="page-title-left">
           <div className="breadcrumb">
@@ -354,48 +379,29 @@ export default function RoznamchaPage() {
         </div>
       </div>
 
-      <div ref={pdfRef}>
-        {/* Summary Cards */}
-        <div className="summary-cards">
-          <SummaryCard
-            label="تمام بل کا جمع"
-            value={summary.totalPayments}
-            icon="wallet"
-            variant="blue"
-          />
-          <SummaryCard
-            label="کل ادائیگی/ایڈوانس"
-            value={summary.totalAdvance}
-            icon="arrowDown"
-            variant="green"
-          />
-          <SummaryCard
-            label="کل بقایا"
-            value={summary.totalRemaining}
-            icon="scale"
-            variant="gold"
-          />
-          <SummaryCard
-            label="کل اندراجات"
-            value={summary.totalEntries}
-            icon="fileText"
-            variant="white"
-          />
-          <SummaryCard
-            label="کل اخراجات"
-            value={summary.totalExpense}
-            icon="receipt"
-            variant="red"
-          />
-          <SummaryCard
-            label="کل ادائیگی - کل اخراجات (بقایا رقم)"
-            value={summary.remainingBalance}
-            icon="fileWarning"
-            variant="purple"
+      {/* Hidden printable area */}
+      <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
+        <div ref={printRef}>
+          <PrintableRoznamcha
+            companyName={companyName}
+            selectedDate={selectedDate}
+            summary={summary}
+            transactions={filteredTransactions}
+            expenses={filteredTransactionsEx}
           />
         </div>
+      </div>
 
-        {/* Add Entry Button */}
+      <div>
+        <div className="summary-cards">
+          <SummaryCard label="تمام بل کا جمع" value={summary.totalPayments} icon="wallet" variant="blue" />
+          <SummaryCard label="کل ادائیگی/ایڈوانس" value={summary.totalAdvance} icon="arrowDown" variant="green" />
+          <SummaryCard label="کل بقایا" value={summary.totalRemaining} icon="scale" variant="gold" />
+          <SummaryCard label="کل اندراجات" value={summary.totalEntries} icon="fileText" variant="white" />
+          <SummaryCard label="کل اخراجات" value={summary.totalExpense} icon="receipt" variant="red" />
+          <SummaryCard label="کل ادائیگی - کل اخراجات (بقایا رقم)" value={summary.remainingBalance} icon="fileWarning" variant="purple" />
+        </div>
+
         <div className="actions-section">
           <button type="button" className="add-entry-btn" onClick={handleAddNew} aria-label="Add New Entry">
             <Plus />
@@ -407,7 +413,8 @@ export default function RoznamchaPage() {
               className="pdf-btn download-btn"
               type="button"
               aria-label="Download PDF"
-              onClick={() => downloadPDF()}
+              onClick={downloadPDF}
+              disabled={isGeneratingPdf}
             >
               <FileDown className="pdf-icon" size={18} />
               <span className="tooltip">Download PDF</span>
@@ -417,23 +424,16 @@ export default function RoznamchaPage() {
               className="pdf-btn share-btn"
               type="button"
               aria-label="Share PDF"
-              onClick={() => handleSharePDF()}
+              onClick={handleSharePDF}
+              disabled={isGeneratingPdf}
             >
-              <Share2
-                className="pdf-icon" size={18} />
+              <Share2 className="pdf-icon" size={18} />
               <span className="tooltip">Share PDF</span>
             </button>
-
           </div>
         </div>
 
-        {/* Transaction Table */}
         <TransactionTable transactions={filteredTransactions} pageName={"روزنامچہ"} isRemaining={false} />
-        {isGeneratingPdf && (
-          <TransactionTableEx transactions={filteredTransactionsEx} pageName={"اخراجات"} />
-        )}
-
-        {/* Entry Form Modal */}
         <EntryFormModal isRemaining={false} />
       </div>
     </div>
