@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
-import { CalendarDays, Printer, Plus, FileDown, Share2, Files, Pencil } from 'lucide-react';
+import { CalendarDays, Printer, Plus, FileDown, Share2, Files, Pencil, Loader2 } from 'lucide-react';
 import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
@@ -169,34 +169,26 @@ export default function RoznamchaPage() {
   const generatePDFBlob = async (): Promise<Blob> => {
     if (!printRef.current) throw new Error("Print element not found");
 
-    // ─── Check expenses loaded ───
     if (entriesEx.length === 0 && filteredTransactionsEx.length === 0) {
       throw new Error("اخراجات کا ڈیٹا لوڈ نہیں ہوا۔ براہ کرم پہلے اخراجات دیکھیں یا ریفریش کریں۔");
     }
 
-    // Ensure font is ready
     await document.fonts.load("24px UrduPrintFont");
     await document.fonts.load("16px UrduPrintFont");
     await document.fonts.load("14px UrduPrintFont");
     await document.fonts.load("12px UrduPrintFont");
     await document.fonts.ready;
 
-    // Small buffer for layout
     await new Promise((r) => setTimeout(r, 300));
 
     const element = printRef.current;
 
-    // ─── Use html-to-image instead of html2canvas ───
     const dataUrl = await htmlToImage.toPng(element, {
       pixelRatio: 3,
       backgroundColor: "#F5F0E8",
-      // Ensure we capture the full scrollable area
       width: element.scrollWidth,
       height: element.scrollHeight,
-      style: {
-        margin: '0',
-      },
-      // Cache-bust fonts by including the font CSS in the SVG
+      style: { margin: '0' },
       fontEmbedCSS: `
         @font-face {
           font-family: 'UrduPrintFont';
@@ -209,7 +201,6 @@ export default function RoznamchaPage() {
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = pdf.internal.pageSize.getHeight();
 
-    // Create temp image to get dimensions
     const img = new Image();
     img.src = dataUrl;
     await new Promise((resolve) => { img.onload = resolve; });
@@ -235,11 +226,15 @@ export default function RoznamchaPage() {
     return pdf.output("blob");
   };
 
+  // ─── DOWNLOAD ───
   const downloadPDF = async () => {
     try {
       setIsGeneratingPdf(true);
+      setType("info");
+      setMessage("PDF تیار ہو رہا ہے... براہ کرم انتظار کریں۔");
+      setAlert(true);
+
       const blob = await generatePDFBlob();
-      setIsGeneratingPdf(false);
 
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -249,8 +244,12 @@ export default function RoznamchaPage() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+
+      setType("success");
+      setMessage("PDF کامیابی سے ڈاؤن لوڈ ہو گیا۔");
+      setAlert(true);
+      setTimeout(() => setAlert(false), 2500);
     } catch (error) {
-      setIsGeneratingPdf(false);
       setType("error");
       setMessage(
         error instanceof Error
@@ -258,15 +257,21 @@ export default function RoznamchaPage() {
           : "PDF ڈاؤن لوڈ کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔"
       );
       setAlert(true);
-      setTimeout(() => setAlert(false), 3000);
+      setTimeout(() => setAlert(false), 4000);
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
+  // ─── SHARE ───
   const handleSharePDF = async () => {
     try {
       setIsGeneratingPdf(true);
+      setType("info");
+      setMessage("PDF تیار ہو رہا ہے... براہ کرم انتظار کریں۔");
+      setAlert(true);
+
       const blob = await generatePDFBlob();
-      setIsGeneratingPdf(false);
 
       const file = new File([blob], `روزنامچہ__${selectedDate}.pdf`, {
         type: "application/pdf",
@@ -274,6 +279,11 @@ export default function RoznamchaPage() {
 
       if (navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({ title: "روزنامچہ", files: [file] });
+
+        setType("success");
+        setMessage("PDF کامیابی سے شیئر ہو گیا۔");
+        setAlert(true);
+        setTimeout(() => setAlert(false), 2500);
       } else {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
@@ -283,9 +293,13 @@ export default function RoznamchaPage() {
         link.click();
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
+
+        setType("success");
+        setMessage("PDF کامیابی سے ڈاؤن لوڈ ہو گیا۔");
+        setAlert(true);
+        setTimeout(() => setAlert(false), 2500);
       }
     } catch (error) {
-      setIsGeneratingPdf(false);
       setType("error");
       setMessage(
         error instanceof Error
@@ -293,7 +307,9 @@ export default function RoznamchaPage() {
           : "PDF شیئر کرنے میں خرابی۔ براہ کرم دوبارہ کوشش کریں۔"
       );
       setAlert(true);
-      setTimeout(() => setAlert(false), 3000);
+      setTimeout(() => setAlert(false), 4000);
+    } finally {
+      setIsGeneratingPdf(false);
     }
   };
 
@@ -409,6 +425,7 @@ export default function RoznamchaPage() {
           </button>
 
           <div className="pdf-actions">
+            {/* DOWNLOAD BUTTON */}
             <button
               className="pdf-btn download-btn"
               type="button"
@@ -416,10 +433,17 @@ export default function RoznamchaPage() {
               onClick={downloadPDF}
               disabled={isGeneratingPdf}
             >
-              <FileDown className="pdf-icon" size={18} />
-              <span className="tooltip">Download PDF</span>
+              {isGeneratingPdf ? (
+                <Loader2 className="pdf-icon animate-spin" size={18} />
+              ) : (
+                <FileDown className="pdf-icon" size={18} />
+              )}
+              <span className="tooltip">
+                {isGeneratingPdf ? "تیار ہو رہا ہے..." : "Download PDF"}
+              </span>
             </button>
 
+            {/* SHARE BUTTON */}
             <button
               className="pdf-btn share-btn"
               type="button"
@@ -427,8 +451,14 @@ export default function RoznamchaPage() {
               onClick={handleSharePDF}
               disabled={isGeneratingPdf}
             >
-              <Share2 className="pdf-icon" size={18} />
-              <span className="tooltip">Share PDF</span>
+              {isGeneratingPdf ? (
+                <Loader2 className="pdf-icon animate-spin" size={18} />
+              ) : (
+                <Share2 className="pdf-icon" size={18} />
+              )}
+              <span className="tooltip">
+                {isGeneratingPdf ? "تیار ہو رہا ہے..." : "Share PDF"}
+              </span>
             </button>
           </div>
         </div>
