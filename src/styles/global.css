@@ -278,7 +278,7 @@ input[type="number"] {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  /* gap: 10px; */
 }
 
 .header-btn {
@@ -302,7 +302,7 @@ input[type="number"] {
   position: relative;
   width: 37px;
   padding: 8px 12px;
-  border: 1px solid var(--border-color);
+  border: 1px solid #999;
   border-radius: 8px;
   font-family: var(--font-ui);
   font-size: 0.875rem;
@@ -392,7 +392,7 @@ input[type="number"] {
 
 .user-name {
   font-family: var(--font-primary);
-  font-size: 0.875rem;
+  font-size: 1.2rem;
   color: var(--text-primary);
 }
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
-import { CalendarDays, Printer, Plus, FileDown, Share2, Files, Pencil, Loader2 } from 'lucide-react';
+import { CalendarDays, Printer, Plus, FileDown, Share2, Files, Loader2 } from 'lucide-react';
 import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
@@ -29,8 +29,7 @@ export default function RoznamchaPage() {
   const [, setAlert] = useAtom(alertAtom);
   const [, setType] = useAtom(alertTypeAtom);
   const [, setMessage] = useAtom(alertMessageAtom);
-  const [isHovered, setIsHovered] = useState(false);
-  const [companyName, setCompanyName, loading] = useSetting(
+  const [companyName] = useSetting(
     "companyName",
     "Company Name"
   );
@@ -62,13 +61,6 @@ export default function RoznamchaPage() {
       document.body.removeChild(preload);
     });
   }, []);
-
-  function askQuestion(question: string): Promise<string> {
-    return new Promise((resolve) => {
-      const answer = window.prompt(question);
-      resolve(answer || "");
-    });
-  }
 
   const filteredTransactions = entries.filter((t) => {
     const query = search.toLowerCase();
@@ -330,15 +322,6 @@ export default function RoznamchaPage() {
     setTimeout(() => setAlert(false), 3000);
   };
 
-  if (loading) {
-    return (
-      <h1 className="page-title">
-        <span className="animate-pulse bg-gray-200 rounded h-8 w-48 inline-block" />
-        <span className="text-gray-400 mr-2">روزنامچہ رجسٹر</span>
-      </h1>
-    );
-  }
-
   return (
     <div>
       <Modal
@@ -350,18 +333,7 @@ export default function RoznamchaPage() {
       />
 
       <div className="header">
-        <h1
-          className="page-title"
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          onClick={async () => {
-            const name = await askQuestion("Your Company Name?");
-            if (name.trim()) await setCompanyName(name);
-          }}
-        >
-          <span className={`edit-icon-wrapper ${isHovered ? "visible" : "hidden"}`}>
-            <Pencil className="edit-icon" />
-          </span>
+        <h1 className="page-title">
           <span className="title-text-wrapper">{companyName}</span> &nbsp;
           <span className="subtitle">روزنامچہ رجسٹر</span>
         </h1>
@@ -395,7 +367,6 @@ export default function RoznamchaPage() {
         </div>
       </div>
 
-      {/* Hidden printable area */}
       {/* Hidden printable area — rendered invisibly, NOT off-screen */}
       <div
         style={{

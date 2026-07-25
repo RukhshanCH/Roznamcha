@@ -8,6 +8,7 @@ import BackupPage from '@/pages/BackupPage'
 import Remainings from './pages/Remainings'
 import Invoice from './pages/Invoice'
 import Trash from './pages/Trash'
+import Settings from './pages/Settings'
 import AlertItem from './components/ui/AlertItem'
 import { useEffect, useState } from 'react'
 import { checkWeeklyBackup, getAllEntries, getEntriesByDateEx, initDB, updateEntry } from './db/indexedDB'
@@ -73,6 +74,7 @@ export default function App() {
         <Route path="/recycle" element={<Trash />} />
         <Route path="/remainings" element={<Remainings />} />
         <Route path="/backup" element={<BackupPage />} />
+        <Route path="/settings" element={<Settings />} />
       </Routes>
     </AppLayout>
   )

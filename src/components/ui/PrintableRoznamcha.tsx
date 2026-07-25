@@ -35,7 +35,7 @@ export default function PrintableRoznamcha({
   return (
     <div
       style={{
-        width: "794px",
+        width: "100%",
         padding: "40px",
         backgroundColor: "#F5F0E8",
         fontFamily: "'UrduPrintFont', 'Jameel Noori Nastaleeq', Tahoma, sans-serif",

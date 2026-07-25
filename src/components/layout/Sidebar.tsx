@@ -10,6 +10,7 @@ import {
   CalendarDays,
   Wallet,
   Trash,
+  Settings,
 } from 'lucide-react';
 import { sidebarCollapsedAtom } from '@/store/atoms';
 import { useMemo } from 'react';
@@ -23,6 +24,7 @@ const menuItems = [
   { icon: Users, label: 'گاہک (کسٹمرز)', path: '/customers' },
   { icon: Trash, label: 'ری سائیکل بن', path: '/recycle' },
   { icon: CloudUpload, label: 'بیک اپ', path: '/backup' },
+  { icon: Settings, label: 'ترتیبات', path: '/settings' },
 ];
 
 const urduDays = ['اتوار', 'پیر', 'منگل', 'بدھ', 'جمعرات', 'جمعہ', 'ہفتہ'];
