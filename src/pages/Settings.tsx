@@ -68,7 +68,7 @@ export default function Settings() {
     }
 
     return (
-        <div className="settings-container">
+        <div dir="ltr" className="settings-container">
             <style>{`
                 .settings-container {
                     max-width: 800px;
