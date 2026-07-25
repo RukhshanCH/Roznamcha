@@ -1,6 +1,7 @@
 import { useState, useRef, type ChangeEvent } from "react";
 import { useSetting } from "@/hooks/useSetting";
 import { Pencil, Camera, Trash2, Building2, MapPin, Phone, Mail, Save } from "lucide-react";
+import Logo from "../assets/Logo.png";
 
 export default function Settings() {
     // Company name
@@ -344,26 +345,26 @@ export default function Settings() {
             {/* Profile Picture & Company Name Card */}
             <div className="settings-card">
                 <h3 className="card-title">Business Identity</h3>
-                
+
                 <div className="profile-section">
                     {/* Avatar */}
                     <div className="profile-avatar-wrapper">
                         {profilePic ? (
-                            <img src={profilePic} alt="Profile" className="profile-avatar" />
+                            <img src={profilePic ?? Logo} alt="Profile" className="profile-avatar" />
                         ) : (
                             <div className="profile-avatar-placeholder">
                                 {companyName.charAt(0).toUpperCase()}
                             </div>
                         )}
-                        
-                        <div 
+
+                        <div
                             className="profile-avatar-overlay"
                             onClick={() => fileInputRef.current?.click()}
                             title="Change picture"
                         >
                             <Camera size={16} />
                         </div>
-                        
+
                         <input
                             ref={fileInputRef}
                             type="file"
@@ -396,7 +397,7 @@ export default function Settings() {
                                 </button>
                             </div>
                         ) : (
-                            <div 
+                            <div
                                 className="company-name-display"
                                 onClick={() => {
                                     setNameInput(companyName);
@@ -407,19 +408,29 @@ export default function Settings() {
                                 <Pencil className="edit-icon-inline" />
                             </div>
                         )}
-                        
+
                         <p className="urdu-text">روزنامچہ رجسٹر — Daily Account Register</p>
 
                         <div className="profile-actions">
-                            <button 
+                            <button
                                 className="btn btn-secondary btn-sm"
                                 onClick={() => fileInputRef.current?.click()}
                             >
                                 <Camera size={14} /> {profilePic ? "Change Picture" : "Upload Picture"}
                             </button>
-                            
+
+                            {
+                                !profilePic &&
+                                <button
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => setProfilePic(Logo)}
+                                >
+                                    <Camera size={14} /> Use Default Picture
+                                </button>
+                            }
+
                             {profilePic && (
-                                <button 
+                                <button
                                     className="btn btn-danger btn-sm"
                                     onClick={handleRemoveImage}
                                 >
@@ -485,7 +496,7 @@ export default function Settings() {
 // Simple X icon component since lucide-react X might conflict
 function XIcon() {
     return (
-        <svg style={{marginTop: "7px"}} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg style={{ marginTop: "7px" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
