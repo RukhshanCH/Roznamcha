@@ -396,8 +396,28 @@ export default function RoznamchaPage() {
       </div>
 
       {/* Hidden printable area */}
-      <div style={{ position: "absolute", left: "-9999px", top: 0 }}>
-        <div ref={printRef}>
+      {/* Hidden printable area — rendered invisibly, NOT off-screen */}
+      <div
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          opacity: 0,
+          pointerEvents: "none",
+          zIndex: -1,
+          overflow: "hidden",
+        }}
+        aria-hidden="true"
+      >
+        <div
+          ref={printRef}
+          style={{
+            width: "794px",
+            margin: "0 auto",
+          }}
+        >
           <PrintableRoznamcha
             companyName={companyName}
             selectedDate={selectedDate}
