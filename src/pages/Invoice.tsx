@@ -1,5 +1,4 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import Logo from "../assets/Logo.png";
 import {
   generateInvoiceNumber,
   initDB,
@@ -7,6 +6,8 @@ import {
 } from "@/db/indexedDB";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { useSetting } from "@/hooks/useSetting";
+import { User } from "lucide-react";
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
@@ -83,6 +84,7 @@ const DEFAULT_FLEX = "china-220";
 
 const Invoice: React.FC = () => {
   const pdfRef = useRef<HTMLDivElement>(null);
+  const [profilePic] = useSetting<string | null>("profilePic", null);
 
   // ── Invoice number lifecycle ───────────────────────────────
   const [nextInvoice, setNextInvoice] = useState<NextInvoice | null>(null);
@@ -345,7 +347,11 @@ const Invoice: React.FC = () => {
       <div dir="ltr" className="invoice-container" ref={pdfRef}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <div className="logo">
-            <img src={Logo} alt="Al-Jannat Flex" />
+            {
+              profilePic ?
+              <img src={profilePic} alt="Al-Jannat Flex" />
+              : <User size={42} />
+            }
           </div>
           <div>
             <h1 className="invoice">INVOICE</h1>

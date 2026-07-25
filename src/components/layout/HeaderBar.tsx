@@ -36,7 +36,7 @@ export default function HeaderBar() {
               profilePic ? (
                 <img src={profilePic} alt="User Avatar" className='logo' />
               ) : (
-                <User className='logo' />
+                <User className='logo user' />
               )
             }
             <span className="user-name">{companyName}</span>
