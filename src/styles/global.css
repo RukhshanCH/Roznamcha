@@ -81,7 +81,7 @@ input[type="number"] {
 
 /* ===== App Layout ===== */
 .app-layout {
-  display: flex;
+  /* display: flex; */
   min-height: 100vh;
 }
 
@@ -315,11 +315,11 @@ input[type="number"] {
   border-color: var(--accent-blue);
   outline: none;
 }
- 
+
 .header-right input {
   cursor: pointer;
 }
- 
+
 .header-right input:focus {
   cursor: text;
 }
@@ -327,7 +327,7 @@ input[type="number"] {
 .header-right input::placeholder {
   opacity: 0;
 }
- 
+
 .header-right input:focus::placeholder {
   opacity: 1;
 }
@@ -494,6 +494,7 @@ input[type="number"] {
 .print-btn svg {
   width: 16px;
   height: 16px;
+  margin-top: 6px;
 }
 
 .pdf-btn {
@@ -1037,6 +1038,7 @@ input[type="number"] {
 .add-entry-btn svg {
   width: 16px;
   height: 16px;
+  margin-top: 4px;
 }
 
 .add-entry-btn span {
@@ -1132,14 +1134,19 @@ input[type="number"] {
   }
 }
 
-/* ===== Responsive ===== */
+/* ===== Tablet (existing) ===== */
 @media (max-width: 1024px) {
   .summary-cards {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 
+/* ===== Tablet / Small Desktop (existing) ===== */
 @media (max-width: 768px) {
+  .header-btn {
+    opacity: 0;
+  }
+
   .sidebar {
     width: var(--sidebar-collapsed);
     padding: 16px 8px;

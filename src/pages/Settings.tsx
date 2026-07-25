@@ -224,6 +224,10 @@ export default function Settings() {
                     padding: 6px 12px;
                     font-size: 13px;
                 }
+
+                .btn svg {
+                    margin-top: 7px;
+                }
                 
                 /* Company Name Editor */
                 .company-name-display {
@@ -481,7 +485,7 @@ export default function Settings() {
 // Simple X icon component since lucide-react X might conflict
 function XIcon() {
     return (
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg style={{marginTop: "7px"}} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="6" x2="6" y2="18" />
             <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
