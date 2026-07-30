@@ -400,7 +400,7 @@ const Invoice: React.FC = () => {
         </div>
 
         {/* Items Table */}
-        <table>
+        <table className="table-responsive">
           <thead>
             <tr>
               <th>DESCRIPTION</th>

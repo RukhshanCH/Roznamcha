@@ -17,10 +17,12 @@ export default function HeaderBar() {
     <header className="header-bar">
       <div className="header-left">
         <button
-          className="header-btn"
+          className="header-btn" data-sidebar-toggle aria-label="Toggle menu"
           type="button"
-          onClick={() => setCollapsed(!collapsed)}
-          aria-label="Toggle sidebar"
+          onClick={() => {
+            setCollapsed(!collapsed)
+            
+          }}
         >
           <Menu />
         </button>

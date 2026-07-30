@@ -62,3 +62,14 @@
     font-weight: 600;
     font-size: 1.2rem;
 }
+
+/* Responsive title adjustments (append to end of file) */
+@media (max-width: 992px) {
+  .page-title { font-size: 1.6rem; }
+  .subtitle { font-size: 1rem; }
+}
+@media (max-width: 480px) {
+  .page-title { font-size: 1.25rem; }
+  .subtitle { font-size: 0.95rem; }
+  .header { justify-content: flex-start; padding: 0 8px; }
+}

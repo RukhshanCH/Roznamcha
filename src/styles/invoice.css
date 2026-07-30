@@ -364,42 +364,230 @@ input[type="number"]::-webkit-inner-spin-button {
 }
 
 @media print {
-  @page {
-    margin: 10mm;
-    size: A4 portrait;
-  }
+    @page {
+        margin: 10mm;
+        size: A4 portrait;
+    }
 
-  .no-print,
-  .actions,
-  .add-row-btn,
-  .delete-btn {
-    display: none !important;
-  }
+    .no-print,
+    .actions,
+    .add-row-btn,
+    .delete-btn {
+        display: none !important;
+    }
 
-  .invoice-container {
-    box-shadow: none !important;
-    border: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    width: 100% !important;
-    background: #fff !important;
-  }
+    .invoice-container {
+        box-shadow: none !important;
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        background: #fff !important;
+    }
 
-  input,
-  select {
-    border: none !important;
-    background: transparent !important;
-    outline: none !important;
-    appearance: none !important;
-    padding: 2px 0 !important;
-    color: #000 !important;
-  }
+    input,
+    select {
+        border: none !important;
+        background: transparent !important;
+        outline: none !important;
+        appearance: none !important;
+        padding: 2px 0 !important;
+        color: #000 !important;
+    }
 
-  tr {
-    page-break-inside: avoid;
-  }
+    tr {
+        page-break-inside: avoid;
+    }
 
-  .summary {
-    page-break-inside: avoid;
-  }
+    .summary {
+        page-break-inside: avoid;
+    }
+}
+
+/* ===== Responsive invoice adjustments (append to end of file) ===== */
+@media (max-width: 1024px) {
+    .invoice-container {
+        max-width: 100%;
+        padding: 24px;
+    }
+
+    .logo {
+        width: 80px;
+        height: 80px;
+    }
+}
+
+@media (max-width: 768px) {
+    .invoice-wrapper {
+        padding: 12px;
+    }
+
+    .invoice-container {
+        padding: 12px;
+        margin: 0 8px;
+        box-shadow: none;
+    }
+
+    /* Reduce logo sizes for mobile */
+    .logo {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+    }
+
+    .header .logo,
+    .header .logo.user {
+        width: 32px;
+        height: 32px;
+        margin-left: 6px;
+    }
+
+    /* Stack addresses vertically */
+    .addresses {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .address-box {
+        border-right: none;
+        border-bottom: 1px solid #eee;
+        padding: 12px 0;
+    }
+
+    .address-box:last-child {
+        border-bottom: none;
+    }
+
+    /* Table: allow horizontal scroll and reduce padding */
+    .table-responsive {
+        display: flex;
+        flex-direction: column;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    th,
+    td {
+        padding: 8px 10px;
+        font-size: 13px;
+    }
+
+    td input,
+    td select {
+        padding: 6px;
+    }
+
+    /* Make measure inputs smaller */
+    .measure-row input {
+        width: 48px;
+    }
+
+    /* Summary: reduce input widths */
+    .summary-row input {
+        width: 90px;
+        font-size: 14px;
+    }
+
+    /* Buttons: stack on narrow screens */
+    .actions {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: stretch;
+    }
+
+    .add-row-btn {
+        width: auto;
+        align-self: flex-start;
+        margin-left: 0;
+    }
+
+    .invoice-container,
+    .invoice-wrapper {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+}
+
+@media (max-width: 994px) {
+    /* ── SCOPED: only affects tables inside invoice ── */
+
+    .invoice-container thead {
+        display: none;
+    }
+
+    .invoice-container table,
+    .invoice-container tbody,
+    .invoice-container tr,
+    .invoice-container td {
+        display: block;
+        width: 100%;
+    }
+
+    .invoice-container tbody tr {
+        margin-bottom: 16px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 16px;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        position: relative;
+    }
+
+    .invoice-container td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        border-bottom: 1px solid #f0f0f0;
+        text-align: right !important;
+    }
+
+    .invoice-container td:last-child {
+        border-bottom: none;
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: auto;
+        padding: 0;
+    }
+
+    /* Labels */
+    .invoice-container td:nth-child(1)::before {
+        content: "Description";
+    }
+
+    .invoice-container td:nth-child(2)::before {
+        content: "Quantity";
+    }
+
+    .invoice-container td:nth-child(3)::before {
+        content: "Unit Price";
+    }
+
+    .invoice-container td:nth-child(4)::before {
+        content: "Measurements";
+    }
+
+    .invoice-container td:nth-child(5)::before {
+        content: "Amount";
+    }
+
+    .invoice-container td::before {
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #666;
+        flex-shrink: 0;
+        margin-right: 12px;
+    }
+
+    .invoice-container .measure-cell {
+        flex-direction: row !important;
+        gap: 12px !important;
+    }
+
+    .invoice-container .measure-row input {
+        width: 50px !important;
+    }
 }

@@ -433,6 +433,7 @@ input[type="number"] {
 
 .page-title-right {
   display: flex;
+  flex-wrap: balance;
   gap: 12px;
   align-items: center;
 }
@@ -1143,17 +1144,15 @@ input[type="number"] {
 
 /* ===== Tablet / Small Desktop (existing) ===== */
 @media (max-width: 768px) {
-  .header-btn {
-    opacity: 0;
-  }
-
   .sidebar {
-    width: var(--sidebar-collapsed);
     padding: 16px 8px;
   }
 
+  .sidebar.collapsed {
+    transform: translateX(100%) !important;
+  }
+
   .sidebar-logo-text,
-  .menu-item-label,
   .sidebar-date-widget {
     display: none;
   }
@@ -1174,5 +1173,116 @@ input[type="number"] {
 
   .table-container {
     overflow-x: auto;
+  }
+}
+
+/* ===== Sidebar & responsive overrides (append to end of file) ===== */
+/* Force sidebar to sit at the viewport edge and remove accidental centering/transforms */
+.sidebar {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  left: auto !important;
+  height: 100vh !important;
+  transform: none !important;
+  z-index: 1000 !important;
+  overflow: visible !important;
+  transition: transform .28s ease, width .3s ease;
+}
+
+/* Direction-aware placement */
+[dir="rtl"] .sidebar {
+  right: 0;
+  left: auto;
+}
+
+[dir="ltr"] .sidebar {
+  left: 0;
+  right: auto;
+}
+
+/* Off-canvas states for mobile */
+.sidebar.closed {
+  transform: translateX(100%) !important;
+}
+
+[dir="ltr"] .sidebar.closed {
+  transform: translateX(-100%) !important;
+}
+
+.sidebar.open {
+  transform: translateX(0) !important;
+}
+
+/* Backdrop used on small screens when sidebar is open */
+.sidebar-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 90;
+  display: none;
+}
+
+.sidebar-backdrop.visible {
+  display: block;
+}
+
+/* Small-screen layout adjustments */
+@media (max-width: 768px) {
+  .main-content {
+    margin-right: 0 !important;
+  }
+
+  /* let content use full width */
+  /* [dir="rtl"] .sidebar { width: 85%; max-width: 320px; }
+  [dir="ltr"] .sidebar { width: 85%; max-width: 320px; } */
+  .tooltip {
+    display: none !important;
+  }
+
+  /* hide hover tooltips on mobile */
+  .header-btn {
+    opacity: 1;
+  }
+
+  /* ensure toggle button visible */
+}
+
+/* Prevent accidental transform inheritance on children */
+.sidebar * {
+  transform: none !important;
+}
+
+/* Responsive card grid fallback */
+.summary-cards {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+/* Utility to prevent body scroll when sidebar is open */
+html.no-scroll,
+body.no-scroll {
+  overflow: hidden !important;
+}
+
+/* Ensure header toggle stays above the sidebar on small screens */
+@media (max-width: 768px) {
+
+  /* Put header above the sidebar so the toggle remains clickable */
+  .header-bar {
+    z-index: 1102;
+    /* greater than .sidebar (1000) */
+    position: sticky;
+    /* keeps header behavior */
+    top: 0;
+  }
+
+  /* Sidebar stays slightly below header */
+  .sidebar {
+    z-index: 1100;
+  }
+
+  /* Backdrop should be below the sidebar but above content */
+  .sidebar-backdrop {
+    z-index: 1090;
   }
 }

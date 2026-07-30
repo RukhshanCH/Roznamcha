@@ -175,7 +175,7 @@ export default function CustomersPage() {
   };
 
   return (
-    <div style={{ padding: '40px', textAlign: 'center' }}>
+    <div style={{ textAlign: 'center' }}>
 
       <Modal
         title="کیا آپ واقعی اس اندراج کو حذف کرنا چاہتے ہیں؟"
