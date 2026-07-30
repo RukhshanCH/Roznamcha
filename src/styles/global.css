@@ -973,9 +973,6 @@ input[type="number"] {
 /* TOOLTIP */
 
 .tooltip {
-  position: absolute;
-  right: 60px;
-  top: -30px;
   background: rgba(20, 20, 20, 0.92);
   color: white;
   padding: 8px 14px;
@@ -998,6 +995,7 @@ input[type="number"] {
 }
 
 .pdf-btn .tooltip {
+  position: absolute;
   top: 0;
   right: 50%;
   transform: translateX(50%);
@@ -1206,6 +1204,10 @@ input[type="number"] {
   transform: translateX(100%) !important;
 }
 
+.sidebar.open {
+  transform: translateX(0) !important;
+}
+
 [dir="ltr"] .sidebar.closed {
   transform: translateX(-100%) !important;
 }
@@ -1233,14 +1235,10 @@ input[type="number"] {
     margin-right: 0 !important;
   }
 
-  /* let content use full width */
-  /* [dir="rtl"] .sidebar { width: 85%; max-width: 320px; }
-  [dir="ltr"] .sidebar { width: 85%; max-width: 320px; } */
   .tooltip {
     display: none !important;
   }
 
-  /* hide hover tooltips on mobile */
   .header-btn {
     opacity: 1;
   }
