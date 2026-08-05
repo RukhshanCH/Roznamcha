@@ -392,9 +392,25 @@ input[type="number"] {
 }
 
 .user-name {
+  display: inline-block;
   font-family: var(--font-primary);
   font-size: 1.2rem;
   color: var(--text-primary);
+  max-width: 200px;
+  opacity: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  transition:
+    max-width 0.3s ease,
+    opacity 0.3s ease,
+    margin 0.3s ease;
+}
+
+.user-name.user-hide {
+  max-width: 0;
+  opacity: 0;
+  margin-left: 0;
+  margin-right: 0;
 }
 
 .user-chevron {

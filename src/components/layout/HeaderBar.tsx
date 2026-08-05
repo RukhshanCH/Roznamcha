@@ -3,26 +3,35 @@ import { Menu, Search, User } from 'lucide-react';
 import { sidebarCollapsedAtom, searchAtom } from '@/store/atoms';
 import { useSetting } from '@/hooks/useSetting';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 
 export default function HeaderBar() {
-  const [collapsed, setCollapsed] = useAtom(sidebarCollapsedAtom);
+  const [, setCollapsed] = useAtom(sidebarCollapsedAtom);
   const [search, setSearch] = useAtom(searchAtom);
+  const [isFocus, setIsFocus] = useState(false);
 
   const [companyName] = useSetting(
     "companyName",
     "Company Name"
   );
   const [profilePic] = useSetting<string | null>("profilePic", null);
+
+  const handleClick = () => {
+    const search = document.getElementById("search");
+
+    if (search) {
+      search.focus();
+      setIsFocus(true);
+    }
+  };
+
   return (
     <header className="header-bar">
       <div className="header-left">
         <button
           className="header-btn" data-sidebar-toggle aria-label="Toggle menu"
           type="button"
-          onClick={() => {
-            setCollapsed(!collapsed)
-            
-          }}
+          onClick={() => setCollapsed(prev => !prev)}
         >
           <Menu />
         </button>
@@ -41,12 +50,12 @@ export default function HeaderBar() {
                 <User className='logo user' />
               )
             }
-            <span className="user-name">{companyName}</span>
+            <span id="user-name" className={`user-name ${isFocus ? 'user-hide' : ''}`}>{companyName}</span>
           </Link>
         </div>
         <div style={{ position: "relative" }}>
           <label htmlFor='search'> <Search className='search-icon' /> </label>
-          <input id="search" className="header-btn search-bar" aria-label="Search" type="text" placeholder="اندراجات تلاش کریں" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input onClick={handleClick} onFocus={() => setIsFocus(true)} onBlur={() => setIsFocus(false)} id="search" className="header-btn search-bar" aria-label="Search" type="text" placeholder="اندراجات تلاش کریں" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
     </header>

@@ -31,25 +31,16 @@ export default function Sidebar() {
   const navigate = useNavigate();
   const sidebarRef = useRef<HTMLElement | null>(null);
 
-  /* ── Keep inert perfectly in sync with closed/open classes ── */
   useEffect(() => {
     const el = sidebarRef.current;
     if (!el) return;
 
-    const syncInert = () => {
-      if (el.classList.contains('closed')) {
-        el.setAttribute('inert', 'true');
-      } else {
-        el.removeAttribute('inert');
-      }
-    };
-
-    syncInert(); // initial
-
-    const observer = new MutationObserver(() => syncInert());
-    observer.observe(el, { attributes: true, attributeFilter: ['class'] });
-    return () => observer.disconnect();
-  }, []);
+    if (collapsed) {
+      el.setAttribute("inert", "true");
+    } else {
+      el.removeAttribute("inert");
+    }
+  }, [collapsed]);
 
   /* ── Desktop resize handling (unchanged logic, cleaned up) ── */
   useEffect(() => {
@@ -63,11 +54,6 @@ export default function Sidebar() {
         el.removeAttribute('inert');
       }
     };
-
-    if (window.innerWidth <= 768) {
-      el.classList.add('closed');
-      el.setAttribute('inert', 'true');
-    }
 
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
