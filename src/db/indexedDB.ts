@@ -1386,19 +1386,37 @@ export async function importBackup(
 
 export async function checkWeeklyBackup() {
   const lastBackup = localStorage.getItem("lastBackup");
+  const firstSeen = localStorage.getItem("backupFirstVisitSeen");
 
   const WEEK = 7 * 24 * 60 * 60 * 1000;
 
-  if (
-    !lastBackup ||
-    Date.now() - Number(lastBackup) >= WEEK
-  ) {
-    await exportWeeklyData();
+  // If this is the user's first visit, mark it and do not trigger or prompt a backup.
+  if (!firstSeen) {
+    localStorage.setItem("backupFirstVisitSeen", Date.now().toString());
+    return;
+  }
 
-    localStorage.setItem(
-      "lastBackup",
-      Date.now().toString()
-    );
+  if (!lastBackup || Date.now() - Number(lastBackup) >= WEEK) {
+    // Ask user before downloading. If they accept, perform the export and record the time.
+    // If they decline, record the time anyway to avoid prompting on every visit for the next week.
+    let userConfirmed = false;
+
+    try {
+      userConfirmed = window.confirm(
+        "Would you like to download a weekly backup of your Roznamcha data now? (Recommended)"
+      );
+    } catch (err) {
+      // In non-browser environments or if confirm is not available, default to not downloading automatically.
+      userConfirmed = false;
+    }
+
+    if (userConfirmed) {
+      await exportWeeklyData();
+      localStorage.setItem("lastBackup", Date.now().toString());
+    } else {
+      // Record that user was asked and declined so we don't prompt on every visit; wait another week before asking again.
+      localStorage.setItem("lastBackup", Date.now().toString());
+    }
   }
 }
 
