@@ -5,10 +5,10 @@ import { useAtom } from "jotai";
 import { sidebarCollapsedAtom } from "@/store/atoms";
 import Sidebar from "./Sidebar";
 import HeaderBar from "./HeaderBar";
-import Loader from "../ui/loader";
 
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
+import LoadingScreen from "../ui/LoadingScreen";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -29,7 +29,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   if (loading) {
     return (
       <AnimatePresence>
-        <Loader />
+        <LoadingScreen />
       </AnimatePresence>
     );
   }
