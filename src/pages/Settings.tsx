@@ -73,7 +73,6 @@ export default function Settings() {
                 .settings-container {
                     max-width: 800px;
                     margin: 0 auto;
-                    padding: 24px;
                     font-family: system-ui, -apple-system, sans-serif;
                 }
                 .settings-header {
@@ -269,7 +268,6 @@ export default function Settings() {
                     border: 1px solid #d1d5db;
                     border-radius: 8px;
                     font-size: 16px;
-                    width: 300px;
                     outline: none;
                     transition: border-color 0.2s, box-shadow 0.2s;
                 }

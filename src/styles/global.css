@@ -1156,6 +1156,10 @@ input[type="number"] {
     display: none;
   }
 
+  .search-bar:focus {
+    width: 170px;
+  }
+
   .main-content {
     margin-right: var(--sidebar-collapsed);
   }
