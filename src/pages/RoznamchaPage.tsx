@@ -1,17 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
 import { CalendarDays, Printer, Plus, FileDown, Share2, Files, Loader2 } from 'lucide-react';
 import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
-import EntryFormModal from '@/components/ui/EntryFormModal';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom, showAllAtom, remainingPlusAtom, alertAtom, alertMessageAtom, alertTypeAtom } from '@/store/atoms';
-import PrintableRoznamcha from '@/components/ui/PrintableRoznamcha';
 import Modal from '@/components/ui/Modal';
 import { deleteEntry, getAllEntries, getEntriesByDate, renumberEntries } from '@/db/indexedDB';
 import { useSetting } from "@/hooks/useSetting";
-import { urduFontBase64 } from "@/fonts/urduFonts";
+import { urduFontPath } from "@/fonts/urduFonts";
 import type { JournalEntry } from '@/types';
+
+const EntryFormModal = lazy(() => import('@/components/ui/EntryFormModal'));
+const PrintableRoznamcha = lazy(() => import('@/components/ui/PrintableRoznamcha'));
 
 export default function RoznamchaPage() {
   const [entries, setEntries] = useAtom(entriesAtom);
@@ -43,7 +44,7 @@ export default function RoznamchaPage() {
     style.textContent = `
       @font-face {
         font-family: 'UrduPrintFont';
-        src: url(data:font/truetype;charset=utf-8;base64,${urduFontBase64}) format('truetype');
+        src: url('${urduFontPath}') format('truetype');
         font-weight: normal;
         font-style: normal;
       }
@@ -185,7 +186,7 @@ export default function RoznamchaPage() {
       fontEmbedCSS: `
         @font-face {
           font-family: 'UrduPrintFont';
-          src: url(data:font/truetype;charset=utf-8;base64,${urduFontBase64}) format('truetype');
+          src: url('${urduFontPath}') format('truetype');
         }
       `,
     });
@@ -390,13 +391,15 @@ export default function RoznamchaPage() {
             margin: "0 auto",
           }}
         >
-          <PrintableRoznamcha
-            companyName={companyName}
-            selectedDate={selectedDate}
-            summary={summary}
-            transactions={filteredTransactions}
-            expenses={filteredTransactionsEx}
-          />
+          <Suspense fallback={null}>
+            <PrintableRoznamcha
+              companyName={companyName}
+              selectedDate={selectedDate}
+              summary={summary}
+              transactions={filteredTransactions}
+              expenses={filteredTransactionsEx}
+            />
+          </Suspense>
         </div>
       </div>
 
@@ -456,7 +459,9 @@ export default function RoznamchaPage() {
         </div>
 
         <TransactionTable transactions={filteredTransactions} pageName={"روزنامچہ"} isRemaining={false} />
-        <EntryFormModal isRemaining={false} />
+        <Suspense fallback={null}>
+          <EntryFormModal isRemaining={false} />
+        </Suspense>
       </div>
     </div>
   );
