@@ -42,6 +42,22 @@ export default function Sidebar() {
     }
   }, [collapsed]);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(max-width: 767px)");
+
+    const updateSidebar = () => {
+      setCollapsed(mediaQuery.matches);
+    };
+
+    updateSidebar();
+
+    mediaQuery.addEventListener("change", updateSidebar);
+
+    return () => {
+      mediaQuery.removeEventListener("change", updateSidebar);
+    };
+  }, [setCollapsed]);
+
   /* ── Desktop resize handling (unchanged logic, cleaned up) ── */
   useEffect(() => {
     if (typeof window === 'undefined') return;
