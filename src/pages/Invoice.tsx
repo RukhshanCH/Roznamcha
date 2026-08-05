@@ -4,8 +4,6 @@ import {
   initDB,
   saveInvoiceCounter,
 } from "@/db/indexedDB";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import { useSetting } from "@/hooks/useSetting";
 import { User } from "lucide-react";
 
@@ -291,6 +289,11 @@ const Invoice: React.FC = () => {
       // 5. Wait for layout
       await document.fonts.ready;
       await new Promise<void>((r) => setTimeout(r, 150));
+
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
 
       // 6. Capture
       const canvas = await html2canvas(clone, {

@@ -6,8 +6,6 @@ import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import EntryFormModal from '@/components/ui/EntryFormModal';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom, showAllAtom, remainingPlusAtom, alertAtom, alertMessageAtom, alertTypeAtom } from '@/store/atoms';
-import jsPDF from "jspdf";
-import * as htmlToImage from 'html-to-image';
 import PrintableRoznamcha from '@/components/ui/PrintableRoznamcha';
 import Modal from '@/components/ui/Modal';
 import { deleteEntry, getAllEntries, getEntriesByDate, renumberEntries } from '@/db/indexedDB';
@@ -174,6 +172,9 @@ export default function RoznamchaPage() {
     await new Promise((r) => setTimeout(r, 300));
 
     const element = printRef.current;
+
+    const htmlToImage = await import('html-to-image');
+    const { default: jsPDF } = await import('jspdf');
 
     const dataUrl = await htmlToImage.toPng(element, {
       pixelRatio: 3,

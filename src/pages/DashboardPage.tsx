@@ -2,27 +2,6 @@ import { useEffect, useState } from "react";
 import { getWeeklyStats } from "@/db/indexedDB";
 import "../styles/dashboard.css";
 
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-} from "chart.js";
-
-import { Bar } from "react-chartjs-2";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend
-);
-
 type Stat = {
   date: string;
   count: number;
@@ -30,9 +9,28 @@ type Stat = {
 
 export default function DashboardPage() {
   const [data, setData] = useState<Stat[]>([]);
+  const [BarComponent, setBarComponent] = useState<any>(null);
 
   useEffect(() => {
     getWeeklyStats().then(setData);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadChart = async () => {
+      await import("chart.js/auto");
+      const { Bar } = await import("react-chartjs-2");
+      if (!cancelled) {
+        setBarComponent(() => Bar);
+      }
+    };
+
+    void loadChart();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const total = data.reduce((sum, d) => sum + d.count, 0);
@@ -160,7 +158,13 @@ export default function DashboardPage() {
             color: "#000"
           }}
         >
-          <Bar data={chartData} options={options} />
+          {BarComponent ? (
+            <BarComponent data={chartData} options={options} />
+          ) : (
+            <div style={{ padding: "2rem", color: "#4b5563" }}>
+              بار چارٹ لوڈ ہو رہا ہے...
+            </div>
+          )}
         </div>
       </div>
     </div>

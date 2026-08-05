@@ -5,8 +5,6 @@ import TransactionTableCs from "@/components/ui/TransactionTableCs";
 import EntryFormModalCs from "@/components/ui/EntryFormModalCs";
 import { useEffect, useRef } from "react";
 import { deleteEntryCs, getCustomers, renumberEntriesCs } from "@/db/indexedDB";
-import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
 import Modal from "@/components/ui/Modal";
 
 export default function CustomersPage() {
@@ -47,6 +45,11 @@ export default function CustomersPage() {
     if (!pdfRef.current) return;
 
     try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
       const canvas = await html2canvas(pdfRef.current, {
         scale: window.devicePixelRatio > 1 ? 2 : 1,
         useCORS: true,
@@ -94,6 +97,11 @@ export default function CustomersPage() {
     if (!pdfRef.current) return;
 
     try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
       const canvas = await html2canvas(pdfRef.current, {
         scale: window.devicePixelRatio > 1 ? 2 : 1,
         useCORS: true,

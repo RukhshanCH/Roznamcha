@@ -6,8 +6,6 @@ import TransactionTablePy from "@/components/ui/TransactionTablePy";
 import EntryFormModalPy from "@/components/ui/EntryFormModalPy";
 import { useCallback, useEffect, useRef } from "react";
 import { deleteEntryPy, getEntriesByDatePy, getPayments, renumberEntriesPy } from "@/db/indexedDB";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import Modal from "@/components/ui/Modal";
 
 export default function PaymentsPage() {
@@ -79,6 +77,11 @@ export default function PaymentsPage() {
   const downloadPDF = async () => {
     if (!pdfRef.current) return;
 
+    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+      import("html2canvas"),
+      import("jspdf"),
+    ]);
+
     const canvas = await html2canvas(pdfRef.current, {
       scale: window.devicePixelRatio > 1 ? 2 : 1,
       useCORS: true,
@@ -113,6 +116,11 @@ export default function PaymentsPage() {
 
   const handleSharePDF = async () => {
     if (!pdfRef.current) return;
+
+    const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+      import("html2canvas"),
+      import("jspdf"),
+    ]);
 
     const canvas = await html2canvas(pdfRef.current, {
       scale: window.devicePixelRatio > 1 ? 2 : 1,

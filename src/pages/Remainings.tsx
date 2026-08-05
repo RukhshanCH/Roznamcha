@@ -5,8 +5,6 @@ import { Printer, FileDown, Share2 } from 'lucide-react';
 import TransactionTable from '@/components/ui/TransactionTable';
 import { alertAtom, alertMessageAtom, alertTypeAtom, editingEntryAtom, entriesAtom, searchAtom, selectedDateAtom } from '@/store/atoms';
 import { deleteEntry, getAllEntries, renumberEntries } from '@/db/indexedDB';
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import EntryFormModal from '@/components/ui/EntryFormModal';
 import Modal from '@/components/ui/Modal';
 
@@ -46,6 +44,11 @@ export default function Remainings() {
         if (!pdfRef.current) return;
 
         try {
+            const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+                import("html2canvas"),
+                import("jspdf"),
+            ]);
+
             const canvas = await html2canvas(pdfRef.current, {
                 scale: window.devicePixelRatio > 1 ? 2 : 1,
                 useCORS: true,
@@ -93,6 +96,11 @@ export default function Remainings() {
         if (!pdfRef.current) return;
 
         try {
+            const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+                import("html2canvas"),
+                import("jspdf"),
+            ]);
+
             const canvas = await html2canvas(pdfRef.current, {
                 scale: window.devicePixelRatio > 1 ? 2 : 1,
                 useCORS: true,

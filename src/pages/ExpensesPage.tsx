@@ -6,8 +6,6 @@ import TransactionTableEx from "@/components/ui/TransactionTableEx";
 import EntryFormModalEx from "@/components/ui/EntryFormModalEx";
 import { useCallback, useEffect, useRef } from "react";
 import { deleteEntryEx, getEntriesByDateEx, getExpenses, renumberEntriesEx } from "@/db/indexedDB";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 import Modal from "@/components/ui/Modal";
 
 export default function ExpensesPage() {
@@ -78,6 +76,11 @@ export default function ExpensesPage() {
     if (!pdfRef.current) return;
 
     try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
       const canvas = await html2canvas(pdfRef.current, {
         scale: window.devicePixelRatio > 1 ? 2 : 1,
         useCORS: true,
@@ -124,6 +127,11 @@ export default function ExpensesPage() {
     if (!pdfRef.current) return;
 
     try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
       const canvas = await html2canvas(pdfRef.current, {
         scale: window.devicePixelRatio > 1 ? 2 : 1,
         useCORS: true,
