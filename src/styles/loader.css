@@ -1,0 +1,142 @@
+.loading-screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    background: #06101d;
+}
+
+.glass-card {
+    position: relative;
+    z-index: 5;
+
+    width: 340px;
+
+    padding: 45px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+
+    border-radius: 30px;
+
+    backdrop-filter: blur(18px);
+
+    background: rgba(255, 255, 255, .06);
+
+    border: 1px solid rgba(255, 255, 255, .12);
+
+    box-shadow:
+        0 30px 60px rgba(0, 0, 0, .35);
+}
+
+.loading-logo {
+    width: 120px;
+    height: 120px;
+
+    border-radius: 24px;
+
+    object-fit: cover;
+
+    box-shadow:
+        0 0 35px rgba(59, 130, 246, .35);
+}
+
+.glass-card h2 {
+
+    margin: 22px 0 30px;
+
+    color: white;
+
+    font-size: 30px;
+    letter-spacing: .08em;
+}
+
+.progress {
+
+    width: 100%;
+    height: 8px;
+
+    border-radius: 999px;
+
+    overflow: hidden;
+
+    background: #223349;
+}
+
+.progress-fill {
+
+    height: 100%;
+    width: 0;
+
+    border-radius: 999px;
+
+    background: linear-gradient(90deg,
+            #2563eb,
+            #3b82f6,
+            #60a5fa);
+}
+
+.glass-card span {
+
+    margin-top: 18px;
+
+    color: #9ca3af;
+
+    font-size: 14px;
+}
+
+.bg-orb {
+
+    position: absolute;
+
+    border-radius: 50%;
+
+    filter: blur(90px);
+
+    animation: float 12s ease-in-out infinite;
+}
+
+.orb1 {
+
+    width: 350px;
+    height: 350px;
+
+    left: -120px;
+    top: -120px;
+
+    background: #2563eb55;
+}
+
+.orb2 {
+
+    width: 300px;
+    height: 300px;
+
+    right: -80px;
+    bottom: -80px;
+
+    background: #06b6d455;
+}
+
+@keyframes float {
+
+    50% {
+        transform: translateY(-40px) scale(1.15);
+    }
+
+}
+
+.particle {
+
+    position: absolute;
+
+    width: 4px;
+    height: 4px;
+
+    border-radius: 50%;
+
+    background: white;
+}

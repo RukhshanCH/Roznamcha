@@ -2,6 +2,7 @@
 @import './backup.css';
 @import './invoice.css';
 @import './title.css';
+@import './loader.css';
 
 /* ===== CSS Variables (Design Tokens) ===== */
 :root {

@@ -1,7 +1,14 @@
-import { useAtom } from 'jotai';
-import { sidebarCollapsedAtom } from '@/store/atoms';
-import Sidebar from './Sidebar';
-import HeaderBar from './HeaderBar';
+import { useEffect, useState } from "react";
+import { AnimatePresence } from "framer-motion";
+import { useAtom } from "jotai";
+
+import { sidebarCollapsedAtom } from "@/store/atoms";
+import Sidebar from "./Sidebar";
+import HeaderBar from "./HeaderBar";
+import Loader from "../ui/loader";
+
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/react";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -9,11 +16,31 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [collapsed] = useAtom(sidebarCollapsedAtom);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) {
+    return (
+      <AnimatePresence>
+        <Loader />
+      </AnimatePresence>
+    );
+  }
 
   return (
     <div className="app-layout">
       <Sidebar />
-      <div className={`main-content ${collapsed ? 'sidebar-collapsed' : ''}`}>
+      <Analytics />
+      <SpeedInsights />
+
+      <div className={`main-content ${collapsed ? "sidebar-collapsed" : ""}`}>
         <HeaderBar />
         <div className="content-area">{children}</div>
       </div>
