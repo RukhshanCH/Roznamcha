@@ -11,7 +11,7 @@ import Trash from './pages/Trash'
 import Settings from './pages/Settings'
 import AlertItem from './components/ui/AlertItem'
 import { useEffect, useState } from 'react'
-import { checkWeeklyBackup, getAllEntries, getEntriesByDateEx, initDB, updateEntry } from './db/indexedDB'
+import { checkWeeklyBackup, emptyTrash, emptyTrashCs, emptyTrashEx, emptyTrashPy, getAllEntries, getEntriesByDateEx, initDB, updateEntry } from './db/indexedDB'
 import { alertMessageAtom, alertTypeAtom, expensesAtom, selectedDateAtom } from './store/atoms'
 import { useAtom, useAtomValue } from 'jotai'
 
@@ -27,6 +27,10 @@ export default function App() {
     async function setup() {
       try {
         await initDB();
+        await emptyTrash();
+        await emptyTrashCs();
+        await emptyTrashEx();
+        await emptyTrashPy();
         setDbReady(true);
         const entries = await getAllEntries();
 
