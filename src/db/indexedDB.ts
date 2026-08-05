@@ -369,6 +369,29 @@ export async function getEntriesByDate(date: string): Promise<JournalEntry[]> {
   });
 }
 
+export async function getEntriesByDateRange(startDate: string, endDate: string): Promise<JournalEntry[]> {
+  const database = await initDB();
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction([STORE_NAME], 'readonly');
+    const store = transaction.objectStore(STORE_NAME);
+    const index = store.index('date');
+    const range = IDBKeyRange.bound(startDate, endDate);
+    const request = index.getAll(range);
+
+    request.onsuccess = () => {
+      const entries = (request.result as JournalEntry[])
+        .filter(entry => !entry.isDeleted)
+        .sort((a, b) => {
+          if (a.date === b.date) return a.serialNo - b.serialNo;
+          return a.date.localeCompare(b.date);
+        });
+
+      resolve(entries);
+    };
+    request.onerror = () => reject(request.error);
+  });
+}
+
 export async function getCustomers(): Promise<CustomerEntry[]> {
   const db = await initDB();
 
