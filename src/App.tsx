@@ -1,19 +1,20 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from '@/components/layout/AppLayout'
-import RoznamchaPage from '@/pages/RoznamchaPage'
-import DashboardPage from '@/pages/DashboardPage'
-import CustomersPage from '@/pages/CustomersPage'
-import ExpensesPage from '@/pages/ExpensesPage'
-import BackupPage from '@/pages/BackupPage'
-import Remainings from './pages/Remainings'
-import Invoice from './pages/Invoice'
-import Trash from './pages/Trash'
-import Settings from './pages/Settings'
 import AlertItem from './components/ui/AlertItem'
-import { useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect, useState } from 'react'
 import { checkWeeklyBackup, emptyTrash, emptyTrashCs, emptyTrashEx, emptyTrashPy, getAllEntries, getEntriesByDateEx, initDB, updateEntry } from './db/indexedDB'
 import { alertMessageAtom, alertTypeAtom, expensesAtom, selectedDateAtom } from './store/atoms'
 import { useAtom, useAtomValue } from 'jotai'
+
+const RoznamchaPage = lazy(() => import('@/pages/RoznamchaPage'))
+const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
+const CustomersPage = lazy(() => import('@/pages/CustomersPage'))
+const ExpensesPage = lazy(() => import('@/pages/ExpensesPage'))
+const BackupPage = lazy(() => import('@/pages/BackupPage'))
+const Remainings = lazy(() => import('./pages/Remainings'))
+const Invoice = lazy(() => import('./pages/Invoice'))
+const Trash = lazy(() => import('./pages/Trash'))
+const Settings = lazy(() => import('./pages/Settings'))
 
 export default function App() {
   const [, setExpenses] = useAtom(expensesAtom);
@@ -68,18 +69,20 @@ export default function App() {
 
       <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/roznamcha" element={<RoznamchaPage />} />
-        <Route path="/invoice" element={<Invoice />} />
-        <Route path="/expenses" element={<ExpensesPage />} />
-        <Route path="/customers" element={<CustomersPage />} />
-        <Route path="/recycle" element={<Trash />} />
-        <Route path="/remainings" element={<Remainings />} />
-        <Route path="/backup" element={<BackupPage />} />
-        <Route path="/settings" element={<Settings />} />
-      </Routes>
+      <Suspense fallback={<div className="min-h-screen bg-background text-foreground">Loading...</div>}>
+        <Routes>
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/roznamcha" element={<RoznamchaPage />} />
+          <Route path="/invoice" element={<Invoice />} />
+          <Route path="/expenses" element={<ExpensesPage />} />
+          <Route path="/customers" element={<CustomersPage />} />
+          <Route path="/recycle" element={<Trash />} />
+          <Route path="/remainings" element={<Remainings />} />
+          <Route path="/backup" element={<BackupPage />} />
+          <Route path="/settings" element={<Settings />} />
+        </Routes>
+      </Suspense>
     </AppLayout>
   )
 }
