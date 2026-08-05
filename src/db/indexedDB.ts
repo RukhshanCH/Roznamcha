@@ -16,8 +16,15 @@ export async function initDB(): Promise<IDBDatabase> {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
 
     request.onerror = () => reject(request.error);
+    request.onblocked = () => {
+      console.warn('IndexedDB open request blocked. Close other tabs to upgrade the database.');
+    };
     request.onsuccess = () => {
       db = request.result;
+      db.onversionchange = () => {
+        db?.close();
+        console.warn('IndexedDB version change detected; the database connection was closed. Reload the page to reconnect.');
+      };
       resolve(db);
     };
 
@@ -389,14 +396,15 @@ export async function getEntriesByDateCs(date: string): Promise<CustomerEntry[]>
   return new Promise((resolve, reject) => {
     const tx = database.transaction(CUSTOMER_STORE_NAME, "readonly");
     const store = tx.objectStore(CUSTOMER_STORE_NAME);
+    const index = store.index('date');
 
-    const request = store.getAll();
+    const request = index.getAll(date);
 
     request.onsuccess = () => {
       const entries = request.result as CustomerEntry[];
 
       const filtered = entries
-        .filter(e => e.date === date && !e.isDeleted)
+        .filter(e => !e.isDeleted)
         .sort((a, b) => a.serialNo - b.serialNo);
 
       resolve(filtered);
@@ -433,14 +441,15 @@ export async function getEntriesByDateEx(date: string): Promise<ExpensesEntry[]>
   return new Promise((resolve, reject) => {
     const tx = database.transaction(EXPENSES_STORE_NAME, "readonly");
     const store = tx.objectStore(EXPENSES_STORE_NAME);
+    const index = store.index('date');
 
-    const request = store.getAll();
+    const request = index.getAll(date);
 
     request.onsuccess = () => {
       const entries = request.result as ExpensesEntry[];
 
       const filtered = entries
-        .filter(e => e.date === date && !e.isDeleted)
+        .filter(e => !e.isDeleted)
         .sort((a, b) => a.serialNo - b.serialNo);
 
       resolve(filtered);
@@ -477,14 +486,15 @@ export async function getEntriesByDatePy(date: string): Promise<PaymentsEntry[]>
   return new Promise((resolve, reject) => {
     const tx = database.transaction(PAYMENTS_STORE_NAME, "readonly");
     const store = tx.objectStore(PAYMENTS_STORE_NAME);
+    const index = store.index('date');
 
-    const request = store.getAll();
+    const request = index.getAll(date);
 
     request.onsuccess = () => {
       const entries = request.result as PaymentsEntry[];
 
       const filtered = entries
-        .filter(e => e.date === date && !e.isDeleted)
+        .filter(e => !e.isDeleted)
         .sort((a, b) => a.serialNo - b.serialNo);
 
       resolve(filtered);
