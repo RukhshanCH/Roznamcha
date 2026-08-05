@@ -879,7 +879,7 @@ export async function emptyTrash(): Promise<void> {
 }
 
 export async function emptyTrashCs(): Promise<void> {
-  const trashItems = await getTrashEntries();
+  const trashItems = await getTrashEntriesCs();
 
   const db = await initDB();
 
@@ -906,7 +906,7 @@ export async function emptyTrashCs(): Promise<void> {
 }
 
 export async function emptyTrashEx(): Promise<void> {
-  const trashItems = await getTrashEntries();
+  const trashItems = await getTrashEntriesEx();
 
   const db = await initDB();
 
@@ -933,7 +933,7 @@ export async function emptyTrashEx(): Promise<void> {
 }
 
 export async function emptyTrashPy(): Promise<void> {
-  const trashItems = await getTrashEntries();
+  const trashItems = await getTrashEntriesPy();
 
   const db = await initDB();
 
@@ -1440,9 +1440,10 @@ export async function getWeeklyStats() {
   return stats;
 }
 
-export function getInvoiceCounter(): Promise<any> {
+export async function getInvoiceCounter(): Promise<any> {
+  const database = await initDB();
   return new Promise((resolve, reject) => {
-    const transaction = db!.transaction("settings", "readonly");
+    const transaction = database.transaction("settings", "readonly");
     const store = transaction.objectStore("settings");
 
     const request = store.get("invoiceCounter");
@@ -1455,22 +1456,23 @@ export function getInvoiceCounter(): Promise<any> {
   });
 }
 
-export function saveInvoiceCounter(
+export async function saveInvoiceCounter(
   date: string,
   sequence: number
 ): Promise<void> {
+  const database = await initDB();
   return new Promise((resolve, reject) => {
-    const transaction = db!.transaction("settings", "readwrite");
+    const transaction = database.transaction("settings", "readwrite");
     const store = transaction.objectStore("settings");
 
-    store.put({
+    const request = store.put({
       key: "invoiceCounter",
       date,
       sequence,
     });
 
-    transaction.oncomplete = () => resolve();
-    transaction.onerror = () => reject(transaction.error);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
   });
 }
 
@@ -1485,8 +1487,11 @@ export async function generateInvoiceNumber() {
   let sequence = 1;
 
   if (counter && counter.date === today) {
-    sequence = counter.sequence + 1;
+    sequence = (counter.sequence || 0) + 1;
   }
+
+  // Persist the new sequence to avoid duplicates on subsequent calls
+  await saveInvoiceCounter(today, sequence);
 
   return {
     invoiceNo: `INV-${today}-${String(sequence).padStart(3, "0")}`,
