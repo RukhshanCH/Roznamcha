@@ -308,7 +308,7 @@ input[type="number"] {
   font-family: var(--font-ui);
   font-size: 0.875rem;
   color: var(--text-primary);
-  transition: all 150ms ease;
+  transition: all .3s ease;
 }
 
 .search-bar:focus {
