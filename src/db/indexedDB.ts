@@ -355,12 +355,20 @@ export async function getEntriesByDate(date: string): Promise<JournalEntry[]> {
   return new Promise((resolve, reject) => {
     const transaction = database.transaction([STORE_NAME], 'readonly');
     const store = transaction.objectStore(STORE_NAME);
-    const index = store.index('date');
-    const request = index.getAll(date);
+
+    // Use index if present, otherwise fallback to scanning all records
+    let request: IDBRequest;
+    if ((store.indexNames && (store.indexNames as any).contains && (store.indexNames as any).contains('date')) || (store.indexNames && (store.indexNames as any).length && Array.from(store.indexNames as any).includes('date'))) {
+      const index = store.index('date');
+      request = index.getAll(date);
+    } else {
+      request = store.getAll();
+    }
 
     request.onsuccess = () => {
-      const entries = (request.result as JournalEntry[])
-        .filter(entry => !entry.isDeleted)
+      const all = request.result as JournalEntry[];
+      const entries = (all.filter(entry => !entry.isDeleted) as JournalEntry[])
+        .filter(e => e.date === date)
         .sort((a, b) => a.serialNo - b.serialNo);
 
       resolve(entries);
@@ -374,13 +382,20 @@ export async function getEntriesByDateRange(startDate: string, endDate: string):
   return new Promise((resolve, reject) => {
     const transaction = database.transaction([STORE_NAME], 'readonly');
     const store = transaction.objectStore(STORE_NAME);
-    const index = store.index('date');
-    const range = IDBKeyRange.bound(startDate, endDate);
-    const request = index.getAll(range);
+
+    let request: IDBRequest;
+    if ((store.indexNames && (store.indexNames as any).contains && (store.indexNames as any).contains('date')) || (store.indexNames && (store.indexNames as any).length && Array.from(store.indexNames as any).includes('date'))) {
+      const index = store.index('date');
+      const range = IDBKeyRange.bound(startDate, endDate);
+      request = index.getAll(range);
+    } else {
+      request = store.getAll();
+    }
 
     request.onsuccess = () => {
-      const entries = (request.result as JournalEntry[])
-        .filter(entry => !entry.isDeleted)
+      const all = request.result as JournalEntry[];
+      const entries = (all.filter(entry => !entry.isDeleted) as JournalEntry[])
+        .filter(e => e.date >= startDate && e.date <= endDate)
         .sort((a, b) => {
           if (a.date === b.date) return a.serialNo - b.serialNo;
           return a.date.localeCompare(b.date);
@@ -419,15 +434,21 @@ export async function getEntriesByDateCs(date: string): Promise<CustomerEntry[]>
   return new Promise((resolve, reject) => {
     const tx = database.transaction(CUSTOMER_STORE_NAME, "readonly");
     const store = tx.objectStore(CUSTOMER_STORE_NAME);
-    const index = store.index('date');
 
-    const request = index.getAll(date);
+    let request: IDBRequest;
+    if ((store.indexNames && (store.indexNames as any).contains && (store.indexNames as any).contains('date')) || (store.indexNames && (store.indexNames as any).length && Array.from(store.indexNames as any).includes('date'))) {
+      const index = store.index('date');
+      request = index.getAll(date);
+    } else {
+      request = store.getAll();
+    }
 
     request.onsuccess = () => {
-      const entries = request.result as CustomerEntry[];
+      const all = request.result as CustomerEntry[];
 
-      const filtered = entries
+      const filtered = all
         .filter(e => !e.isDeleted)
+        .filter(e => e.date === date)
         .sort((a, b) => a.serialNo - b.serialNo);
 
       resolve(filtered);
@@ -464,15 +485,21 @@ export async function getEntriesByDateEx(date: string): Promise<ExpensesEntry[]>
   return new Promise((resolve, reject) => {
     const tx = database.transaction(EXPENSES_STORE_NAME, "readonly");
     const store = tx.objectStore(EXPENSES_STORE_NAME);
-    const index = store.index('date');
 
-    const request = index.getAll(date);
+    let request: IDBRequest;
+    if ((store.indexNames && (store.indexNames as any).contains && (store.indexNames as any).contains('date')) || (store.indexNames && (store.indexNames as any).length && Array.from(store.indexNames as any).includes('date'))) {
+      const index = store.index('date');
+      request = index.getAll(date);
+    } else {
+      request = store.getAll();
+    }
 
     request.onsuccess = () => {
-      const entries = request.result as ExpensesEntry[];
+      const all = request.result as ExpensesEntry[];
 
-      const filtered = entries
+      const filtered = all
         .filter(e => !e.isDeleted)
+        .filter(e => e.date === date)
         .sort((a, b) => a.serialNo - b.serialNo);
 
       resolve(filtered);
@@ -509,15 +536,21 @@ export async function getEntriesByDatePy(date: string): Promise<PaymentsEntry[]>
   return new Promise((resolve, reject) => {
     const tx = database.transaction(PAYMENTS_STORE_NAME, "readonly");
     const store = tx.objectStore(PAYMENTS_STORE_NAME);
-    const index = store.index('date');
 
-    const request = index.getAll(date);
+    let request: IDBRequest;
+    if ((store.indexNames && (store.indexNames as any).contains && (store.indexNames as any).contains('date')) || (store.indexNames && (store.indexNames as any).length && Array.from(store.indexNames as any).includes('date'))) {
+      const index = store.index('date');
+      request = index.getAll(date);
+    } else {
+      request = store.getAll();
+    }
 
     request.onsuccess = () => {
-      const entries = request.result as PaymentsEntry[];
+      const all = request.result as PaymentsEntry[];
 
-      const filtered = entries
+      const filtered = all
         .filter(e => !e.isDeleted)
+        .filter(e => e.date === date)
         .sort((a, b) => a.serialNo - b.serialNo);
 
       resolve(filtered);
