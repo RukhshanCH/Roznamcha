@@ -98,7 +98,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
         <table className="data-table">
           <thead>
             <tr>
-              <th colSpan={9} style={{ margin: 0, fontSize: "20px" }}>{pageName}</th>
+              <th colSpan={10} style={{ margin: 0, fontSize: "20px" }}>{pageName}</th>
             </tr>
             <tr>
               <th>نمبر شمار</th>
@@ -107,6 +107,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
               <th>کل رقم</th>
               <th>ادائیگی/ایڈوانس</th>
               <th>بقیہ رقم</th>
+              <th>طریقہ</th>
               <th>نوٹ</th>
               {
                 search.trim() !== "" && (
@@ -134,6 +135,9 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                 </td>
                 <td className={!entry.remaining ? 'empty-cell' : ''}>
                   {formatAmount(entry.remaining)}
+                </td>
+                <td>
+                  {entry.paymentMethod === 'online' ? 'آن لائن' : 'نقد'}
                 </td>
                 <td className="note-cell">
                   {entry.note.split("\n").map((line, i) => (
@@ -190,7 +194,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
 
             {entries.length === 0 && (
               <tr>
-                <td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
+                <td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
                   کوئی اندراج نہیں۔ نیا اندراج شامل کرنے کے لیے "نیا اندراج" بٹن دبائیں۔
                 </td>
               </tr>
@@ -198,7 +202,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
 
             {entries.length > 0 && transactions.length === 0 && (
               <tr>
-                <td colSpan={9} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
+                <td colSpan={10} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
                   کوئی اندراج نہی۔
                 </td>
               </tr>
@@ -211,7 +215,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
                 {
                   !isRemaining ?
                     <>
-                      <td colSpan={2}>
+                      <td colSpan={3}>
                         <div className="footer-total-label">
                           <span className="label">کل وصولی:</span>
                           <span className="footer-value blue">{formatAmount(summary.totalPayments)}</span>

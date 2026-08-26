@@ -713,6 +713,38 @@ input[type="number"] {
   color: var(--accent-purple-text);
 }
 
+.summary-card.teal {
+  background: #E0F2F1;
+}
+
+.summary-card.teal .card-icon-wrapper {
+  background: #80CBC4;
+}
+
+.summary-card.teal .card-icon-wrapper svg {
+  color: #00695C;
+}
+
+.summary-card.teal .card-value {
+  color: #00695C;
+}
+
+.summary-card.orange {
+  background: #FFF3E0;
+}
+
+.summary-card.orange .card-icon-wrapper {
+  background: #FFCC80;
+}
+
+.summary-card.orange .card-icon-wrapper svg {
+  color: #E65100;
+}
+
+.summary-card.orange .card-value {
+  color: #E65100;
+}
+
 /* ===== Transaction Table ===== */
 .table-container {
   background: var(--bg-card);

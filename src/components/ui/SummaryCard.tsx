@@ -4,15 +4,17 @@ import {
   Scale,
   FileText,
   Receipt,
-  FileWarning
+  FileWarning,
+  Banknote,
+  Smartphone
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
 interface SummaryCardProps {
   label: string;
   value: string;
-  icon: 'wallet' | 'arrowDown' | 'scale' | 'fileText' | 'receipt' | 'fileWarning';
-  variant: 'blue' | 'green' | 'gold' | 'white' | 'red' | 'purple';
+  icon: 'wallet' | 'arrowDown' | 'scale' | 'fileText' | 'receipt' | 'fileWarning' | 'banknote' | 'smartphone';
+  variant: 'blue' | 'green' | 'gold' | 'white' | 'red' | 'purple' | 'teal' | 'orange';
 }
 
 const iconMap: Record<string, LucideIcon> = {
@@ -21,7 +23,9 @@ const iconMap: Record<string, LucideIcon> = {
   scale: Scale,
   fileText: FileText,
   receipt: Receipt,
-  fileWarning: FileWarning
+  fileWarning: FileWarning,
+  banknote: Banknote,
+  smartphone: Smartphone
 };
 
 export default function SummaryCard({ label, value, icon, variant }: SummaryCardProps) {

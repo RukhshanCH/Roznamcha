@@ -127,6 +127,14 @@ export default function RoznamchaPage() {
 
     const remainingBalance = totalAdvance - totalExpense;
 
+    const sourceEntries = search.trim() !== "" ? filteredTransactions : entries;
+    const totalCashAdvance = sourceEntries
+      .filter(e => !e.paymentMethod || e.paymentMethod === 'cash')
+      .reduce((sum, e) => sum + (e.advance || 0), 0);
+    const totalOnlineAdvance = sourceEntries
+      .filter(e => e.paymentMethod === 'online')
+      .reduce((sum, e) => sum + (e.advance || 0), 0);
+
     return {
       totalPayments: totalPayments.toLocaleString('en-US') + '/-',
       totalAdvance: totalAdvance.toLocaleString('en-US') + '/-',
@@ -134,6 +142,8 @@ export default function RoznamchaPage() {
       totalExpense: totalExpense.toLocaleString('en-US') + '/-',
       remainingBalance: remainingBalance.toLocaleString('en-US') + '/-',
       totalEntries: String(entries.length),
+      totalCashAdvance: totalCashAdvance.toLocaleString('en-US') + '/-',
+      totalOnlineAdvance: totalOnlineAdvance.toLocaleString('en-US') + '/-',
     };
   }, [entries, filteredTransactionsEx, filteredTransactions, entriesEx]);
 
@@ -410,6 +420,8 @@ export default function RoznamchaPage() {
           <SummaryCard label="کل بقایا" value={summary.totalRemaining} icon="scale" variant="gold" />
           <SummaryCard label="کل اندراجات" value={summary.totalEntries} icon="fileText" variant="white" />
           <SummaryCard label="کل اخراجات" value={summary.totalExpense} icon="receipt" variant="red" />
+          <SummaryCard label="نقد ادائیگی (Cash)" value={summary.totalCashAdvance} icon="banknote" variant="teal" />
+          <SummaryCard label="آن لائن ادائیگی (Online)" value={summary.totalOnlineAdvance} icon="smartphone" variant="orange" />
           <SummaryCard label="کل ادائیگی - کل اخراجات (بقایا رقم)" value={summary.remainingBalance} icon="fileWarning" variant="purple" />
         </div>
 

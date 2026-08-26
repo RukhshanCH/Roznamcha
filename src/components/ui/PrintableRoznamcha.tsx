@@ -8,6 +8,8 @@ interface Props {
     totalExpense: string;
     remainingBalance: string;
     totalEntries: string;
+    totalCashAdvance: string;
+    totalOnlineAdvance: string;
   };
   transactions: Array<{
     id?: number;
@@ -17,6 +19,7 @@ interface Props {
     total?: number;
     advance?: number;
     remaining?: number | string;
+    paymentMethod?: 'cash' | 'online';
   }>;
   expenses: Array<{
     name: string;
@@ -70,7 +73,7 @@ export default function PrintableRoznamcha({
         }
         .summary-grid {
           display: grid;
-          grid-template-columns: repeat(3, 1fr);
+          grid-template-columns: repeat(4, 1fr);
           gap: 10px;
           margin-bottom: 24px;
         }
@@ -127,6 +130,14 @@ export default function PrintableRoznamcha({
           <div className="summary-label">کل ادائیگی - کل اخراجات</div>
           <div className="summary-value">{summary.remainingBalance}</div>
         </div>
+        <div className="summary-card" style={{ borderTopColor: "#00695C" }}>
+          <div className="summary-label">نقد ادائیگی (Cash)</div>
+          <div className="summary-value">{summary.totalCashAdvance}</div>
+        </div>
+        <div className="summary-card" style={{ borderTopColor: "#E65100" }}>
+          <div className="summary-label">آن لائن ادائیگی (Online)</div>
+          <div className="summary-value">{summary.totalOnlineAdvance}</div>
+        </div>
       </div>
 
       <div style={{ fontSize: 14, marginBottom: 10, color: "#5D4037", background: "#E8E0D5", padding: "8px 12px", borderRadius: 4 }}>
@@ -142,6 +153,7 @@ export default function PrintableRoznamcha({
             <th>کل بل</th>
             <th>ایڈوانس</th>
             <th>بقایا</th>
+            <th>طریقہ</th>
           </tr>
         </thead>
         <tbody>
@@ -155,10 +167,11 @@ export default function PrintableRoznamcha({
                 <td>{(t.total || 0).toLocaleString('en-US')}/-</td>
                 <td>{(t.advance || 0).toLocaleString('en-US')}/-</td>
                 <td>{(Number(t.remaining) || 0).toLocaleString('en-US')}/-</td>
+                <td>{t.paymentMethod === 'online' ? 'آن لائن' : 'نقد'}</td>
               </tr>
             ))
           ) : (
-            <tr><td colSpan={7} style={{ textAlign: "center" }}>کوئی اندراج نہیں</td></tr>
+            <tr><td colSpan={8} style={{ textAlign: "center" }}>کوئی اندراج نہیں</td></tr>
           )}
         </tbody>
       </table>

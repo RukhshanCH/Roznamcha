@@ -10,6 +10,7 @@ export interface JournalEntry {
   remainingPlus: number;
   
   note: string;
+  paymentMethod: 'cash' | 'online';
   date: string;
   createdAt: number;
   

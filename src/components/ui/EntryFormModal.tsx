@@ -16,6 +16,7 @@ const initialFormData = {
   remaining: '',
   remainingPlus: '',
   note: '',
+  paymentMethod: 'cash' as 'cash' | 'online',
 };
 
 export default function EntryFormModal({ isRemaining }: Props) {
@@ -41,6 +42,7 @@ export default function EntryFormModal({ isRemaining }: Props) {
         remaining: editingEntry.remaining ? String(editingEntry.remaining) : '',
         remainingPlus: editingEntry.remainingPlus ? String(editingEntry.remainingPlus) : '',
         note: editingEntry.note || '',
+        paymentMethod: editingEntry.paymentMethod || 'cash',
       });
     } else {
       setFormData({
@@ -51,6 +53,7 @@ export default function EntryFormModal({ isRemaining }: Props) {
         remaining: '',
         remainingPlus: '',
         note: '',
+        paymentMethod: 'cash',
       });
     }
   }, [editingEntry]);
@@ -92,6 +95,7 @@ export default function EntryFormModal({ isRemaining }: Props) {
       remaining: !remainingPlusValue ? total - advance : total - advance - remainingPlus,
       remainingPlus,
       note: formData.note,
+      paymentMethod: formData.paymentMethod,
       date: editingEntry?.date ?? selectedDate,
       createdAt: editingEntry?.createdAt ?? Date.now(),
     };
@@ -148,6 +152,7 @@ export default function EntryFormModal({ isRemaining }: Props) {
             remainingPlus: 0,
 
             note: " بقیہ رقم۔ تاریخ: " + editingEntry.date,
+            paymentMethod: formData.paymentMethod,
             date: todayStr,
             createdAt: Date.now(),
 
@@ -323,6 +328,34 @@ export default function EntryFormModal({ isRemaining }: Props) {
               onChange={(e) => handleChange('note', e.target.value)}
               placeholder="اضافی نوٹ"
             />
+          </div>
+
+          <div className="form-group">
+            <label className="form-label">ادائیگی کا طریقہ</label>
+            <div style={{ display: 'flex', gap: '20px', marginTop: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#00695C' }}>
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="cash"
+                  checked={formData.paymentMethod === 'cash'}
+                  onChange={(e) => handleChange('paymentMethod', e.target.value)}
+                  aria-label="Cash Payment"
+                />
+                <span>نقد (Cash)</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer', color: '#E65100' }}>
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="online"
+                  checked={formData.paymentMethod === 'online'}
+                  onChange={(e) => handleChange('paymentMethod', e.target.value)}
+                  aria-label="Online Payment"
+                />
+                <span>آن لائن (Online)</span>
+              </label>
+            </div>
           </div>
 
           <div className="form-actions">
