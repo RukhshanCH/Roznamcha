@@ -1,0 +1,14 @@
+# Roznamcha - Shop Daily Journal / Accounting System
+# https://roznamcha-eta.vercel.app
+
+User-agent: *
+Allow: /
+Disallow: /recycle
+Disallow: /backup
+Disallow: /settings
+
+# Sitemap
+Sitemap: https://roznamcha-eta.vercel.app/sitemap.xml
+
+# LLMs
+# See https://roznamcha-eta.vercel.app/llms.txt

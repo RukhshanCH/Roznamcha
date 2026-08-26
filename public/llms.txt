@@ -1,0 +1,71 @@
+# Roznamcha (روزنامچہ)
+
+> Roznamcha is a modern, Urdu-first shop daily journal and accounting system for small businesses in Pakistan.
+
+## Overview
+
+Roznamcha (meaning "daily journal" in Urdu) is a web-based accounting application designed for shopkeepers and small business owners. It provides an intuitive, right-to-left (RTL) interface in Urdu for managing daily financial transactions, customer records, expenses, and invoices.
+
+All data is stored locally in the browser using IndexedDB — no server, no sign-up, no internet required after first load.
+
+## Key Features
+
+- **Daily Journal (روزنامچہ)**: Record daily transactions with customer names, cash amounts, payments, receipts, and balances
+- **Dashboard**: Overview of financial summaries and charts
+- **Customer Management**: Track customer records and transaction history
+- **Expense Tracking**: Log and categorize daily business expenses
+- **Invoice Generation**: Create and export professional invoices as PDF
+- **Remaining Balances (بقایا جات)**: Track outstanding amounts and receivables
+- **Data Backup & Restore**: Export/import data as JSON for safekeeping
+- **Recycle Bin**: Recover accidentally deleted entries
+- **Dark/Light Theme**: Full theme support with system preference detection
+- **Offline-First**: Works entirely offline after initial load — all data stored in IndexedDB
+
+## Technology Stack
+
+- **Frontend**: React 19, TypeScript, Vite 7
+- **Styling**: Tailwind CSS v3 with shadcn/ui components
+- **State Management**: Jotai (atomic state)
+- **Routing**: React Router v7
+- **Storage**: IndexedDB (browser-local, no backend)
+- **PDF Export**: jsPDF, @react-pdf/renderer
+- **Charts**: Recharts, Chart.js
+- **Icons**: Lucide React
+- **Fonts**: Noto Nastaliq Urdu (Urdu text), Inter (numbers/Latin)
+- **Deployment**: Vercel
+- **Analytics**: Vercel Analytics & Speed Insights
+
+## Pages
+
+| Route | Page | Description |
+|-------|------|-------------|
+| `/` | Redirect | Redirects to Dashboard |
+| `/dashboard` | Dashboard | Financial overview with summary cards and charts |
+| `/roznamcha` | Daily Journal | Main transaction register — add, edit, delete daily entries |
+| `/invoice` | Invoice | Generate and export invoices |
+| `/expenses` | Expenses | Track and manage business expenses |
+| `/customers` | Customers | Customer directory and transaction history |
+| `/remainings` | Remaining Balances | Outstanding amounts and receivables tracking |
+| `/backup` | Backup | Export/import data as JSON backup files |
+| `/recycle` | Recycle Bin | View and restore deleted entries |
+| `/settings` | Settings | Theme, language, and app configuration |
+
+## Data Model
+
+Roznamcha uses IndexedDB with the following core data structure:
+
+- **Journal Entry**: Serial number, customer name, mobile number, cash amount, payment, receipt, balance, remaining amount, previous balance, notes, date
+- **Customers**: Name, contact info, transaction history
+- **Expenses**: Category, amount, date, description
+
+## Language & Locale
+
+- Primary language: Urdu (اردو)
+- Text direction: Right-to-left (RTL)
+- Number format: Standard Arabic numerals with Urdu labels
+- Date display: Urdu-formatted dates via date-fns
+
+## Source Code
+
+- Repository: https://github.com/RukhshanCH/Roznamcha
+- License: See repository for license details
