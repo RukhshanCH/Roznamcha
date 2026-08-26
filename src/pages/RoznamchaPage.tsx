@@ -47,6 +47,7 @@ export default function RoznamchaPage() {
         src: url('${urduFontPath}') format('truetype');
         font-weight: normal;
         font-style: normal;
+        font-display: swap;
       }
     `;
     document.head.appendChild(style);
