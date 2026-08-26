@@ -42,7 +42,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
 
       <div className={`main-content ${collapsed ? "sidebar-collapsed" : ""}`}>
         <HeaderBar />
-        <div className="content-area">{children}</div>
+        <main className="content-area">{children}</main>
       </div>
     </div>
   );

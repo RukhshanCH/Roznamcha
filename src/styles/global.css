@@ -89,7 +89,7 @@ input[type="number"] {
 .main-content {
   flex: 1;
   margin-right: var(--sidebar-width);
-  transition: margin-right 300ms ease;
+  transition: none;
   display: flex;
   flex-direction: column;
 }
@@ -116,7 +116,6 @@ input[type="number"] {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  transition: width 300ms ease;
   z-index: 100;
   overflow: visible;
 }
@@ -143,7 +142,7 @@ input[type="number"] {
 }
 
 .sidebar-logo-text {
-  transition: opacity 200ms ease, width 200ms ease;
+  transition: opacity 200ms ease;
   white-space: nowrap;
 }
 

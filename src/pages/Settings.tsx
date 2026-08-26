@@ -1,7 +1,7 @@
 import { useState, useRef, type ChangeEvent } from "react";
 import { useSetting } from "@/hooks/useSetting";
 import { Pencil, Camera, Trash2, Building2, MapPin, Phone, Mail, Save } from "lucide-react";
-import Logo from "../assets/Logo.png";
+import Logo from "../assets/Logo.webp";
 
 export default function Settings() {
     // Company name
