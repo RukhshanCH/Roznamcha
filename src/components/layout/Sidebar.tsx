@@ -35,7 +35,10 @@ export default function Sidebar() {
     const el = sidebarRef.current;
     if (!el) return;
 
-    if (collapsed) {
+    // Only set inert on mobile where the sidebar slides fully off-screen.
+    // On desktop the collapsed sidebar is still visible (narrow strip),
+    // and setting inert there blocks mouse events on the main content.
+    if (collapsed && window.innerWidth <= 768) {
       el.setAttribute("inert", "true");
     } else {
       el.removeAttribute("inert");
