@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { getEntriesByDateRange } from "@/db/indexedDB";
 import "../styles/dashboard.css";
+
+const BarChart = lazy(() => import("@/components/dashboard/BarChart"));
 
 type Stat = {
   date: string;
@@ -9,16 +11,22 @@ type Stat = {
 
 type RangeType = "weekly" | "monthly" | "custom";
 
-const todayString = () => new Date().toISOString().slice(0, 10);
+const formatLocalDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const todayString = () => formatLocalDate(new Date());
 const getDateNDaysAgo = (days: number) => {
   const date = new Date();
   date.setDate(date.getDate() - days);
-  return date.toISOString().slice(0, 10);
+  return formatLocalDate(date);
 };
 
 export default function DashboardPage() {
   const [data, setData] = useState<Stat[]>([]);
-  const [BarComponent, setBarComponent] = useState<ComponentType<Record<string, unknown>> | null>(null);
   const [rangeType, setRangeType] = useState<RangeType>("weekly");
   const [customStart, setCustomStart] = useState(() => getDateNDaysAgo(29));
   const [customEnd, setCustomEnd] = useState(() => todayString());
@@ -40,7 +48,7 @@ export default function DashboardPage() {
     if (rangeType === "weekly") return getDateNDaysAgo(6);
     if (rangeType === "monthly") {
       const now = new Date();
-      return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+      return formatLocalDate(new Date(now.getFullYear(), now.getMonth(), 1));
     }
     return customStart;
   }, [rangeType, customStart]);
@@ -70,7 +78,7 @@ export default function DashboardPage() {
         const end = new Date(endDate);
 
         for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
-          const date = dt.toISOString().slice(0, 10);
+          const date = formatLocalDate(dt);
           stats.push({ date, count: countsByDate[date] || 0 });
         }
 
@@ -85,24 +93,6 @@ export default function DashboardPage() {
 
     void loadData();
   }, [startDate, endDate]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadChart = async () => {
-      await import("chart.js/auto");
-      const { Bar } = await import("react-chartjs-2");
-      if (!cancelled) {
-        setBarComponent(() => Bar as ComponentType<Record<string, unknown>>);
-      }
-    };
-
-    void loadChart();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const total = useMemo(() => data.reduce((sum, d) => sum + d.count, 0), [data]);
   const average = useMemo(() => (data.length ? Math.round(total / data.length) : 0), [data, total]);
@@ -160,12 +150,12 @@ export default function DashboardPage() {
           color: "#111827",
           font: {
             size: 20,
-            weight: "600",
+            weight: "bold" as const,
           },
         },
         tooltip: {
           callbacks: {
-            label: (context: { parsed: { y: number } }) => ` ${context.parsed.y} اندراج`,
+            label: (context: { parsed: { y: number | null } }) => ` ${context.parsed.y ?? 0} اندراج`,
           },
         },
       },
@@ -277,10 +267,10 @@ export default function DashboardPage() {
             <div className="dashboard-empty-state">{errorMessage}</div>
           ) : isLoading ? (
             <div className="dashboard-empty-state">تجزیاتی ڈیٹا لوڈ ہو رہا ہے...</div>
-          ) : BarComponent ? (
-            <BarComponent data={chartData} options={options} />
           ) : (
-            <div className="dashboard-empty-state">بار چارٹ لوڈ ہو رہا ہے...</div>
+            <Suspense fallback={<div className="dashboard-empty-state">بار چارٹ لوڈ ہو رہا ہے...</div>}>
+              <BarChart data={chartData} options={options} />
+            </Suspense>
           )}
         </section>
       </div>
