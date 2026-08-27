@@ -104,12 +104,16 @@ export default function DashboardPage() {
     };
   }, []);
 
-  const total = data.reduce((sum, d) => sum + d.count, 0);
-  const average = data.length ? Math.round(total / data.length) : 0;
+  const total = useMemo(() => data.reduce((sum, d) => sum + d.count, 0), [data]);
+  const average = useMemo(() => (data.length ? Math.round(total / data.length) : 0), [data, total]);
 
-  const maxDay = data.reduce(
-    (max, d) => (d.count > max.count ? d : max),
-    data[0] || { date: "", count: 0 }
+  const maxDay = useMemo(
+    () =>
+      data.reduce(
+        (max, d) => (d.count > max.count ? d : max),
+        data[0] || { date: "", count: 0 }
+      ),
+    [data]
   );
 
   const formatDateForDisplay = (date: string) =>
@@ -125,68 +129,74 @@ export default function DashboardPage() {
       : parsed.toLocaleDateString("ur-PK", { day: "numeric", month: "short" });
   };
 
-  const chartData = {
-    labels: data.map((d) => formatLabel(d.date)),
-    datasets: [
-      {
-        label: "اندراجات",
-        data: data.map((d) => d.count),
-        backgroundColor: "rgba(59, 130, 246, 0.85)",
-        borderRadius: 16,
-        maxBarThickness: 42,
-      },
-    ],
-  };
+  const chartData = useMemo(
+    () => ({
+      labels: data.map((d) => formatLabel(d.date)),
+      datasets: [
+        {
+          label: "اندراجات",
+          data: data.map((d) => d.count),
+          backgroundColor: "rgba(59, 130, 246, 0.85)",
+          borderRadius: 16,
+          maxBarThickness: 42,
+        },
+      ],
+    }),
+    [data, rangeType]
+  );
 
-  const options = {
-    responsive: true,
-    plugins: {
-      legend: {
-        labels: {
-          color: "#1f2937",
-        },
-      },
-      title: {
-        display: true,
-        text: `${rangeLabel} ${startDate === endDate ? startDate : `${startDate} - ${endDate}`}`,
-        color: "#111827",
-        font: {
-          size: 20,
-          weight: "600",
-        },
-      },
-      tooltip: {
-        callbacks: {
-          label: (context: { parsed: { y: number } }) => ` ${context.parsed.y} اندراج`,
-        },
-      },
-    },
-    scales: {
-      x: {
-        ticks: {
-          color: "#1f2937",
-          font: {
-            size: 12,
+  const options = useMemo(
+    () => ({
+      responsive: true,
+      plugins: {
+        legend: {
+          labels: {
+            color: "#1f2937",
           },
         },
-        grid: {
-          color: "rgba(148, 163, 184, 0.18)",
-        },
-      },
-      y: {
-        beginAtZero: true,
-        ticks: {
-          color: "#1f2937",
+        title: {
+          display: true,
+          text: `${rangeLabel} ${startDate === endDate ? startDate : `${startDate} - ${endDate}`}`,
+          color: "#111827",
           font: {
-            size: 12,
+            size: 20,
+            weight: "600",
           },
         },
-        grid: {
-          color: "rgba(148, 163, 184, 0.18)",
+        tooltip: {
+          callbacks: {
+            label: (context: { parsed: { y: number } }) => ` ${context.parsed.y} اندراج`,
+          },
         },
       },
-    },
-  };
+      scales: {
+        x: {
+          ticks: {
+            color: "#1f2937",
+            font: {
+              size: 12,
+            },
+          },
+          grid: {
+            color: "rgba(148, 163, 184, 0.18)",
+          },
+        },
+        y: {
+          beginAtZero: true,
+          ticks: {
+            color: "#1f2937",
+            font: {
+              size: 12,
+            },
+          },
+          grid: {
+            color: "rgba(148, 163, 184, 0.18)",
+          },
+        },
+      },
+    }),
+    [rangeLabel, startDate, endDate]
+  );
 
   const displayRange =
     startDate === endDate

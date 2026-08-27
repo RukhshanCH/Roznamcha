@@ -62,23 +62,23 @@ export default function RoznamchaPage() {
     });
   }, []);
 
-  const filteredTransactions = entries.filter((t) => {
+  const filteredTransactions = useMemo(() => entries.filter((t) => {
     const query = search.toLowerCase();
     return (
       t.name.toLowerCase().includes(query) ||
       t.mobileNumber.toLowerCase().includes(query) ||
       t.note.toLowerCase().includes(query)
     );
-  });
+  }), [entries, search]);
 
-  const filteredTransactionsEx = entriesEx.filter((t) => {
+  const filteredTransactionsEx = useMemo(() => entriesEx.filter((t) => {
     const query = search.toLowerCase();
     return (
       t.name.toLowerCase().includes(query) ||
       t.description.toLowerCase().includes(query) ||
       String(t.amount).includes(query)
     );
-  });
+  }), [entriesEx, search]);
 
   const refreshEntries = async () => {
     if (showAll) {

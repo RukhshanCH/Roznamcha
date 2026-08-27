@@ -15,4 +15,28 @@ export default defineConfig(({ command }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router', 'react-router-dom'],
+          'vendor-ui': ['jotai', 'lucide-react'],
+          'vendor-radix': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-dropdown-menu',
+            '@radix-ui/react-popover',
+            '@radix-ui/react-select',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-label',
+            '@radix-ui/react-separator',
+            '@radix-ui/react-checkbox',
+            '@radix-ui/react-switch',
+            '@radix-ui/react-scroll-area',
+          ],
+        },
+      },
+    },
+  },
 }));

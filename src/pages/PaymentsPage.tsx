@@ -4,7 +4,7 @@ import { paymentsAtom, editingEntryAtomPy, isModalOpenAtomPy, selectedDateAtom, 
 import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTablePy from "@/components/ui/TransactionTablePy";
 import EntryFormModalPy from "@/components/ui/EntryFormModalPy";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { deleteEntryPy, getEntriesByDatePy, getPayments, renumberEntriesPy } from "@/db/indexedDB";
 import Modal from "@/components/ui/Modal";
 
@@ -23,7 +23,7 @@ export default function PaymentsPage() {
 
   const search = useAtomValue(searchAtom);
 
-  const filteredTransactions = payments.filter((t) => {
+  const filteredTransactions = useMemo(() => payments.filter((t) => {
     const query = search.toLowerCase();
 
     return (
@@ -31,7 +31,7 @@ export default function PaymentsPage() {
       t.description.toLowerCase().includes(query) ||
       String(t.amount).includes(query)
     );
-  });
+  }), [payments, search]);
 
   const refreshEntries = async () => {
     if (showAll) {

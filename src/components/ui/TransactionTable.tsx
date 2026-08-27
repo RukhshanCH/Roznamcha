@@ -74,7 +74,7 @@ const TransactionTable = forwardRef<HTMLTableElement, Props>(
         totalRemaining,
         totalEntries: String(entries.length),
       };
-    }, [entries, transactions]);
+    }, [entries, transactions, search]);
 
     const highlightText = (text = "", query = "") => {
       if (!query.trim()) return text;

@@ -3,7 +3,7 @@ import { alertAtom, alertMessageAtom, alertTypeAtom, customerAtom, editingEntryA
 import { FileDown, Plus, Share2 } from "lucide-react";
 import TransactionTableCs from "@/components/ui/TransactionTableCs";
 import EntryFormModalCs from "@/components/ui/EntryFormModalCs";
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { deleteEntryCs, getCustomers, renumberEntriesCs } from "@/db/indexedDB";
 import Modal from "@/components/ui/Modal";
 
@@ -18,14 +18,18 @@ export default function CustomersPage() {
   const [, setType] = useAtom(alertTypeAtom);
   const [, setMessage] = useAtom(alertMessageAtom);
 
-  const filteredTransactions = customers.filter((t) => {
-    const query = search.toLowerCase();
+  const filteredTransactions = useMemo(
+    () =>
+      customers.filter((t) => {
+        const query = search.toLowerCase();
 
-    return (
-      t.name.toLowerCase().includes(query) ||
-      t.mobileNumber.toLowerCase().includes(query)
-    );
-  });
+        return (
+          t.name.toLowerCase().includes(query) ||
+          t.mobileNumber.toLowerCase().includes(query)
+        );
+      }),
+    [customers, search]
+  );
 
   // Load data
   useEffect(() => {
@@ -34,7 +38,7 @@ export default function CustomersPage() {
       setCustomers(allData);
     };
     void loadData();
-  }, [selectedDate, setCustomers]);
+  }, [setCustomers]);
 
   const handleAddNew = () => {
     setEditingEntry(null);

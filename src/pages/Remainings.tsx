@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
 import { Link } from 'react-router-dom';
 import { Printer, FileDown, Share2 } from 'lucide-react';
@@ -18,14 +18,14 @@ export default function Remainings() {
     const [, setType] = useAtom(alertTypeAtom);
     const [, setMessage] = useAtom(alertMessageAtom);
 
-    const filteredRemainings = entries.filter((e) => {
+    const filteredRemainings = useMemo(() => entries.filter((e) => {
 
         const matchesSearch =
             e.name.toLowerCase().includes(search.toLowerCase()) ||
             e.mobileNumber.includes(search);
 
         return Number(e.remaining) > 0 && matchesSearch && !e.note.includes("Dated");
-    });
+    }), [entries, search]);
 
     // Load data
     useEffect(() => {

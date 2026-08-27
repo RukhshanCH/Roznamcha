@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTableEx from "@/components/ui/TransactionTableEx";
 import EntryFormModalEx from "@/components/ui/EntryFormModalEx";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { deleteEntryEx, getEntriesByDateEx, getExpenses, renumberEntriesEx } from "@/db/indexedDB";
 import Modal from "@/components/ui/Modal";
 
@@ -21,7 +21,7 @@ export default function ExpensesPage() {
   const [, setType] = useAtom(alertTypeAtom);
   const [, setMessage] = useAtom(alertMessageAtom);
 
-  const filteredTransactions = expenses.filter((t) => {
+  const filteredTransactions = useMemo(() => expenses.filter((t) => {
     const query = search.toLowerCase();
 
     return (
@@ -29,7 +29,7 @@ export default function ExpensesPage() {
       t.description.toLowerCase().includes(query) ||
       String(t.amount).includes(query)
     );
-  });
+  }), [expenses, search]);
 
   const refreshEntries = async () => {
     if (showAll) {

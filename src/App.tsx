@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from '@/components/layout/AppLayout'
 import AlertItem from './components/ui/AlertItem'
 import { Suspense, lazy, useEffect, useState } from 'react'
-import { checkWeeklyBackup, emptyTrash, emptyTrashCs, emptyTrashEx, emptyTrashPy, getAllEntries, getEntriesByDateEx, initDB, updateEntry } from './db/indexedDB'
+import { checkWeeklyBackup, emptyTrash, emptyTrashCs, emptyTrashEx, emptyTrashPy, getAllEntries, getEntriesByDateEx, getSetting, initDB, setSetting, updateEntry } from './db/indexedDB'
 import { alertMessageAtom, alertTypeAtom, expensesAtom, selectedDateAtom } from './store/atoms'
 import { useAtom, useAtomValue } from 'jotai'
 
@@ -28,19 +28,28 @@ export default function App() {
     async function setup() {
       try {
         await initDB();
-        await emptyTrash();
-        await emptyTrashCs();
-        await emptyTrashEx();
-        await emptyTrashPy();
+        // Run trash cleanup in parallel
+        await Promise.all([emptyTrash(), emptyTrashCs(), emptyTrashEx(), emptyTrashPy()]);
         setDbReady(true);
-        const entries = await getAllEntries();
 
-        for (const entry of entries) {
-          if (!entry.debtId) {
-            await updateEntry({
-              ...entry,
-              debtId: crypto.randomUUID(),
-            });
+        // One-time migration: add debtId to entries that don't have it
+        const migrationDone = await getSetting('debtIdMigrationDone');
+        if (!migrationDone) {
+          const entries = await getAllEntries();
+          let needsMigration = false;
+          for (const entry of entries) {
+            if (!entry.debtId) {
+              needsMigration = true;
+              await updateEntry({
+                ...entry,
+                debtId: crypto.randomUUID(),
+              });
+            }
+          }
+          // Mark migration as done even if no entries needed it
+          await setSetting('debtIdMigrationDone', 'true');
+          if (needsMigration) {
+            console.log('debtId migration completed');
           }
         }
       } catch (err) {
