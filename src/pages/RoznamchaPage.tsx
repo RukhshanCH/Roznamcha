@@ -171,10 +171,6 @@ export default function RoznamchaPage() {
   const generatePDFBlob = async (): Promise<Blob> => {
     if (!printRef.current) throw new Error("Print element not found");
 
-    if (entriesEx.length === 0 && filteredTransactionsEx.length === 0) {
-      throw new Error("اخراجات کا ڈیٹا لوڈ نہیں ہوا۔ براہ کرم پہلے اخراجات دیکھیں یا ریفریش کریں۔");
-    }
-
     await document.fonts.load("24px UrduPrintFont");
     await document.fonts.load("16px UrduPrintFont");
     await document.fonts.load("14px UrduPrintFont");
