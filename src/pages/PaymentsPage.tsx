@@ -5,7 +5,7 @@ import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-rea
 import TransactionTablePy from "@/components/ui/TransactionTablePy";
 import EntryFormModalPy from "@/components/ui/EntryFormModalPy";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { deleteEntryPy, getEntriesByDatePy, getPayments, renumberEntriesPy } from "@/db/indexedDB";
+import { deleteEntryPy, getEntriesByDatePy, getPayments, renumberEntriesPy } from '@/db/payments';
 import Modal from "@/components/ui/Modal";
 
 export default function PaymentsPage() {

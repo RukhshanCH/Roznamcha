@@ -5,5 +5,6 @@ export {
   exportWeeklyData,
   exportMonthlyData,
   exportByDateRange,
-  importBackup
+  importBackup,
+  checkWeeklyBackup
 } from '@/db/indexedDB';

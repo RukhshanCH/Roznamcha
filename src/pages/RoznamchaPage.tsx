@@ -6,7 +6,7 @@ import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, searchAtom, expensesAtom, showAllAtom, remainingPlusAtom, alertAtom, alertMessageAtom, alertTypeAtom } from '@/store/atoms';
 import Modal from '@/components/ui/Modal';
-import { deleteEntry, getAllEntries, getEntriesByDate, renumberEntries } from '@/db/indexedDB';
+import { deleteEntry, getAllEntries, getEntriesByDate, renumberEntries } from '@/db/roznamcha';
 import { useSetting } from "@/hooks/useSetting";
 import { urduFontPath } from "@/fonts/urduFonts";
 import type { JournalEntry } from '@/types';

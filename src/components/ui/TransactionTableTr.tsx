@@ -1,20 +1,7 @@
 import { useAtom, useAtomValue } from 'jotai';
 import { alertAtom, alertMessageAtom, alertTypeAtom, searchAtom, showModalAtom } from '@/store/atoms';
 import { useEffect, useState } from "react";
-import {
-    getTrashEntries,
-    restoreEntry,
-    permanentlyDeleteEntry,
-    getTrashEntriesCs,
-    getTrashEntriesPy,
-    getTrashEntriesEx,
-    restoreEntryEx,
-    restoreEntryPy,
-    restoreEntryCs,
-    permanentlyDeleteEntryEx,
-    permanentlyDeleteEntryCs,
-    permanentlyDeleteEntryPy
-} from "@/db/indexedDB";
+import { getTrashEntries, restoreEntry, permanentlyDeleteEntry, getTrashEntriesCs, getTrashEntriesPy, getTrashEntriesEx, restoreEntryEx, restoreEntryPy, restoreEntryCs, permanentlyDeleteEntryEx, permanentlyDeleteEntryCs, permanentlyDeleteEntryPy } from '@/db/trash';
 import type { CustomerEntry, ExpensesEntry, JournalEntry, PaymentsEntry, TrashItem } from "@/types";
 import { RotateCcw, Undo2 } from "lucide-react";
 import Modal from './Modal';

@@ -5,7 +5,7 @@ import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-rea
 import TransactionTableEx from "@/components/ui/TransactionTableEx";
 import EntryFormModalEx from "@/components/ui/EntryFormModalEx";
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import { deleteEntryEx, getEntriesByDateEx, getExpenses, renumberEntriesEx } from "@/db/indexedDB";
+import { deleteEntryEx, getEntriesByDateEx, getExpenses, renumberEntriesEx } from '@/db/expenses';
 import Modal from "@/components/ui/Modal";
 
 export default function ExpensesPage() {

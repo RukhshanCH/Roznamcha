@@ -2,7 +2,11 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import AppLayout from '@/components/layout/AppLayout'
 import AlertItem from './components/ui/AlertItem'
 import { Suspense, lazy, useEffect, useState } from 'react'
-import { checkWeeklyBackup, emptyTrash, emptyTrashCs, emptyTrashEx, emptyTrashPy, getAllEntries, getEntriesByDateEx, getSetting, initDB, setSetting, updateEntry } from './db/indexedDB'
+import { checkWeeklyBackup } from '@/db/backup';
+import { emptyTrash, emptyTrashCs, emptyTrashEx, emptyTrashPy } from '@/db/trash';
+import { getAllEntries, initDB, updateEntry } from '@/db/roznamcha';
+import { getEntriesByDateEx } from '@/db/expenses';
+import { getSetting, setSetting } from '@/db/core';
 import { alertMessageAtom, alertTypeAtom, expensesAtom, selectedDateAtom } from './store/atoms'
 import { useAtom, useAtomValue } from 'jotai'
 

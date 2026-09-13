@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Printer, FileDown, Share2 } from 'lucide-react';
 import TransactionTable from '@/components/ui/TransactionTable';
 import { alertAtom, alertMessageAtom, alertTypeAtom, editingEntryAtom, entriesAtom, searchAtom, selectedDateAtom } from '@/store/atoms';
-import { deleteEntry, getAllEntries, renumberEntries } from '@/db/indexedDB';
+import { deleteEntry, getAllEntries, renumberEntries } from '@/db/roznamcha';
 import EntryFormModal from '@/components/ui/EntryFormModal';
 import Modal from '@/components/ui/Modal';
 

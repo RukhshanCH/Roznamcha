@@ -1,5 +1,5 @@
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
-import { getEntriesByDateRange } from "@/db/indexedDB";
+import { getEntriesByDateRange } from '@/db/roznamcha';
 import "../styles/dashboard.css";
 
 const BarChart = lazy(() => import("@/components/dashboard/BarChart"));
