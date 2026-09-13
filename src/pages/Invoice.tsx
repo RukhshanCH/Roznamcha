@@ -1,9 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
-import {
-  generateInvoiceNumber,
-  initDB,
-  saveInvoiceCounter,
-} from "@/db/indexedDB";
+import { generateInvoiceNumber, initDB, saveInvoiceCounter } from '@/db/roznamcha';
 import { useSetting } from "@/hooks/useSetting";
 import { User } from "lucide-react";
 

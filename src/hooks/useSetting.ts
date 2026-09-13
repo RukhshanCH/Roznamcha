@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getSetting, setSetting } from "@/db/indexedDB";
+import { getSetting, setSetting } from '@/db/core';
 
 export function useSetting<T = string>(
   key: string,

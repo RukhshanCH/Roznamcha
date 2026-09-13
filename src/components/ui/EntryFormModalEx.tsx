@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
 import { isModalOpenAtomEx, editingEntryAtomEx, expensesAtom, selectedDateAtom, alertAtom, alertMessageAtom, alertTypeAtom } from '@/store/atoms';
-import { updateEntryEx, addEntryEx, getEntriesByDateEx } from '@/db/indexedDB';
+import { updateEntryEx, addEntryEx, getEntriesByDateEx } from '@/db/expenses';
 
 const initialFormData = {
     name: '',

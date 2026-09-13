@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAtom } from 'jotai';
 import { X } from 'lucide-react';
 import { entriesAtom, selectedDateAtom, isModalOpenAtom, editingEntryAtom, remainingPlusAtom, alertAtom, alertMessageAtom, alertTypeAtom } from '@/store/atoms';
-import { addEntry, updateEntry, getEntriesByDate, getAllEntries } from '@/db/indexedDB';
+import { addEntry, updateEntry, getEntriesByDate, getAllEntries } from '@/db/roznamcha';
 
 interface Props {
   isRemaining: Boolean

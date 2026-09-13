@@ -1,4 +1,4 @@
-import { exportAllData, exportByDateRange, exportMonthlyData, exportWeeklyData, importBackup } from "@/db/indexedDB";
+import { exportAllData, exportByDateRange, exportMonthlyData, exportWeeklyData, importBackup } from '@/db/backup';
 import { alertAtom, alertTypeAtom, alertMessageAtom } from "@/store/atoms";
 import { useAtom } from "jotai";
 import { useEffect, useState } from "react";

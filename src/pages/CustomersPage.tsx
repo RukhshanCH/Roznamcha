@@ -4,7 +4,7 @@ import { FileDown, Plus, Share2 } from "lucide-react";
 import TransactionTableCs from "@/components/ui/TransactionTableCs";
 import EntryFormModalCs from "@/components/ui/EntryFormModalCs";
 import { useEffect, useMemo, useRef } from "react";
-import { deleteEntryCs, getCustomers, renumberEntriesCs } from "@/db/indexedDB";
+import { deleteEntryCs, getCustomers, renumberEntriesCs } from '@/db/customers';
 import Modal from "@/components/ui/Modal";
 
 export default function CustomersPage() {

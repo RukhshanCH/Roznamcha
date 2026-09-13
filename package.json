@@ -1,8 +1,11 @@
 {
+  "$schema": "https://json.schemastore.org/package.json",
+
   "name": "my-app",
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "sideEffects": false,
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
