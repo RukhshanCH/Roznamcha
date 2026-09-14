@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { AnimatePresence } from "framer-motion";
 import { useAtom } from "jotai";
 
 import { sidebarCollapsedAtom } from "@/store/atoms";
@@ -27,11 +26,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   }, []);
 
   if (loading) {
-    return (
-      <AnimatePresence>
-        <LoadingScreen />
-      </AnimatePresence>
-    );
+    return <LoadingScreen />;
   }
 
   return (

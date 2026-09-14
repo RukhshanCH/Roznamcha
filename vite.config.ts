@@ -20,10 +20,16 @@ export default defineConfig(({ command }) => ({
       output: {
         manualChunks(id) {
           if (id.includes('src/db/')) return 'db';
-          // existing vendor chunks
-          if (id.includes('react') && id.includes('node_modules')) return 'vendor-react';
-          if (id.includes('jotai') || id.includes('lucide-react')) return 'vendor-ui';
-          if (id.includes('@radix-ui')) return 'vendor-radix';
+          if (id.includes('node_modules/react/') ||
+            id.includes('node_modules/react-dom/') ||
+            id.includes('node_modules/react-router/') ||
+            id.includes('node_modules/react-router-dom/')) {
+            return 'vendor-react';
+          }
+          if (id.includes('node_modules/jotai/') || id.includes('node_modules/lucide-react/')) {
+            return 'vendor-ui';
+          }
+          if (id.includes('node_modules/@radix-ui/')) return 'vendor-radix';
         },
       },
     },
