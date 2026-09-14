@@ -318,10 +318,12 @@ input[type="number"] {
 
 .header-right input {
   cursor: pointer;
+  color: transparent;
 }
 
 .header-right input:focus {
   cursor: text;
+  color: var(--text-primary);
 }
 
 .header-right input::placeholder {
