@@ -10,7 +10,7 @@ export default function Settings() {
     const [nameInput, setNameInput] = useState(companyName);
 
     // Profile picture (stored as base64 string in settings)
-    const [profilePic, setProfilePic] = useSetting<string | null>("profilePic", null);
+    const [profilePic, setProfilePic] = useSetting<string | null>("profilePic", Logo);
 
     // Extra business info (optional but practical)
     const [businessAddress, setBusinessAddress] = useSetting("businessAddress", "");
@@ -414,20 +414,19 @@ export default function Settings() {
                                 className="btn btn-secondary btn-sm"
                                 onClick={() => fileInputRef.current?.click()}
                             >
-                                <Camera size={14} /> {profilePic ? "Change Picture" : "Upload Picture"}
+                                <Camera size={14} /> {profilePic !== null && profilePic !== Logo ? "Change Picture" : "Upload Picture"}
                             </button>
 
-                            {
-                                !profilePic &&
+                            {profilePic !== Logo && (
                                 <button
                                     className="btn btn-secondary btn-sm"
                                     onClick={() => setProfilePic(Logo)}
                                 >
                                     <Camera size={14} /> Use Default Picture
                                 </button>
-                            }
+                            )}
 
-                            {profilePic && (
+                            {profilePic !== null && (
                                 <button
                                     className="btn btn-danger btn-sm"
                                     onClick={handleRemoveImage}
