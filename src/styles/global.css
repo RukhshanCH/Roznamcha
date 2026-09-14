@@ -13,22 +13,22 @@
   --bg-card-green: #ECFDF5;
   --bg-card-gold: #FEF3C7;
   --text-primary: #1F2937;
-  --text-secondary: #6B7280;
+  --text-secondary: #4B5563;
   --text-sidebar: #FFFFFF;
   --text-sidebar-muted: #94A3B8;
   --accent-blue: #3B82F6;
   --accent-blue-light: #DBEAFE;
   --accent-blue-hover: #2563EB;
-  --accent-green: #10B981;
+  --accent-green: #047857;
   --accent-green-hover: #0ca975;
-  --accent-gold: #D97706;
+  --accent-gold: #92400E;
   --accent-purple-light: #F3E8FF;
   --accent-purple-text: #7C3AED;
   --accent-purple-icon: #C4B5FD;
   --border-color: #E5E7EB;
   --table-header-bg: #F9FAFB;
   --table-footer-bg: #F9FAFB;
-  --badge-red: #EF4444;
+  --badge-red: #B91C1C;
   --badge-red-light: #fcd1d1;
 
   --font-primary: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', serif;
@@ -439,12 +439,13 @@ input[type="number"] {
 }
 
 .breadcrumb a {
-  color: var(--accent-blue);
-  text-decoration: none;
+  color: #1D4ED8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .breadcrumb a:hover {
-  text-decoration: underline;
+  color: #1E3A8A;
 }
 
 .page-title-right {
@@ -689,15 +690,15 @@ input[type="number"] {
 }
 
 .summary-card.blue .card-value {
-  color: var(--accent-blue);
+  color: #1D4ED8;
 }
 
 .summary-card.green .card-value {
-  color: var(--accent-green);
+  color: #047857;
 }
 
 .summary-card.gold .card-value {
-  color: var(--accent-gold);
+  color: #92400E;
 }
 
 .summary-card.white .card-value {
@@ -705,7 +706,7 @@ input[type="number"] {
 }
 
 .summary-card.red .card-value {
-  color: var(--badge-red);
+  color: #B91C1C;
 }
 
 .summary-card.purple .card-value {
@@ -796,7 +797,11 @@ input[type="number"] {
 }
 
 .data-table td.empty-cell {
-  color: #9CA3AF;
+  color: var(--text-secondary);
+}
+
+.empty-state-cell {
+  color: var(--text-secondary);
 }
 
 .note-cell {

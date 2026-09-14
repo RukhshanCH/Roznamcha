@@ -97,7 +97,7 @@ const TransactionTableCs = forwardRef<HTMLTableElement, Props>(
 
                         {entries.length === 0 && (
                             <tr>
-                                <td colSpan={11} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
+                                <td colSpan={11} className="empty-state-cell" style={{ padding: '40px', textAlign: 'center' }}>
                                     کوئی اندراج نہیں۔ نیا اندراج شامل کرنے کے لیے "نیا اندراج" بٹن دبائیں۔
                                 </td>
                             </tr>
@@ -105,7 +105,7 @@ const TransactionTableCs = forwardRef<HTMLTableElement, Props>(
 
                         {entries.length > 0 && transactions.length === 0 && (
                             <tr>
-                                <td colSpan={11} style={{ padding: '40px', textAlign: 'center', color: '#9CA3AF' }}>
+                                <td colSpan={11} className="empty-state-cell" style={{ padding: '40px', textAlign: 'center' }}>
                                     کوئی اندراج نہی۔
                                 </td>
                             </tr>
