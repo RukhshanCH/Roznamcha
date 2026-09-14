@@ -2,7 +2,7 @@ import { useAtom } from 'jotai';
 import { Menu, Search, User } from 'lucide-react';
 import { sidebarCollapsedAtom, searchAtom } from '@/store/atoms';
 import { useSetting } from '@/hooks/useSetting';
-import { Link } from 'react-router-dom';
+import { Link } from '@/router';
 import { useState } from 'react';
 
 export default function HeaderBar() {

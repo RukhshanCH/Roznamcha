@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
-import { Link } from 'react-router-dom';
+import { Link } from '@/router';
 import { Printer, FileDown, Share2 } from 'lucide-react';
 import TransactionTable from '@/components/ui/TransactionTable';
 import { alertAtom, alertMessageAtom, alertTypeAtom, editingEntryAtom, entriesAtom, searchAtom, selectedDateAtom } from '@/store/atoms';

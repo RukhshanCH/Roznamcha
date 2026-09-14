@@ -1,6 +1,6 @@
 import { useAtom, useAtomValue } from "jotai";
 import { expensesAtom, editingEntryAtomEx, isModalOpenAtomEx, selectedDateAtom, searchAtom, showAllAtom, alertAtom, alertMessageAtom, alertTypeAtom } from "@/store/atoms";
-import { Link } from 'react-router-dom';
+import { Link } from '@/router';
 import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTableEx from "@/components/ui/TransactionTableEx";
 import EntryFormModalEx from "@/components/ui/EntryFormModalEx";

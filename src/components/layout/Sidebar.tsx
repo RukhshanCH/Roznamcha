@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from '@/router';
 import {
   BookOpen, ReceiptText, LayoutDashboard, Users, MinusCircle,
   CloudUpload, CalendarDays, Wallet, Trash, Settings,

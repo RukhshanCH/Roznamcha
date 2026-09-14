@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link } from "@/router";
 import TransactionTableTr from "@/components/ui/TransactionTableTr";
 
 const Trash = () => {

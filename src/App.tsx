@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate } from '@/router'
 import AppLayout from '@/components/layout/AppLayout'
 import AlertItem from './components/ui/AlertItem'
 import { Suspense, lazy, useEffect, useState } from 'react'

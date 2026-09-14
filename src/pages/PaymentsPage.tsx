@@ -1,5 +1,5 @@
 import { useAtom, useAtomValue } from "jotai";
-import { Link } from 'react-router-dom';
+import { Link } from '@/router';
 import { paymentsAtom, editingEntryAtomPy, isModalOpenAtomPy, selectedDateAtom, searchAtom, showAllAtom, alertAtom, alertMessageAtom, alertTypeAtom } from "@/store/atoms";
 import { CalendarDays, FileDown, Plus, Printer, Share2, Files } from "lucide-react";
 import TransactionTablePy from "@/components/ui/TransactionTablePy";

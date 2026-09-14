@@ -1,6 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAtom, useAtomValue } from 'jotai';
-import { Link } from 'react-router-dom';
+import { Link } from '@/router';
 import { CalendarDays, Printer, Plus, FileDown, Share2, Files, Loader2 } from 'lucide-react';
 import SummaryCard from '@/components/ui/SummaryCard';
 import TransactionTable from '@/components/ui/TransactionTable';
