@@ -1,5 +1,7 @@
 import { atom } from 'jotai';
 import type { CustomerEntry, ExpensesEntry, JournalEntry, PaymentsEntry } from '@/types';
+import type { Plan, Subscription } from '@/lib/supabase';
+import type { User } from '@supabase/supabase-js';
 
 export const sidebarCollapsedAtom = atom(false);
 
@@ -35,5 +37,18 @@ export const remainingPlusAtom = atom(false);
 export const showModalAtom = atom(false);
 
 export const alertAtom = atom(false);
-export const alertTypeAtom = atom("");
-export const alertMessageAtom = atom("");
+export const alertTypeAtom = atom('');
+export const alertMessageAtom = atom('');
+
+// ── Auth & Billing ──────────────────────────────────────────────────────────
+// Null = not yet loaded; User object when authenticated
+export const userAtom = atom<User | null>(null);
+
+// Current plan — defaults to 'free' until subscription is fetched
+export const planAtom = atom<Plan>('free');
+
+// Full subscription details (for the billing page)
+export const subscriptionAtom = atom<Subscription | null>(null);
+
+// Whether auth + subscription data has finished loading
+export const authLoadingAtom = atom(true);

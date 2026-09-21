@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, useEffect } from "react";
 import { generateInvoiceNumber, initDB, saveInvoiceCounter } from '@/db/roznamcha';
 import { useSetting } from "@/hooks/useSetting";
 import { User } from "lucide-react";
+import { usePlan } from "@/hooks/usePlan";
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
@@ -77,6 +78,7 @@ const DEFAULT_FLEX = "china-220";
 // ═══════════════════════════════════════════════════════════════
 
 const Invoice: React.FC = () => {
+  const { canCreateInvoice } = usePlan();
   const pdfRef = useRef<HTMLDivElement>(null);
   const [profilePic] = useSetting<string | null>("profilePic", null);
 
@@ -599,15 +601,27 @@ const Invoice: React.FC = () => {
         <button className="btn-print" type="button" aria-label="Print" onClick={handlePrint}>
           Print / Save PDF
         </button>
-        <button
-          className="btn-print"
-          type="button"
-          aria-label="Download PDF"
-          onClick={handleDownload}
-          disabled={downloading}
-        >
-          {downloading ? "Generating PDF..." : "Download PDF"}
-        </button>
+        {canCreateInvoice ? (
+          <button
+            className="btn-print"
+            type="button"
+            aria-label="Download PDF"
+            onClick={handleDownload}
+            disabled={downloading}
+          >
+            {downloading ? "Generating PDF..." : "Download PDF"}
+          </button>
+        ) : (
+          <button
+            className="btn-print"
+            type="button"
+            style={{ opacity: 0.5, cursor: 'not-allowed', position: 'relative' }}
+            title="Download PDF — Pro plan required"
+            onClick={() => window.location.href = '/billing'}
+          >
+            🔒 Download PDF (Pro)
+          </button>
+        )}
         <button className="btn-reset" type="reset" aria-label="Reset" onClick={handleReset}>
           Reset
         </button>

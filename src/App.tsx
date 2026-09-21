@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from '@/router'
 import AppLayout from '@/components/layout/AppLayout'
 import AlertItem from './components/ui/AlertItem'
+import AuthGate from './components/auth/AuthGate'
 import { Suspense, lazy, useEffect, useState } from 'react'
 import { checkWeeklyBackup } from '@/db/backup';
 import { emptyTrash, emptyTrashCs, emptyTrashEx, emptyTrashPy } from '@/db/trash';
@@ -19,6 +20,7 @@ const Remainings = lazy(() => import('./pages/Remainings'))
 const Invoice = lazy(() => import('./pages/Invoice'))
 const Trash = lazy(() => import('./pages/Trash'))
 const Settings = lazy(() => import('./pages/Settings'))
+const BillingPage = lazy(() => import('./pages/BillingPage'))
 
 export default function App() {
   const [, setExpenses] = useAtom(expensesAtom);
@@ -78,24 +80,27 @@ export default function App() {
   }, []);
 
   return (
-    <AppLayout>
+    <AuthGate>
+      <AppLayout>
 
-      <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
+        <AlertItem message={message} type={type as 'success' | 'error' | 'info'} />
 
-      <Suspense fallback={<div className="min-h-screen bg-background text-foreground">Loading...</div>}>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/roznamcha" element={<RoznamchaPage />} />
-          <Route path="/invoice" element={<Invoice />} />
-          <Route path="/expenses" element={<ExpensesPage />} />
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/recycle" element={<Trash />} />
-          <Route path="/remainings" element={<Remainings />} />
-          <Route path="/backup" element={<BackupPage />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
-      </Suspense>
-    </AppLayout>
+        <Suspense fallback={<div className="min-h-screen bg-background text-foreground">Loading...</div>}>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/roznamcha" element={<RoznamchaPage />} />
+            <Route path="/invoice" element={<Invoice />} />
+            <Route path="/expenses" element={<ExpensesPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/recycle" element={<Trash />} />
+            <Route path="/remainings" element={<Remainings />} />
+            <Route path="/backup" element={<BackupPage />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/billing" element={<BillingPage />} />
+          </Routes>
+        </Suspense>
+      </AppLayout>
+    </AuthGate>
   )
 }

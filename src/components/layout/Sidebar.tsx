@@ -2,7 +2,7 @@ import { useAtom } from 'jotai';
 import { useLocation, useNavigate } from '@/router';
 import {
   BookOpen, ReceiptText, LayoutDashboard, Users, MinusCircle,
-  CloudUpload, CalendarDays, Wallet, Trash, Settings,
+  CloudUpload, CalendarDays, Wallet, Trash, Settings, CreditCard,
 } from 'lucide-react';
 import { sidebarCollapsedAtom } from '@/store/atoms';
 import { useEffect, useMemo, useRef } from 'react';
@@ -17,6 +17,7 @@ const menuItems = [
   { icon: Trash, label: 'ری سائیکل بن', path: '/recycle' },
   { icon: CloudUpload, label: 'بیک اپ', path: '/backup' },
   { icon: Settings, label: 'ترتیبات', path: '/settings' },
+  { icon: CreditCard, label: 'بلنگ و پلانز', path: '/billing' },
 ];
 
 const urduDays = ['اتوار', 'پیر', 'منگل', 'بدھ', 'جمعرات', 'جمعہ', 'ہفتہ'];
