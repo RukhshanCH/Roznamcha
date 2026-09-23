@@ -2,14 +2,22 @@ import { exportAllData, exportByDateRange, exportMonthlyData, exportWeeklyData, 
 import { alertAtom, alertTypeAtom, alertMessageAtom } from "@/store/atoms";
 import { useAtom } from "jotai";
 import { useEffect, useState } from "react";
+import { usePlan } from "@/hooks/usePlan";
+import UpgradePrompt from "@/components/ui/UpgradePrompt";
 
 export default function BackupPage() {
+  const { canCloudBackup } = usePlan();
   const [showModal, setShowModal] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [, setAlert] = useAtom(alertAtom);
   const [, setType] = useAtom(alertTypeAtom);
   const [, setMessage] = useAtom(alertMessageAtom);
+
+  // Gate: free users see the upgrade prompt
+  if (!canCloudBackup) {
+    return <UpgradePrompt feature="بیک اپ (ڈیٹا محفوظ کریں)" requiredPlan="pro" />;
+  }
 
   const isDisabled = (!startDate || !endDate) || startDate > endDate;
 
