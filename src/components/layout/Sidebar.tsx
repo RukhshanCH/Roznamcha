@@ -2,7 +2,7 @@ import { useAtom } from 'jotai';
 import { useLocation, useNavigate } from '@/router';
 import {
   BookOpen, ReceiptText, LayoutDashboard, Users, MinusCircle,
-  CloudUpload, CalendarDays, Wallet, Trash, Settings,
+  CloudUpload, CalendarDays, Wallet, Trash, Settings, CreditCard, Headphones,
 } from 'lucide-react';
 import { sidebarCollapsedAtom } from '@/store/atoms';
 import { useEffect, useMemo, useRef } from 'react';
@@ -16,6 +16,8 @@ const menuItems = [
   { icon: Users, label: 'گاہک (کسٹمرز)', path: '/customers' },
   { icon: Trash, label: 'ری سائیکل بن', path: '/recycle' },
   { icon: CloudUpload, label: 'بیک اپ', path: '/backup' },
+  { icon: CreditCard,   label: 'بلنگ و پلانز',    path: '/billing' },
+  { icon: Headphones,   label: 'ہم سے رابطہ',     path: '/contact' },
   { icon: Settings, label: 'ترتیبات', path: '/settings' },
 ];
 
