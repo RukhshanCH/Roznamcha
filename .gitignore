@@ -23,5 +23,11 @@ dist-ssr
 *.sln
 *.sw?
 
+# Environment files
+.env
+.env.local
+
 # Others
 %AppData%
+.vercel
+.env*

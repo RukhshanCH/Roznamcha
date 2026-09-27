@@ -8,6 +8,7 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { randomUUID } from 'crypto';
 
 // ── Plan price table (PKR) ─────────────────────────────────────────────────
 const PLAN_PRICES: Record<string, Record<string, number>> = {
@@ -32,58 +33,76 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
-  const priceInPaisa = (PLAN_PRICES[planId]?.[cycle] ?? 0) * 100; // Safepay uses paisa
-  if (priceInPaisa === 0) {
+  const amount = PLAN_PRICES[planId]?.[cycle] ?? 0;
+  if (amount === 0) {
     return res.status(400).json({ error: 'Invalid plan or cycle' });
   }
 
-  const SAFEPAY_SECRET = process.env.SAFEPAY_SECRET_KEY;
-  const SAFEPAY_TRACKER = process.env.SAFEPAY_TRACKER;
+  const safepayEnvironment = process.env.SAFEPAY_ENV === 'production'
+    ? 'production'
+    : 'sandbox';
+  const safepayApiHost = safepayEnvironment === 'production'
+    ? 'api.getsafepay.com'
+    : 'sandbox.api.getsafepay.com';
+  const safepayCheckoutBase = safepayEnvironment === 'production'
+    ? 'https://getsafepay.com/checkout'
+    : 'https://sandbox.api.getsafepay.com/checkout';
+  const safepayApiKey = process.env.SAFEPAY_API_KEY;
 
-  if (!SAFEPAY_SECRET || !SAFEPAY_TRACKER) {
+  if (
+    !safepayApiKey ||
+    safepayApiKey === 'your-safepay-api-key'
+  ) {
     console.error('Safepay env vars not configured');
     return res.status(500).json({ error: 'Payment gateway not configured' });
   }
 
   try {
-    // Step 1: Create a tracker (Safepay payment session)
-    const trackerRes = await fetch('https://sandbox.api.getsafepay.com/order/v1/init', {
+    const orderId = `roznamcha-${randomUUID()}`;
+
+    // Step 1: Create a tracker (Safepay payment session).
+    const trackerRes = await fetch(`https://${safepayApiHost}/order/v1/init`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-SFPY-MERCHANT-SECRET': SAFEPAY_SECRET,
       },
       body: JSON.stringify({
-        client: { email },
-        order: {
-          currency: 'PKR',
-          amount: priceInPaisa,
-        },
-        // Store metadata so the webhook knows what to activate
-        user_data: {
-          user_id: userId,
-          plan_id: planId,
-          billing_cycle: cycle,
-        },
+        client: safepayApiKey,
+        amount,
+        currency: 'PKR',
+        environment: safepayEnvironment,
       }),
     });
 
     if (!trackerRes.ok) {
       const err = await trackerRes.text();
-      console.error('Safepay tracker error:', err);
-      return res.status(502).json({ error: 'Failed to create payment session' });
+      const providerError = err.replace(/\s+/g, ' ').trim().slice(0, 500);
+      console.error('Safepay tracker error:', trackerRes.status, providerError);
+      return res.status(502).json({
+        error: `Safepay rejected the payment session (${trackerRes.status})`,
+        details: providerError || 'The provider returned an empty error response',
+      });
     }
 
-    const tracker = (await trackerRes.json()) as { data: { tracker: string } };
-    const token = tracker.data.tracker;
+    const tracker = (await trackerRes.json()) as { data?: { token?: string } };
+    const token = tracker.data?.token;
+    if (!token) {
+      console.error('Safepay response did not include a tracker token:', tracker);
+      return res.status(502).json({
+        error: 'Safepay returned an invalid payment session response',
+      });
+    }
 
     // Step 2: Build the hosted checkout URL
-    // Switch to https://api.getsafepay.com for production
-    const checkoutUrl =
-      `https://sandbox.api.getsafepay.com/embedded?tracker=${token}` +
-      `&source=custom` +
-      `&redirect_url=${encodeURIComponent(process.env.APP_URL + '/billing')}` +
-      `&cancel_url=${encodeURIComponent(process.env.APP_URL + '/billing')}`;
+    const checkoutUrl = `${safepayCheckoutBase}?${new URLSearchParams({
+      beacon: token,
+      cancel_url: `${process.env.APP_URL ?? 'http://localhost:5173'}/billing`,
+      env: safepayEnvironment,
+      order_id: orderId,
+      redirect_url: `${process.env.APP_URL ?? 'http://localhost:5173'}/billing?plan=${encodeURIComponent(planId)}&cycle=${cycle}`,
+      source: 'custom',
+      webhooks: 'true',
+    }).toString()}`;
 
     return res.status(200).json({ checkoutUrl, token });
   } catch (err) {

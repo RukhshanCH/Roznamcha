@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   CreditCard,
   Check,
@@ -16,6 +16,7 @@ import "@/styles/billing.css";
 import { usePlan } from "@/hooks/usePlan";
 import { useAtomValue } from "jotai";
 import { userAtom, subscriptionAtom } from "@/store/atoms";
+import { supabase } from "@/lib/supabase";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -144,16 +145,69 @@ const FAQS = [
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const PLAN_LABELS: Record<string, string> = { free: 'مفت', pro: 'پرو', business: 'بزنس' };
+const PENDING_CHECKOUT_KEY = 'roznamcha.pending-checkout';
 
 export default function BillingPage() {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const checkoutConfirmationStarted = useRef(false);
 
   // Real plan data from atoms (populated by useAuthBootstrap in AuthGate)
   const { plan: currentPlan, isLoading: planLoading } = usePlan();
   const user = useAtomValue(userAtom);
   const subscription = useAtomValue(subscriptionAtom);
+
+  useEffect(() => {
+    if (checkoutConfirmationStarted.current) return;
+
+    const params = new URLSearchParams(window.location.search);
+    const pendingCheckout = (() => {
+      try {
+        const value = window.localStorage.getItem(PENDING_CHECKOUT_KEY);
+        return value ? JSON.parse(value) as {
+          tracker?: string;
+          planId?: string;
+          cycle?: BillingCycle;
+        } : null;
+      } catch {
+        return null;
+      }
+    })();
+    const tracker = params.get('tracker') ?? params.get('beacon') ?? pendingCheckout?.tracker;
+    const planId = params.get('plan') ?? pendingCheckout?.planId;
+    const cycle = (params.get('cycle') as BillingCycle | null) ?? pendingCheckout?.cycle;
+
+    if (!tracker || (planId !== 'pro' && planId !== 'business') || !cycle) return;
+    checkoutConfirmationStarted.current = true;
+
+    let cancelled = false;
+    void (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || cancelled) return;
+
+      const response = await fetch('/api/confirm-checkout', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tracker, beacon: tracker, planId, cycle }),
+      });
+
+      if (response.ok && !cancelled) {
+        window.localStorage.removeItem(PENDING_CHECKOUT_KEY);
+        window.history.replaceState({}, '', '/billing');
+        window.location.reload();
+      } else if (!response.ok) {
+        console.error('Checkout confirmation failed:', await response.text());
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const formatPrice = (price: number) =>
     price === 0 ? "مفت" : price.toLocaleString("en-PK");
@@ -187,12 +241,30 @@ export default function BillingPage() {
           email: user.email,
         }),
       });
-      if (!res.ok) throw new Error('Checkout failed');
-      const { checkoutUrl } = (await res.json()) as { checkoutUrl: string };
+      const result = (await res.json().catch(() => null)) as
+        | { checkoutUrl?: string; token?: string; error?: string; details?: string }
+        | null;
+      if (!res.ok) {
+        const message = [result?.error, result?.details].filter(Boolean).join(': ');
+        throw new Error(message || `Checkout failed (${res.status})`);
+      }
+      if (!result?.checkoutUrl) {
+        throw new Error('Checkout response did not include a URL');
+      }
+      const { checkoutUrl } = result;
+      if (!result.token) {
+        throw new Error('Checkout response did not include a tracker token');
+      }
+      window.localStorage.setItem(PENDING_CHECKOUT_KEY, JSON.stringify({
+        tracker: result.token,
+        planId,
+        cycle,
+      }));
       window.location.href = checkoutUrl;
     } catch (err) {
       console.error('Checkout error:', err);
-      alert('ادائیگی کا عمل شروع نہیں ہو سکا۔ دوبارہ کوشش کریں۔');
+      const message = err instanceof Error ? err.message : 'Unknown checkout error';
+      alert(`ادائیگی کا عمل شروع نہیں ہو سکا: ${message}`);
     } finally {
       setCheckoutLoading(null);
     }

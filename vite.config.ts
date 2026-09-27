@@ -8,7 +8,7 @@ export default defineConfig(({ command }) => ({
   base: './',
   plugins: [command === 'serve' ? inspectAttr() : null, react()].filter(Boolean),
   server: {
-    port: 3000,
+    port: 5173,
   },
   resolve: {
     alias: {

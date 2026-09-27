@@ -30,7 +30,7 @@ async function fetchSubscription(accessToken: string): Promise<Subscription> {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     return (await res.json()) as Subscription;
   } catch (err) {
-    console.warn('Could not fetch subscription, defaulting to free:', err);
+    console.error('Could not fetch subscription, defaulting to free:', err);
     return { plan: 'free', billingCycle: null, expiresAt: null, isActive: false };
   }
 }
