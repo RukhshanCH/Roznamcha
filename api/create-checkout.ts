@@ -8,7 +8,6 @@
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { randomUUID } from 'crypto';
 
 // ── Plan price table (PKR) ─────────────────────────────────────────────────
 const PLAN_PRICES: Record<string, Record<string, number>> = {
@@ -45,32 +44,38 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     ? 'api.getsafepay.com'
     : 'sandbox.api.getsafepay.com';
   const safepayCheckoutBase = safepayEnvironment === 'production'
-    ? 'https://getsafepay.com/checkout'
-    : 'https://sandbox.api.getsafepay.com/checkout';
+    ? 'https://getsafepay.com'
+    : 'https://sandbox.api.getsafepay.com';
   const safepayApiKey = process.env.SAFEPAY_API_KEY;
+  const safepaySecret = process.env.SAFEPAY_SECRET_KEY;
+  const forwardedProto = req.headers['x-forwarded-proto'];
+  const protocol = (Array.isArray(forwardedProto) ? forwardedProto[0] : forwardedProto) ?? 'http';
+  const appUrl = process.env.APP_URL ?? `${protocol}://${req.headers.host ?? 'localhost:5173'}`;
 
   if (
     !safepayApiKey ||
-    safepayApiKey === 'your-safepay-api-key'
+    safepayApiKey === 'your-safepay-api-key' ||
+    !safepaySecret
   ) {
     console.error('Safepay env vars not configured');
     return res.status(500).json({ error: 'Payment gateway not configured' });
   }
 
   try {
-    const orderId = `roznamcha-${randomUUID()}`;
-
     // Step 1: Create a tracker (Safepay payment session).
-    const trackerRes = await fetch(`https://${safepayApiHost}/order/v1/init`, {
+    const trackerRes = await fetch(`https://${safepayApiHost}/order/payments/v3/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-sfpy-merchant-secret': safepaySecret,
       },
       body: JSON.stringify({
-        client: safepayApiKey,
-        amount,
+        merchant_api_key: safepayApiKey,
+        intent: 'CYBERSOURCE',
+        mode: 'payment',
+        entry_mode: 'raw',
+        amount: amount * 100,
         currency: 'PKR',
-        environment: safepayEnvironment,
       }),
     });
 
@@ -84,8 +89,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const tracker = (await trackerRes.json()) as { data?: { token?: string } };
-    const token = tracker.data?.token;
+    const tracker = (await trackerRes.json()) as {
+      data?: { token?: string; tracker?: { token?: string } };
+    };
+    const token = tracker.data?.tracker?.token ?? tracker.data?.token;
     if (!token) {
       console.error('Safepay response did not include a tracker token:', tracker);
       return res.status(502).json({
@@ -93,15 +100,36 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    // Step 2: Build the hosted checkout URL
-    const checkoutUrl = `${safepayCheckoutBase}?${new URLSearchParams({
-      beacon: token,
-      cancel_url: `${process.env.APP_URL ?? 'http://localhost:5173'}/billing`,
-      env: safepayEnvironment,
-      order_id: orderId,
-      redirect_url: `${process.env.APP_URL ?? 'http://localhost:5173'}/billing?plan=${encodeURIComponent(planId)}&cycle=${cycle}`,
-      source: 'custom',
-      webhooks: 'true',
+    const tbtRes = await fetch(`https://${safepayApiHost}/client/passport/v1/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-sfpy-merchant-secret': safepaySecret,
+      },
+      body: '{}',
+    });
+
+    if (!tbtRes.ok) {
+      const providerError = (await tbtRes.text()).replace(/\s+/g, ' ').trim().slice(0, 500);
+      console.error('Safepay checkout token error:', tbtRes.status, providerError);
+      return res.status(502).json({
+        error: `Safepay rejected the checkout session (${tbtRes.status})`,
+        details: providerError || 'The provider returned an empty error response',
+      });
+    }
+
+    const tbtResult = (await tbtRes.json()) as { data?: string };
+    if (!tbtResult.data) {
+      return res.status(502).json({ error: 'Safepay returned an invalid checkout token response' });
+    }
+
+    const checkoutUrl = `${safepayCheckoutBase}/embedded/?${new URLSearchParams({
+      environment: safepayEnvironment,
+      tracker: token,
+      tbt: tbtResult.data,
+      cancel_url: `${appUrl}/billing`,
+      redirect_url: `${appUrl}/billing?tracker=${encodeURIComponent(token)}&plan=${encodeURIComponent(planId)}&cycle=${cycle}`,
+      source: 'hosted',
     }).toString()}`;
 
     return res.status(200).json({ checkoutUrl, token });

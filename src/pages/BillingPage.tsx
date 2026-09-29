@@ -113,14 +113,6 @@ const PLANS: Plan[] = [
   },
 ];
 
-// ── Billing History ───────────────────────────────────────────────────────────
-
-const HISTORY = [
-  { id: "INV-0043", date: "۱ ستمبر ۲۰۲۶", plan: "مفت", amount: "مفت", status: "paid" },
-  { id: "INV-0042", date: "۱ اگست ۲۰۲۶", plan: "مفت", amount: "مفت", status: "paid" },
-  { id: "INV-0041", date: "۱ جولائی ۲۰۲۶", plan: "مفت", amount: "مفت", status: "paid" },
-];
-
 // ── FAQ Data ──────────────────────────────────────────────────────────────────
 
 const FAQS = [
@@ -145,18 +137,36 @@ const FAQS = [
 // ── Component ─────────────────────────────────────────────────────────────────
 
 const PLAN_LABELS: Record<string, string> = { free: 'مفت', pro: 'پرو', business: 'بزنس' };
+const PLAN_PRICES: Record<string, Record<string, number>> = {
+  pro: { monthly: 999, yearly: 9588 },
+  business: { monthly: 2499, yearly: 23988 },
+};
 const PENDING_CHECKOUT_KEY = 'roznamcha.pending-checkout';
 
 export default function BillingPage() {
   const [cycle, setCycle] = useState<BillingCycle>("monthly");
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const checkoutConfirmationStarted = useRef(false);
 
   // Real plan data from atoms (populated by useAuthBootstrap in AuthGate)
   const { plan: currentPlan, isLoading: planLoading } = usePlan();
   const user = useAtomValue(userAtom);
   const subscription = useAtomValue(subscriptionAtom);
+  const billingHistory = subscription?.payment?.paidAt && subscription.payment.plan !== 'free'
+    ? [{
+        id: subscription.payment.tracker ?? `SUB-${subscription.payment.paidAt}`,
+        date: new Date(subscription.payment.paidAt).toLocaleDateString('ur-PK', {
+          day: 'numeric',
+          month: 'long',
+          year: 'numeric',
+        }),
+        plan: PLAN_LABELS[subscription.payment.plan] ?? subscription.payment.plan,
+        amount: `Rs ${(PLAN_PRICES[subscription.payment.plan]?.[subscription.payment.billingCycle ?? 'monthly'] ?? 0).toLocaleString('en-PK')}`,
+        status: 'paid',
+      }]
+    : [];
 
   useEffect(() => {
     if (checkoutConfirmationStarted.current) return;
@@ -174,15 +184,19 @@ export default function BillingPage() {
         return null;
       }
     })();
-    const tracker = params.get('tracker') ?? params.get('beacon') ?? pendingCheckout?.tracker;
+    const tracker = params.get('tracker')
+      ?? params.get('beacon')
+      ?? params.get('token')
+      ?? pendingCheckout?.tracker;
     const planId = params.get('plan') ?? pendingCheckout?.planId;
     const cycle = (params.get('cycle') as BillingCycle | null) ?? pendingCheckout?.cycle;
 
     if (!tracker || (planId !== 'pro' && planId !== 'business') || !cycle) return;
     checkoutConfirmationStarted.current = true;
+    setCheckoutError(null);
 
     let cancelled = false;
-    void (async () => {
+    const confirmationRequest = (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session || cancelled) return;
 
@@ -198,11 +212,28 @@ export default function BillingPage() {
       if (response.ok && !cancelled) {
         window.localStorage.removeItem(PENDING_CHECKOUT_KEY);
         window.history.replaceState({}, '', '/billing');
+        // Auth bootstrap fetches the subscription on a full reload. Keeping
+        // the reload here also handles a stale plan atom after checkout.
         window.location.reload();
       } else if (!response.ok) {
-        console.error('Checkout confirmation failed:', await response.text());
+        const result = await response.json().catch(() => null) as {
+          error?: string;
+          details?: string;
+        } | null;
+        const message = [result?.error, result?.details].filter(Boolean).join(': ');
+        console.error('Checkout confirmation failed:', message || `HTTP ${response.status}`);
+        if (!cancelled) {
+          setCheckoutError(message || 'ادائیگی کی تصدیق نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔');
+        }
       }
     })();
+
+    void confirmationRequest.catch((error: unknown) => {
+      console.error('Checkout confirmation request failed:', error);
+      if (!cancelled) {
+        setCheckoutError('ادائیگی کی تصدیق کے دوران خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔');
+      }
+    });
 
     return () => {
       cancelled = true;
@@ -286,7 +317,22 @@ export default function BillingPage() {
   return (
 
     <div dir="ltr" className="billing-page">
-      {/* ── Page Header ── */}
+    {checkoutError && (
+      <div
+        role="alert"
+        style={{
+          marginBottom: 16,
+          padding: '12px 16px',
+          borderRadius: 8,
+          background: '#fef2f2',
+          color: '#b91c1c',
+          border: '1px solid #fecaca',
+        }}
+      >
+        {checkoutError}
+      </div>
+    )}
+    {/* ── Page Header ── */}
       <div className="billing-header">
         <div className="billing-header-icon">
           <CreditCard size={28} />
@@ -456,28 +502,30 @@ export default function BillingPage() {
             </tr>
           </thead>
           <tbody>
-            {HISTORY.map((row) => (
-              <tr key={row.id}>
-                <td style={{ fontFamily: "monospace", fontWeight: 600 }}>{row.id}</td>
-                <td>{row.date}</td>
-                <td>{row.plan}</td>
-                <td>{row.amount}</td>
-                <td>
-                  <span className={`billing-status-badge ${row.status}`}>
-                    {row.status === "paid"
-                      ? "✓ ادا شدہ"
-                      : row.status === "pending"
-                      ? "⏳ زیر التوا"
-                      : "✗ ناکام"}
-                  </span>
-                </td>
-                <td>
-                  <button className="billing-download-btn">
-                    <Download size={14} /> PDF
-                  </button>
+            {billingHistory.length > 0 ? billingHistory.map((row) => (
+                <tr key={row.id}>
+                  <td style={{ fontFamily: "monospace", fontWeight: 600 }}>{row.id}</td>
+                  <td>{row.date}</td>
+                  <td>{row.plan}</td>
+                  <td>{row.amount}</td>
+                  <td>
+                    <span className={`billing-status-badge ${row.status}`}>
+                      ✓ ادا شدہ
+                    </span>
+                  </td>
+                  <td>
+                    <button className="billing-download-btn">
+                      <Download size={14} /> PDF
+                    </button>
+                  </td>
+                </tr>
+            )) : (
+              <tr>
+                <td colSpan={6} style={{ textAlign: 'center', padding: '24px' }}>
+                  ابھی کوئی ادائیگی موجود نہیں
                 </td>
               </tr>
-            ))}
+            )}
           </tbody>
         </table>
       </div>

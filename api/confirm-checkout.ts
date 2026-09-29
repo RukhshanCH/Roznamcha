@@ -18,6 +18,9 @@ function getExpiresAt(cycle: 'monthly' | 'yearly'): string {
   return date.toISOString();
 }
 
+const wait = (milliseconds: number) =>
+  new Promise((resolve) => setTimeout(resolve, milliseconds));
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -34,8 +37,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const checkoutTracker = tracker ?? beacon;
 
   if (!accessToken || !checkoutTracker || !planId || !cycle || !PLAN_PRICES[planId]?.[cycle]) {
+    const missingFields = [
+      !accessToken && 'authorization',
+      !checkoutTracker && 'tracker',
+      !planId && 'plan',
+      !cycle && 'cycle',
+      planId && cycle && !PLAN_PRICES[planId]?.[cycle] && 'plan/cycle combination',
+    ].filter(Boolean);
     return res.status(400).json({
       error: 'Missing or invalid checkout confirmation data',
+      details: `Missing or invalid: ${missingFields.join(', ') || 'unknown fields'}`,
       missing: {
         authorization: !accessToken,
         tracker: !checkoutTracker,
@@ -59,27 +70,58 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const host = environment === 'production'
     ? 'api.getsafepay.com'
     : 'sandbox.api.getsafepay.com';
+  const safepaySecret = process.env.SAFEPAY_SECRET_KEY;
+
+  if (!safepaySecret) {
+    console.error('Safepay secret key is not configured');
+    return res.status(500).json({ error: 'Payment gateway is not configured for verification' });
+  }
 
   try {
-    const trackerResponse = await fetch(`https://${host}/order/v1/${encodeURIComponent(checkoutTracker)}`, {
-      headers: { Accept: 'application/json' },
-    });
-    const trackerResult = (await trackerResponse.json().catch(() => null)) as {
-      data?: { state?: string; amount?: number; currency?: string };
+    let trackerResult: {
+      data?: { state?: string; amount?: number | string; currency?: string };
       status?: { errors?: string[] };
-    } | null;
+    } | null = null;
+    let trackerResponseOk = false;
 
-    if (!trackerResponse.ok || !trackerResult?.data) {
-      return res.status(502).json({ error: 'Could not verify the Safepay transaction' });
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const trackerResponse = await fetch(
+        `https://${host}/reporter/api/v1/payments/${encodeURIComponent(checkoutTracker)}`,
+        {
+          headers: {
+            Accept: 'application/json',
+            'x-sfpy-merchant-secret': safepaySecret,
+          },
+        },
+      );
+      trackerResponseOk = trackerResponse.ok;
+      trackerResult = (await trackerResponse.json().catch(() => null)) as typeof trackerResult;
+
+      if (
+        trackerResponseOk &&
+        trackerResult?.data?.state === 'TRACKER_ENDED'
+      ) {
+        break;
+      }
+
+      if (attempt < 4) await wait(2000);
+    }
+
+    if (!trackerResponseOk || !trackerResult?.data) {
+      return res.status(502).json({
+        error: 'Could not verify the Safepay transaction',
+        details: trackerResult?.status?.errors?.join(', ') ?? 'Safepay reporter request failed',
+      });
     }
 
     if (
       trackerResult.data.state !== 'TRACKER_ENDED' ||
-      trackerResult.data.amount !== PLAN_PRICES[planId][cycle] ||
-      trackerResult.data.currency !== 'PKR'
+      Number(trackerResult.data.amount) !== PLAN_PRICES[planId][cycle] * 100 ||
+      trackerResult.data.currency?.toUpperCase() !== 'PKR'
     ) {
       return res.status(409).json({
         error: 'Safepay payment is not completed or does not match this plan',
+        details: `state=${trackerResult.data.state ?? 'unknown'}, amount=${trackerResult.data.amount ?? 'unknown'}, currency=${trackerResult.data.currency ?? 'unknown'}`,
       });
     }
 

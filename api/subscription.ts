@@ -40,7 +40,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // ── 3. Fetch subscription row ─────────────────────────────────────────
   const { data: sub, error: dbError } = await supabase
     .from('subscriptions')
-    .select('plan, billing_cycle, expires_at')
+    .select('plan, billing_cycle, expires_at, safepay_tracker, updated_at')
     .eq('user_id', user.id)
     .single();
 
@@ -62,5 +62,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     billingCycle: sub?.billing_cycle ?? null,
     expiresAt: sub?.expires_at ?? null,
     isActive,
+    payment: sub
+      ? {
+          tracker: sub.safepay_tracker ?? null,
+          paidAt: sub.updated_at ?? null,
+        plan: sub.plan ?? 'free',
+        billingCycle: sub.billing_cycle ?? null,
+      }
+      : undefined,
   });
 }

@@ -41,4 +41,10 @@ export interface Subscription {
   billingCycle: 'monthly' | 'yearly' | null;
   expiresAt: string | null;
   isActive: boolean;
+  payment?: {
+    tracker: string | null;
+    paidAt: string | null;
+    plan: Plan;
+    billingCycle: 'monthly' | 'yearly' | null;
+  };
 }
