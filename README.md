@@ -71,3 +71,18 @@ export default defineConfig([
   },
 ])
 ```
+
+## Safepay serverless configuration
+
+The billing serverless endpoints in [`api/`](C:/Users/rukhs/Desktop/Roznamcha/api) require these environment variables:
+
+- `SAFEPAY_API_KEY`
+- `SAFEPAY_SECRET_KEY`
+- `SAFEPAY_WEBHOOK_SECRET` (webhook endpoint secret from the Safepay dashboard)
+- `SAFEPAY_ENV` (`sandbox` or `production`)
+
+SafePay tracker metadata only supports `order_id`. The checkout endpoint encodes
+the user, plan, and billing cycle in that value so the webhook can activate the
+correct subscription.
+
+Webhook endpoint: `/api/webhook`

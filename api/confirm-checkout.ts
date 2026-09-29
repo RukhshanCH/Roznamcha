@@ -1,6 +1,22 @@
 /**
+ * api/confirm-checkout.ts  — FIXED
  * Confirms a completed Safepay tracker after the hosted checkout redirects
  * back to the billing page, then activates the authenticated user's plan.
+ *
+ * RESPONSE SHAPE — READ THIS (corrected 2026-09-30 against a real sandbox
+ * response): Safepay's reporter returns the tracker fields DIRECTLY under
+ * `data`, NOT under `data.tracker` as the Express Checkout guide's example
+ * suggests. Real response:
+ *   {"ok":true,"data":{"token":"track_...","state":"TRACKER_ENDED",
+ *    "purchase_totals":{"quote_amount":{"currency":"PKR","amount":99900}},...}}
+ * Correct paths:
+ *   state    -> data.state
+ *   amount   -> data.purchase_totals.quote_amount.amount  (paisa)
+ *   currency -> data.purchase_totals.quote_amount.currency
+ *
+ * (The original code got `data.state` right but read `data.amount` /
+ * `data.currency`, which don't exist — so every payment failed the amount
+ * check with a 409 and the plan stayed on free.)
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -20,6 +36,26 @@ function getExpiresAt(cycle: 'monthly' | 'yearly'): string {
 
 const wait = (milliseconds: number) =>
   new Promise((resolve) => setTimeout(resolve, milliseconds));
+
+// Shape of GET /reporter/api/v1/payments/{tracker}.
+// ⚠️ The live API returns the tracker fields DIRECTLY under `data`
+// ({"ok":true,"data":{"token":"track_...","state":"TRACKER_ENDED",...}}),
+// NOT under `data.tracker` as the docs example suggests. Verified against a
+// real sandbox response on 2026-09-30.
+interface ReporterResponse {
+  ok?: boolean;
+  data?: {
+    token?: string;
+    state?: string;
+    purchase_totals?: {
+      quote_amount?: {
+        currency?: string;
+        amount?: number | string;
+      };
+    };
+  };
+  status?: { errors?: string[]; message?: string };
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
@@ -78,11 +114,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    let trackerResult: {
-      data?: { state?: string; amount?: number | string; currency?: string };
-      status?: { errors?: string[] };
-    } | null = null;
-    let trackerResponseOk = false;
+    let trackerState: string | undefined;
+    let quoteAmount: number | undefined;
+    let quoteCurrency: string | undefined;
 
     for (let attempt = 0; attempt < 5; attempt += 1) {
       const trackerResponse = await fetch(
@@ -94,34 +128,57 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           },
         },
       );
-      trackerResponseOk = trackerResponse.ok;
-      trackerResult = (await trackerResponse.json().catch(() => null)) as typeof trackerResult;
 
-      if (
-        trackerResponseOk &&
-        trackerResult?.data?.state === 'TRACKER_ENDED'
-      ) {
+      const rawBody = await trackerResponse.text().catch(() => '');
+      let body: ReporterResponse | null = null;
+      try {
+        body = rawBody ? (JSON.parse(rawBody) as ReporterResponse) : null;
+      } catch {
+        body = null;
+      }
+      // Live API: tracker fields sit directly under `data`
+      // (the docs' `data.tracker` nesting does not match reality).
+      const tracker = body?.data;
+      trackerState = tracker?.state;
+      quoteAmount = tracker?.purchase_totals?.quote_amount?.amount != null
+        ? Number(tracker.purchase_totals.quote_amount.amount)
+        : undefined;
+      quoteCurrency = tracker?.purchase_totals?.quote_amount?.currency;
+
+      console.log(
+        `confirm-checkout attempt ${attempt + 1}: http=${trackerResponse.status} ` +
+        `state=${trackerState ?? 'unknown'} amount=${quoteAmount ?? 'unknown'} currency=${quoteCurrency ?? 'unknown'}`,
+      );
+      if (!trackerResponse.ok || trackerState === undefined) {
+        console.log(
+          `confirm-checkout attempt ${attempt + 1} response body: ` +
+          rawBody.replace(/\s+/g, ' ').trim().slice(0, 500),
+        );
+      }
+
+      if (trackerResponse.ok && trackerState === 'TRACKER_ENDED') {
         break;
       }
 
       if (attempt < 4) await wait(2000);
     }
 
-    if (!trackerResponseOk || !trackerResult?.data) {
+    if (trackerState === undefined) {
       return res.status(502).json({
         error: 'Could not verify the Safepay transaction',
-        details: trackerResult?.status?.errors?.join(', ') ?? 'Safepay reporter request failed',
+        details: 'Safepay reporter request failed',
       });
     }
 
+    const expectedAmount = PLAN_PRICES[planId][cycle] * 100; // PKR -> paisa
     if (
-      trackerResult.data.state !== 'TRACKER_ENDED' ||
-      Number(trackerResult.data.amount) !== PLAN_PRICES[planId][cycle] * 100 ||
-      trackerResult.data.currency?.toUpperCase() !== 'PKR'
+      trackerState !== 'TRACKER_ENDED' ||
+      quoteAmount !== expectedAmount ||
+      quoteCurrency?.toUpperCase() !== 'PKR'
     ) {
       return res.status(409).json({
         error: 'Safepay payment is not completed or does not match this plan',
-        details: `state=${trackerResult.data.state ?? 'unknown'}, amount=${trackerResult.data.amount ?? 'unknown'}, currency=${trackerResult.data.currency ?? 'unknown'}`,
+        details: `state=${trackerState}, amount=${quoteAmount ?? 'unknown'} (expected ${expectedAmount}), currency=${quoteCurrency ?? 'unknown'}`,
       });
     }
 
@@ -141,6 +198,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(500).json({ error: 'Database update failed' });
     }
 
+    console.log(`Plan activated via confirm-checkout: user=${user.id} plan=${planId} cycle=${cycle}`);
     return res.status(200).json({ confirmed: true });
   } catch (error) {
     console.error('Safepay confirmation error:', error);

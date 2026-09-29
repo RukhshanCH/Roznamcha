@@ -184,22 +184,64 @@ export default function BillingPage() {
         return null;
       }
     })();
-    const tracker = params.get('tracker')
-      ?? params.get('beacon')
-      ?? params.get('token')
-      ?? pendingCheckout?.tracker;
-    const planId = params.get('plan') ?? pendingCheckout?.planId;
-    const cycle = (params.get('cycle') as BillingCycle | null) ?? pendingCheckout?.cycle;
+    // SafePay appends its own `tracker` to our redirect_url, which already
+    // carries query params -- values can arrive mangled (e.g.
+    // cycle="monthly?tracker=track_x"). Accept only exact values from the
+    // URL and fall back to the pending checkout stored before redirecting.
+    const cleanTracker = (value: string | null | undefined) =>
+      value ? value.split('?')[0].split('&')[0].split('#')[0] : undefined;
 
-    if (!tracker || (planId !== 'pro' && planId !== 'business') || !cycle) return;
+    const tracker = cleanTracker(params.get('tracker'))
+      ?? cleanTracker(params.get('beacon'))
+      ?? cleanTracker(params.get('token'))
+      ?? pendingCheckout?.tracker;
+
+    const urlPlan = params.get('plan');
+    const planId = urlPlan === 'pro' || urlPlan === 'business'
+      ? urlPlan
+      : pendingCheckout?.planId;
+
+    const urlCycle = params.get('cycle');
+    const cycle: BillingCycle | undefined =
+      urlCycle === 'monthly' || urlCycle === 'yearly'
+        ? urlCycle
+        : pendingCheckout?.cycle;
+
+    // Debug logging: silent skips were the reason the network tab stayed empty.
+    console.log('[checkout] return params:', {
+      search: window.location.search || '(none)',
+      tracker: tracker ? 'present (' + tracker.slice(0, 14) + '\u2026)' : null,
+      planId: planId ?? null,
+      cycle: cycle ?? null,
+      usedPendingStorage: !params.get('tracker') && !!pendingCheckout?.tracker,
+    });
+
+    if (!tracker || (planId !== 'pro' && planId !== 'business') || !cycle) {
+      console.log('[checkout] skipping confirmation -- tracker/plan/cycle not resolved');
+      return;
+    }
+    console.log('[checkout] guard passed — starting confirmation');
     checkoutConfirmationStarted.current = true;
     setCheckoutError(null);
 
-    let cancelled = false;
+    // NOTE: intentionally no cancellation flag here. In dev React StrictMode
+    // this effect runs setup -> cleanup -> setup; a cleanup that cancels the
+    // in-flight request would silently kill the confirmation while the ref
+    // guard above stops the second run from retrying. The ref alone makes
+    // the request fire exactly once; setState after unmount is harmless in
+    // React 18.
     const confirmationRequest = (async () => {
+      console.log('[checkout] requesting Supabase session…');
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session || cancelled) return;
+      console.log('[checkout] session:', session ? 'present' : 'MISSING');
+      if (!session) {
+        // This used to return silently -- now the user sees what happened.
+        console.error('[checkout] no Supabase session after redirect; cannot confirm payment');
+        setCheckoutError('\u0622\u067e \u06a9\u0627 \u0644\u0627\u06af \u0627\u0650\u0646 \u0633\u06cc\u0634\u0646 \u0646\u06c1\u06cc\u06ba \u0645\u0644\u0627\u06d4 \u0628\u0631\u0627\u06c1 \u06a9\u0631\u0645 \u062f\u0648\u0628\u0627\u0631\u06c1 \u0644\u0627\u06af \u0627\u0650\u0646 \u06a9\u0631 \u06a9\u06d2 \u0627\u062f\u0627\u0626\u06cc\u06af\u06cc \u0645\u06a9\u0645\u0644 \u06a9\u0631\u06cc\u06ba\u06d4');
+        return;
+      }
 
+      console.log('[checkout] calling /api/confirm-checkout \u2026');
       const response = await fetch('/api/confirm-checkout', {
         method: 'POST',
         headers: {
@@ -208,36 +250,30 @@ export default function BillingPage() {
         },
         body: JSON.stringify({ tracker, beacon: tracker, planId, cycle }),
       });
+      console.log('[checkout] confirm-checkout responded:', response.status);
 
-      if (response.ok && !cancelled) {
+      if (response.ok) {
         window.localStorage.removeItem(PENDING_CHECKOUT_KEY);
         window.history.replaceState({}, '', '/billing');
         // Auth bootstrap fetches the subscription on a full reload. Keeping
         // the reload here also handles a stale plan atom after checkout.
         window.location.reload();
-      } else if (!response.ok) {
+      } else {
         const result = await response.json().catch(() => null) as {
           error?: string;
           details?: string;
         } | null;
         const message = [result?.error, result?.details].filter(Boolean).join(': ');
         console.error('Checkout confirmation failed:', message || `HTTP ${response.status}`);
-        if (!cancelled) {
-          setCheckoutError(message || 'ادائیگی کی تصدیق نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔');
-        }
+        setCheckoutError(message || 'ادائیگی کی تصدیق نہیں ہو سکی۔ براہ کرم دوبارہ کوشش کریں۔');
       }
     })();
 
     void confirmationRequest.catch((error: unknown) => {
       console.error('Checkout confirmation request failed:', error);
-      if (!cancelled) {
-        setCheckoutError('ادائیگی کی تصدیق کے دوران خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔');
-      }
+      setCheckoutError('ادائیگی کی تصدیق کے دوران خرابی پیش آئی۔ براہ کرم دوبارہ کوشش کریں۔');
     });
 
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   const formatPrice = (price: number) =>

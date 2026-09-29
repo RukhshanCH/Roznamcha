@@ -1,7 +1,12 @@
 /**
- * api/create-checkout.ts
+ * api/create-checkout.ts  — FIXED (2026-09-29)
  * Vercel Serverless Function — creates a Safepay payment tracker and
  * returns the hosted checkout URL for the frontend to redirect to.
+ *
+ * FIX: the tracker is now created WITH `metadata` ({ user_id, plan_id,
+ * billing_cycle }) so the Safepay webhook can link the payment back to
+ * your user and plan. Without this, api/webhook.ts can never know whose
+ * subscription to activate.
  *
  * POST /api/create-checkout
  * Body: { planId: 'pro' | 'business', cycle: 'monthly' | 'yearly', userId: string, email: string }
@@ -76,6 +81,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         entry_mode: 'raw',
         amount: amount * 100,
         currency: 'PKR',
+        // ⬇️ FIXED: attach metadata so the webhook can identify the user/plan.
+        // SafePay rejects unknown metadata keys on tracker creation
+        // ("unsupported meta key ...") — only documented keys like
+        // "order_id" are accepted. So we pack everything into order_id as
+        // JSON; the webhook unpacks it. SafePay echoes metadata back as
+        // data.metadata in webhook events.
+        metadata: {
+          order_id: JSON.stringify({
+            user_id: userId,
+            plan_id: planId,
+            billing_cycle: cycle,
+          }),
+        },
       }),
     });
 
