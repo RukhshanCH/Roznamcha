@@ -154,7 +154,14 @@ export default function BackupPage() {
           </button>
 
           {showModal && (
-            <div className="modal-overlay" onClick={() => setShowModal(false)}>
+            <div
+              className="modal-overlay"
+              onPointerDown={(e) => {
+                if (e.target === e.currentTarget) {
+                  setShowModal(false);
+                }
+              }}
+            >
               <div
                 className="modal"
                 onClick={(e) => e.stopPropagation()}

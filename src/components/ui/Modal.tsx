@@ -36,7 +36,11 @@ const Modal = ({ title, submitText, handleSubmit, children, type = "button", ari
             {showModal && (
                 <div
                     className="modal-overlay"
-                    onClick={() => setShowModal(false)}
+                    onPointerDown={(e) => {
+                        if (e.target === e.currentTarget) {
+                            setShowModal(false);
+                        }
+                    }}
                 >
                     <div
                         className="modal"

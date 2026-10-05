@@ -199,7 +199,14 @@ export default function EntryFormModal({ isRemaining }: Props) {
   };
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
+    <div
+      className="modal-overlay"
+      onPointerDown={(e) => {
+        if (e.target === e.currentTarget) {
+          handleClose();
+        }
+      }}
+    >
       <div
         role="dialog"
         aria-modal="true"
