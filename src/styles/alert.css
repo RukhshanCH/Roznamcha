@@ -1,53 +1,101 @@
 .custom-alert {
   position: fixed;
-  top: 20px;
-  right: 20px;
-
-  width: 320px;
-  padding: 16px;
-  text-align: center;
-
-  background: #ffffff;
-  border: 1px solid #22c55e;
-  border-left: 5px solid #22c55e;
-  border-radius: 10px;
-
-  color: #1f2937;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-
+  top: 24px;
+  right: 24px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: min(380px, calc(100vw - 32px));
+  min-height: 72px;
+  padding: 14px 16px;
+  direction: rtl;
+  text-align: right;
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid #dbe4ee;
+  border-right: 4px solid #2563eb;
+  border-radius: 14px;
+  color: #172033;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.14), 0 3px 8px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(10px);
   z-index: 9999;
-
-  animation: slideIn 0.3s ease;
+  animation: slideIn 0.3s ease-out;
 }
 
 .custom-alert.success {
-  border-color: #22c55e;
-  border-left-color: #22c55e;
+  border-right-color: #059669;
 }
 
 .custom-alert.error {
-  border-color: #ef4444;
-  border-left-color: #ef4444;
+  border-right-color: #dc2626;
+}
+
+.custom-alert.info {
+  border-right-color: #2563eb;
+}
+
+.custom-alert .alert-icon {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 10px;
+  color: #2563eb;
+  background: #eff6ff;
+}
+
+.custom-alert.success .alert-icon {
+  color: #047857;
+  background: #ecfdf5;
+}
+
+.custom-alert.error .alert-icon {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.custom-alert .alert-content {
+  min-width: 0;
+  flex: 1;
 }
 
 .custom-alert .alert-title {
-  font-size: 18px;
-  font-weight: 600;
-  margin-bottom: 8px;
+  margin: 0 0 2px;
+  color: #172033;
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
 }
 
 .custom-alert .alert-description {
-  font-size: 16px;
-  color: #6b7280;
+  color: #526176;
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
 }
 
 @keyframes slideIn {
   from {
     opacity: 0;
-    transform: translateX(100%);
+    transform: translateX(24px);
   }
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+@media (max-width: 640px) {
+  .custom-alert {
+    top: 16px;
+    right: 16px;
+    width: calc(100vw - 32px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .custom-alert {
+    animation: none;
   }
 }
