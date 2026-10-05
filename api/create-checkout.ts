@@ -10,6 +10,11 @@
  *
  * POST /api/create-checkout
  * Body: { planId: 'pro' | 'business', cycle: 'monthly' | 'yearly', userId: string, email: string }
+ *
+ * EMAIL PREFILL (2026-09-30): creates a SafePay guest customer from the
+ * shopper's email (best-effort — never blocks checkout) and attaches it via
+ * `user` on the tracker + `user_id` on the checkout URL, so the hosted form
+ * comes prefilled and SafePay sends the payment receipt to the right address.
  */
 
 import type { VercelRequest, VercelResponse } from '@vercel/node';
@@ -67,6 +72,50 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    // Step 0 (best-effort): create a guest customer so SafePay prefills the
+    // checkout form and emails the receipt to the right address.
+    // This must NEVER break checkout — any failure just means "no prefill".
+    let safepayCustomerToken: string | undefined;
+    try {
+      const nameParts = email
+        .split('@')[0]
+        .replace(/[._-]+/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean);
+      const firstName = nameParts[0] ?? 'Customer';
+      const lastName = nameParts.slice(1).join(' ');
+      const customerRes = await fetch(`https://${safepayApiHost}/user/customers/v1`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-sfpy-merchant-secret': safepaySecret,
+        },
+        body: JSON.stringify({
+          first_name: firstName,
+          ...(lastName ? { last_name: lastName } : {}),
+          email,
+          country: 'PK',
+          is_guest: true,
+        }),
+      });
+      if (customerRes.ok) {
+        const customerBody = (await customerRes.json()) as { data?: { token?: string } };
+        safepayCustomerToken = customerBody?.data?.token;
+        if (safepayCustomerToken) {
+          console.log('Safepay guest customer created:', safepayCustomerToken);
+        }
+      } else {
+        console.warn(
+          'Safepay customer creation skipped:',
+          customerRes.status,
+          (await customerRes.text()).replace(/\s+/g, ' ').trim().slice(0, 200),
+        );
+      }
+    } catch (customerError) {
+      console.warn('Safepay customer creation failed (continuing without prefill):', customerError);
+    }
+
     // Step 1: Create a tracker (Safepay payment session).
     const trackerRes = await fetch(`https://${safepayApiHost}/order/payments/v3/`, {
       method: 'POST',
@@ -81,6 +130,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         entry_mode: 'raw',
         amount: amount * 100,
         currency: 'PKR',
+        // Attach the guest customer so the hosted form is prefilled.
+        ...(safepayCustomerToken ? { user: safepayCustomerToken } : {}),
         // ⬇️ FIXED: attach metadata so the webhook can identify the user/plan.
         // SafePay rejects unknown metadata keys on tracker creation
         // ("unsupported meta key ...") — only documented keys like
@@ -145,6 +196,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       environment: safepayEnvironment,
       tracker: token,
       tbt: tbtResult.data,
+      // Prefill the hosted form with the guest customer (email), when available.
+      ...(safepayCustomerToken ? { user_id: safepayCustomerToken } : {}),
       cancel_url: `${appUrl}/billing`,
       redirect_url: `${appUrl}/billing?tracker=${encodeURIComponent(token)}&plan=${encodeURIComponent(planId)}&cycle=${cycle}`,
       source: 'hosted',
