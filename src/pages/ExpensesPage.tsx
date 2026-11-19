@@ -51,6 +51,8 @@ export default function ExpensesPage() {
     };
 
     loadEntries();
+    window.addEventListener('roznamcha:data-changed', loadEntries);
+    return () => window.removeEventListener('roznamcha:data-changed', loadEntries);
   }, [selectedDate, showAll, search, setExpenses, refreshEntries]);
 
   const handleAddNew = () => {

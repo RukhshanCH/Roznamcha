@@ -1,9 +1,37 @@
-import { useState, useRef, type ChangeEvent } from "react";
+import { useState, useRef, type ChangeEvent, type FormEvent } from "react";
 import { useSetting } from "@/hooks/useSetting";
 import { Pencil, Camera, Trash2, Building2, MapPin, Phone, Mail, Save } from "lucide-react";
 import Logo from "../assets/Logo.webp";
+import { useAtomValue } from 'jotai';
+import { userAtom } from '@/store/atoms';
+import { updateUserProfile } from '@/hooks/useAuth';
 
 export default function Settings() {
+    const user = useAtomValue(userAtom);
+    const [accountName, setAccountName] = useState(
+        typeof user?.user_metadata?.display_name === 'string' ? user.user_metadata.display_name : '',
+    );
+    const [newPassword, setNewPassword] = useState('');
+    const [profileError, setProfileError] = useState('');
+    const [profileMessage, setProfileMessage] = useState('');
+    const [profileSaving, setProfileSaving] = useState(false);
+
+    const saveAccountProfile = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setProfileError('');
+        setProfileMessage('');
+        setProfileSaving(true);
+        try {
+            await updateUserProfile({ displayName: accountName, password: newPassword || undefined });
+            setNewPassword('');
+            setProfileMessage('Account profile updated.');
+        } catch (error) {
+            setProfileError(error instanceof Error ? error.message : 'Could not update the account profile.');
+        } finally {
+            setProfileSaving(false);
+        }
+    };
+
     // Company name
     const [companyName, setCompanyName, loading] = useSetting("companyName", "Company Name");
     const [isEditingName, setIsEditingName] = useState(false);
@@ -437,6 +465,42 @@ export default function Settings() {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <div className="settings-card">
+                <h3 className="card-title">Account Profile</h3>
+                <p>{user?.email}</p>
+                <form onSubmit={saveAccountProfile}>
+                    <div className="form-grid">
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="account-display-name">Display name</label>
+                            <input
+                                id="account-display-name"
+                                className="input-field"
+                                autoComplete="name"
+                                value={accountName}
+                                onChange={(event) => setAccountName(event.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="account-new-password">New password (optional)</label>
+                            <input
+                                id="account-new-password"
+                                className="input-field"
+                                type="password"
+                                autoComplete="new-password"
+                                minLength={8}
+                                value={newPassword}
+                                onChange={(event) => setNewPassword(event.target.value)}
+                            />
+                        </div>
+                    </div>
+                    {profileError && <p role="alert" className="auth-error">{profileError}</p>}
+                    {profileMessage && <p role="status" className="auth-success">{profileMessage}</p>}
+                    <button className="btn btn-primary" type="submit" disabled={profileSaving}>
+                        <Save size={14} /> {profileSaving ? 'Saving…' : 'Save account profile'}
+                    </button>
+                </form>
             </div>
 
             {/* Business Details Card */}

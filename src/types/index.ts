@@ -1,5 +1,11 @@
 export interface JournalEntry {
   id?: number;
+  ownerUserId?: string;
+  cloudId?: string;
+  cloudVersion?: number;
+  syncStatus?: 'pending' | 'synced' | 'conflict';
+  sourceInstallationId?: string;
+  sourceLocalId?: number;
   serialNo: number;
   name: string;
   mobileNumber: string;
@@ -26,6 +32,12 @@ export interface JournalEntry {
 
 export interface CustomerEntry {
   id?: number;
+  ownerUserId?: string;
+  cloudId?: string;
+  cloudVersion?: number;
+  syncStatus?: 'pending' | 'synced' | 'conflict';
+  sourceInstallationId?: string;
+  sourceLocalId?: number;
   serialNo: number;
   name: string;
   mobileNumber: string;
@@ -38,6 +50,12 @@ export interface CustomerEntry {
 
 export interface ExpensesEntry {
   id?: number;
+  ownerUserId?: string;
+  cloudId?: string;
+  cloudVersion?: number;
+  syncStatus?: 'pending' | 'synced' | 'conflict';
+  sourceInstallationId?: string;
+  sourceLocalId?: number;
   serialNo: number;
   name: string;
   description: string;
@@ -51,6 +69,12 @@ export interface ExpensesEntry {
 
 export interface PaymentsEntry {
   id?: number;
+  ownerUserId?: string;
+  cloudId?: string;
+  cloudVersion?: number;
+  syncStatus?: 'pending' | 'synced' | 'conflict';
+  sourceInstallationId?: string;
+  sourceLocalId?: number;
   serialNo: number;
   name: string;
   description: string;
@@ -87,4 +111,32 @@ export interface SummaryCardData {
   value: string;
   icon: string;
   variant: 'blue' | 'green' | 'gold' | 'white';
+}
+
+export type LocalDataStore = 'entries' | 'customers' | 'expenses' | 'payments';
+
+export interface SyncOutboxRecord {
+  key: string;
+  mutationId: string;
+  userId: string;
+  store: LocalDataStore | 'settings';
+  localId?: number;
+  settingKey?: string;
+  operation: 'upsert' | 'delete';
+  cloudId?: string;
+  cloudVersion?: number;
+  payload?: Record<string, unknown>;
+  createdAt: number;
+  attempts: number;
+  lastError?: string;
+}
+
+export interface SyncTombstoneRecord {
+  key: string;
+  userId: string;
+  store: LocalDataStore;
+  cloudId: string;
+  installationId: string;
+  sourceLocalId: number;
+  deletedAt: number;
 }

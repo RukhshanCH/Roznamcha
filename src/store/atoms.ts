@@ -1,5 +1,14 @@
 import { atom } from 'jotai';
 import type { CustomerEntry, ExpensesEntry, JournalEntry, PaymentsEntry } from '@/types';
+import type { User } from '@supabase/supabase-js';
+import type { SyncConflict } from '@/db/cloudSync';
+
+export type SyncStatusState = {
+  phase: 'idle' | 'syncing' | 'synced' | 'pending' | 'offline' | 'error' | 'conflict';
+  queued: number;
+  conflicts: SyncConflict[];
+  error?: string;
+};
 
 export const sidebarCollapsedAtom = atom(false);
 
@@ -37,3 +46,13 @@ export const showModalAtom = atom(false);
 export const alertAtom = atom(false);
 export const alertTypeAtom = atom("");
 export const alertMessageAtom = atom("");
+
+export const userAtom = atom<User | null>(null);
+export const authLoadingAtom = atom(true);
+export const authErrorAtom = atom<string | null>(null);
+export const syncStatusAtom = atom<SyncStatusState>({
+  phase: 'idle',
+  queued: 0,
+  conflicts: [],
+});
+export const syncRequestAtom = atom(0);

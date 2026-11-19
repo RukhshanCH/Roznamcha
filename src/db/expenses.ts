@@ -10,4 +10,4 @@ export {
   permanentlyDeleteEntryEx,
   emptyTrashEx,
   getTrashEntriesEx
-} from '@/db/indexedDB';
+} from '@/db/primaryRepository';

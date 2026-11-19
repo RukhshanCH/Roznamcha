@@ -281,6 +281,71 @@ input[type="number"] {
   /* gap: 10px; */
 }
 
+.sync-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font: 0.75rem var(--font-ui);
+  margin-inline: 8px;
+  position: relative;
+}
+
+.sync-status-error,
+.sync-status-conflict {
+  color: var(--badge-red);
+}
+
+.sync-status-offline,
+.sync-status-pending {
+  color: var(--accent-gold);
+}
+
+.sync-status-retry,
+.sync-conflicts button {
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent-blue-light);
+  color: var(--accent-blue-hover);
+  cursor: pointer;
+  padding: 5px 8px;
+  font: inherit;
+}
+
+.sync-conflicts summary {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.sync-conflicts ul {
+  position: absolute;
+  z-index: 80;
+  inset-inline-start: 0;
+  top: calc(100% + 8px);
+  width: min(460px, 90vw);
+  max-height: 60vh;
+  overflow: auto;
+  list-style: none;
+  background: white;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-hover);
+  padding: 12px;
+}
+
+.sync-conflicts li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sync-conflicts p {
+  color: var(--badge-red);
+}
+
 .header-btn {
   background: none;
   border: none;

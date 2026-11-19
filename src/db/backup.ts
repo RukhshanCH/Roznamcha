@@ -7,4 +7,4 @@ export {
   exportByDateRange,
   importBackup,
   checkWeeklyBackup
-} from '@/db/indexedDB';
+} from '@/db/primaryBackup';

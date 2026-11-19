@@ -14,4 +14,4 @@ export {
   generateInvoiceNumber,
   saveInvoiceCounter,
 
-} from '@/db/indexedDB';
+} from '@/db/primaryRepository';

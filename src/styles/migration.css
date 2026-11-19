@@ -1,0 +1,60 @@
+.migration-page {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #f3f6fb;
+}
+
+.migration-card {
+  width: min(100%, 560px);
+  display: grid;
+  gap: 14px;
+  padding: 28px;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 8px 36px rgb(15 23 42 / 10%);
+}
+
+.migration-card h1,
+.migration-card p,
+.migration-card ul {
+  margin: 0;
+}
+
+.migration-card ul {
+  padding-inline-start: 22px;
+}
+
+.migration-confirm {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.migration-card button {
+  padding: 11px 16px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: #1d4ed8;
+  cursor: pointer;
+}
+
+.migration-card button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.migration-card .migration-secondary {
+  color: #1f2937;
+  background: #e5e7eb;
+}
+
+.migration-card progress {
+  width: 100%;
+}
+
+.migration-spinner {
+  animation: auth-spin 1s linear infinite;
+}

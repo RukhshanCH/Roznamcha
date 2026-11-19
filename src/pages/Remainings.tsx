@@ -34,6 +34,8 @@ export default function Remainings() {
             setEntries(allData);
         };
         void loadData();
+        window.addEventListener('roznamcha:data-changed', loadData);
+        return () => window.removeEventListener('roznamcha:data-changed', loadData);
     }, [setEntries]);
 
     const handlePrint = useCallback(() => {

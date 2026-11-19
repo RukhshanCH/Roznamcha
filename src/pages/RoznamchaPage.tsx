@@ -97,6 +97,8 @@ export default function RoznamchaPage() {
       await refreshEntries();
     };
     loadEntries();
+    window.addEventListener('roznamcha:data-changed', loadEntries);
+    return () => window.removeEventListener('roznamcha:data-changed', loadEntries);
   }, [selectedDate, showAll, search, setEntries, refreshEntries]);
 
   const summary = useMemo(() => {

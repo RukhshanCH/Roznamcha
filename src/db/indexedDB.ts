@@ -1,11 +1,45 @@
-import type { CustomerEntry, JournalEntry, ExpensesEntry, PaymentsEntry } from '@/types';
+import type {
+  CustomerEntry,
+  JournalEntry,
+  ExpensesEntry,
+  PaymentsEntry,
+  LocalDataStore,
+} from '@/types';
+import {
+  getActiveInstallationId,
+  getActiveSyncUser,
+  getScopedSettingKey,
+} from '@/db/syncContext';
+import {
+  addLocalRecord,
+  deleteLocalRecord,
+  putLocalRecord,
+  putLocalSetting,
+} from '@/db/localSync';
+import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase';
 
 const DB_NAME = 'RoznamchaDB';
-const DB_VERSION = 4;
+const DB_VERSION = 6;
 const STORE_NAME = 'entries';
 const CUSTOMER_STORE_NAME = 'customers';
 const EXPENSES_STORE_NAME = 'expenses';
 const PAYMENTS_STORE_NAME = 'payments';
+export const SYNC_OUTBOX_STORE_NAME = 'syncOutbox';
+export const SYNC_TOMBSTONES_STORE_NAME = 'syncTombstones';
+export const DATABASE_VERSION = DB_VERSION;
+
+function isOwnedByActiveUser(record: { ownerUserId?: string }): boolean {
+  const userId = getActiveSyncUser();
+  return userId !== null && record.ownerUserId === userId;
+}
+
+function transactionDone(transaction: IDBTransaction): Promise<void> {
+  return new Promise((resolve, reject) => {
+    transaction.oncomplete = () => resolve();
+    transaction.onabort = () => reject(transaction.error ?? new Error('IndexedDB transaction was aborted.'));
+    transaction.onerror = () => reject(transaction.error ?? new Error('IndexedDB transaction failed.'));
+  });
+}
 
 let db: IDBDatabase | null = null;
 
@@ -23,6 +57,7 @@ export async function initDB(): Promise<IDBDatabase> {
       db = request.result;
       db.onversionchange = () => {
         db?.close();
+        db = null;
         console.warn('IndexedDB version change detected; the database connection was closed. Reload the page to reconnect.');
       };
       resolve(db);
@@ -68,6 +103,25 @@ export async function initDB(): Promise<IDBDatabase> {
           keyPath: "key",
         });
       }
+      if (!database.objectStoreNames.contains(SYNC_OUTBOX_STORE_NAME)) {
+        database.createObjectStore(SYNC_OUTBOX_STORE_NAME, { keyPath: 'key' });
+      }
+      if (!database.objectStoreNames.contains(SYNC_TOMBSTONES_STORE_NAME)) {
+        database.createObjectStore(SYNC_TOMBSTONES_STORE_NAME, { keyPath: 'key' });
+      }
+
+      for (const storeName of [
+        STORE_NAME,
+        CUSTOMER_STORE_NAME,
+        EXPENSES_STORE_NAME,
+        PAYMENTS_STORE_NAME,
+        SYNC_OUTBOX_STORE_NAME,
+      ]) {
+        const store = (event.target as IDBOpenDBRequest).transaction?.objectStore(storeName);
+        if (store && !store.indexNames.contains('cloudId')) {
+          store.createIndex('cloudId', 'cloudId', { unique: false });
+        }
+      }
     };
   });
 }
@@ -75,30 +129,84 @@ export async function initDB(): Promise<IDBDatabase> {
 // Get and Set Settings
 export async function getSetting<T = string>(key: string): Promise<T | undefined> {
   const database = await initDB();
-  return new Promise((resolve, reject) => {
-    const tx = database.transaction("settings", "readonly");
-    const store = tx.objectStore("settings");
-    const req = store.get(key);
+  const userId = getActiveSyncUser();
+  const transaction = database.transaction('settings', 'readonly');
+  const store = transaction.objectStore('settings');
+  if (!userId) {
+    const record = await requestValue<{ value?: T } | undefined>(store.get(key));
+    return record?.value;
+  }
 
-    req.onsuccess = () => {
-      // req.result is { key: "companyName", value: "..." } or undefined
-      resolve(req.result?.value);
-    };
-    req.onerror = () => reject(req.error);
-  });
+  const scopedRequest = store.get(getScopedSettingKey(userId, key));
+  const legacyRequest = store.get(key);
+  const [scoped, legacy] = await Promise.all([
+    requestValue<{ value?: T } | undefined>(scopedRequest),
+    requestValue<{ value?: T; ownerUserId?: string } | undefined>(legacyRequest),
+  ]);
+  if (scoped) return scoped.value;
+
+  return legacy?.ownerUserId === userId ? legacy.value : undefined;
 }
 
 export async function setSetting<T = string>(key: string, value: T): Promise<void> {
   const database = await initDB();
-  return new Promise((resolve, reject) => {
-    const tx = database.transaction("settings", "readwrite");
-    const store = tx.objectStore("settings");
-    // Because keyPath is "key", we pass the whole object
-    const req = store.put({ key, value });
+  const transaction = database.transaction(['settings', SYNC_OUTBOX_STORE_NAME], 'readwrite');
+  const complete = transactionDone(transaction);
+  putLocalSetting(transaction, key, value);
+  await complete;
+}
 
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
+function requestValue<T>(request: IDBRequest<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error('IndexedDB request failed.'));
   });
+}
+
+function withoutSyncMetadata(record: object): Record<string, unknown> {
+  const excluded = new Set([
+    'id',
+    'ownerUserId',
+    'cloudId',
+    'cloudVersion',
+    'syncStatus',
+    'sourceInstallationId',
+    'sourceLocalId',
+  ]);
+  return Object.fromEntries(
+    Object.entries(record).filter(([key]) => !excluded.has(key)),
+  );
+}
+
+async function getOwnedSettingsForBackup(): Promise<Array<{ key: string; value: unknown }>> {
+  const database = await initDB();
+  const transaction = database.transaction('settings', 'readonly');
+  const records = await requestValue<Array<Record<string, unknown>>>(
+    transaction.objectStore('settings').getAll(),
+  );
+  const userId = getActiveSyncUser();
+  return records.flatMap((record) => {
+    if (typeof record.ownerUserId !== 'string' || record.ownerUserId !== userId) return [];
+    if (typeof record.key !== 'string' || record.key.startsWith('@sync:')) return [];
+    const key = typeof record.userSettingKey === 'string'
+      ? record.userSettingKey
+      : record.key;
+    if (key.includes('::')) return [];
+    return [{ key, value: record.value ?? Object.fromEntries(
+      Object.entries(record).filter(([field]) =>
+        !['key', 'ownerUserId', 'cloudVersion', 'syncStatus', 'sourceInstallationId'].includes(field),
+      ),
+    ) }];
+  });
+}
+
+async function getOwnedRecordsIncludingDeleted<T extends { ownerUserId?: string }>(
+  storeName: LocalDataStore,
+): Promise<T[]> {
+  const database = await initDB();
+  const transaction = database.transaction(storeName, 'readonly');
+  const records = await requestValue<T[]>(transaction.objectStore(storeName).getAll());
+  return records.filter(isOwnedByActiveUser);
 }
 
 // CRUD operations for Journal Entries
@@ -107,9 +215,8 @@ export async function setSetting<T = string>(key: string, value: T): Promise<voi
 export async function addEntry(entry: Omit<JournalEntry, 'id'>): Promise<number> {
   const database = await initDB();
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.add(entry);
+    const transaction = database.transaction([STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
+    const request = addLocalRecord(transaction, STORE_NAME, entry);
 
     request.onsuccess = () => resolve(request.result as number);
     request.onerror = () => reject(request.error);
@@ -120,9 +227,8 @@ export async function addEntryCs(entry: Omit<CustomerEntry, 'id'>): Promise<numb
   const database = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([CUSTOMER_STORE_NAME], 'readwrite');
-    const store = tx.objectStore(CUSTOMER_STORE_NAME);
-    const request = store.add(entry);
+    const tx = database.transaction([CUSTOMER_STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
+    const request = addLocalRecord(tx, CUSTOMER_STORE_NAME, entry);
 
     request.onsuccess = () => resolve(request.result as number);
     request.onerror = () => reject(request.error);
@@ -133,9 +239,8 @@ export async function addEntryEx(entry: Omit<ExpensesEntry, 'id'>): Promise<numb
   const database = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([EXPENSES_STORE_NAME], 'readwrite');
-    const store = tx.objectStore(EXPENSES_STORE_NAME);
-    const request = store.add(entry);
+    const tx = database.transaction([EXPENSES_STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
+    const request = addLocalRecord(tx, EXPENSES_STORE_NAME, entry);
 
     request.onsuccess = () => resolve(request.result as number);
     request.onerror = () => reject(request.error);
@@ -146,9 +251,8 @@ export async function addEntryPy(entry: Omit<PaymentsEntry, 'id'>): Promise<numb
   const database = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([PAYMENTS_STORE_NAME], 'readwrite');
-    const store = tx.objectStore(PAYMENTS_STORE_NAME);
-    const request = store.add(entry);
+    const tx = database.transaction([PAYMENTS_STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
+    const request = addLocalRecord(tx, PAYMENTS_STORE_NAME, entry);
 
     request.onsuccess = () => resolve(request.result as number);
     request.onerror = () => reject(request.error);
@@ -159,9 +263,8 @@ export async function addEntryPy(entry: Omit<PaymentsEntry, 'id'>): Promise<numb
 export async function updateEntry(entry: JournalEntry): Promise<void> {
   const database = await initDB();
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.put(entry);
+    const transaction = database.transaction([STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
+    const request = putLocalRecord(transaction, STORE_NAME, entry);
 
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
@@ -172,9 +275,8 @@ export async function updateEntryCs(entry: CustomerEntry): Promise<void> {
   const database = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([CUSTOMER_STORE_NAME], 'readwrite');
-    const store = tx.objectStore(CUSTOMER_STORE_NAME);
-    const request = store.put(entry);
+    const tx = database.transaction([CUSTOMER_STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
+    const request = putLocalRecord(tx, CUSTOMER_STORE_NAME, entry);
 
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
@@ -185,9 +287,8 @@ export async function updateEntryEx(entry: ExpensesEntry): Promise<void> {
   const database = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([EXPENSES_STORE_NAME], 'readwrite');
-    const store = tx.objectStore(EXPENSES_STORE_NAME);
-    const request = store.put(entry);
+    const tx = database.transaction([EXPENSES_STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
+    const request = putLocalRecord(tx, EXPENSES_STORE_NAME, entry);
 
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
@@ -198,9 +299,8 @@ export async function updateEntryPy(entry: PaymentsEntry): Promise<void> {
   const database = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = database.transaction([PAYMENTS_STORE_NAME], 'readwrite');
-    const store = tx.objectStore(PAYMENTS_STORE_NAME);
-    const request = store.put(entry);
+    const tx = database.transaction([PAYMENTS_STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
+    const request = putLocalRecord(tx, PAYMENTS_STORE_NAME, entry);
 
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
@@ -212,7 +312,7 @@ export async function deleteEntry(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([STORE_NAME], "readwrite");
+    const transaction = db.transaction([STORE_NAME, SYNC_OUTBOX_STORE_NAME], "readwrite");
     const store = transaction.objectStore(STORE_NAME);
 
     const getRequest = store.get(id);
@@ -230,7 +330,7 @@ export async function deleteEntry(id: number): Promise<void> {
       entry.isDeleted = true;
       entry.deletedAt = new Date().toISOString();
 
-      const updateRequest = store.put(entry);
+      const updateRequest = putLocalRecord(transaction, STORE_NAME, entry);
 
       updateRequest.onsuccess = () => resolve();
       updateRequest.onerror = () => reject(updateRequest.error);
@@ -242,7 +342,7 @@ export async function deleteEntryCs(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([CUSTOMER_STORE_NAME], "readwrite");
+    const transaction = db.transaction([CUSTOMER_STORE_NAME, SYNC_OUTBOX_STORE_NAME], "readwrite");
     const store = transaction.objectStore(CUSTOMER_STORE_NAME);
 
     const getRequest = store.get(id);
@@ -260,7 +360,7 @@ export async function deleteEntryCs(id: number): Promise<void> {
       entry.isDeleted = true;
       entry.deletedAt = new Date().toISOString();
 
-      const updateRequest = store.put(entry);
+      const updateRequest = putLocalRecord(transaction, CUSTOMER_STORE_NAME, entry);
 
       updateRequest.onsuccess = () => resolve();
       updateRequest.onerror = () => reject(updateRequest.error);
@@ -272,7 +372,7 @@ export async function deleteEntryEx(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([EXPENSES_STORE_NAME], "readwrite");
+    const transaction = db.transaction([EXPENSES_STORE_NAME, SYNC_OUTBOX_STORE_NAME], "readwrite");
     const store = transaction.objectStore(EXPENSES_STORE_NAME);
 
     const getRequest = store.get(id);
@@ -290,7 +390,7 @@ export async function deleteEntryEx(id: number): Promise<void> {
       entry.isDeleted = true;
       entry.deletedAt = new Date().toISOString();
 
-      const updateRequest = store.put(entry);
+      const updateRequest = putLocalRecord(transaction, EXPENSES_STORE_NAME, entry);
 
       updateRequest.onsuccess = () => resolve();
       updateRequest.onerror = () => reject(updateRequest.error);
@@ -302,7 +402,7 @@ export async function deleteEntryPy(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction([PAYMENTS_STORE_NAME], "readwrite");
+    const transaction = db.transaction([PAYMENTS_STORE_NAME, SYNC_OUTBOX_STORE_NAME], "readwrite");
     const store = transaction.objectStore(PAYMENTS_STORE_NAME);
 
     const getRequest = store.get(id);
@@ -320,7 +420,7 @@ export async function deleteEntryPy(id: number): Promise<void> {
       entry.isDeleted = true;
       entry.deletedAt = new Date().toISOString();
 
-      const updateRequest = store.put(entry);
+      const updateRequest = putLocalRecord(transaction, PAYMENTS_STORE_NAME, entry);
 
       updateRequest.onsuccess = () => resolve();
       updateRequest.onerror = () => reject(updateRequest.error);
@@ -340,7 +440,7 @@ export async function getAllEntries(): Promise<JournalEntry[]> {
 
     request.onsuccess = () => {
       const entries = request.result.filter(
-        entry => !entry.isDeleted
+        entry => !entry.isDeleted && isOwnedByActiveUser(entry)
       );
 
       resolve(entries);
@@ -367,7 +467,7 @@ export async function getEntriesByDate(date: string): Promise<JournalEntry[]> {
 
     request.onsuccess = () => {
       const all = request.result as JournalEntry[];
-      const entries = (all.filter(entry => !entry.isDeleted) as JournalEntry[])
+      const entries = (all.filter(entry => !entry.isDeleted && isOwnedByActiveUser(entry)) as JournalEntry[])
         .filter(e => e.date === date)
         .sort((a, b) => a.serialNo - b.serialNo);
 
@@ -394,7 +494,7 @@ export async function getEntriesByDateRange(startDate: string, endDate: string):
 
     request.onsuccess = () => {
       const all = request.result as JournalEntry[];
-      const entries = (all.filter(entry => !entry.isDeleted) as JournalEntry[])
+      const entries = (all.filter(entry => !entry.isDeleted && isOwnedByActiveUser(entry)) as JournalEntry[])
         .filter(e => e.date >= startDate && e.date <= endDate)
         .sort((a, b) => {
           if (a.date === b.date) return a.serialNo - b.serialNo;
@@ -418,7 +518,7 @@ export async function getCustomers(): Promise<CustomerEntry[]> {
 
     request.onsuccess = () => {
       const entries = request.result.filter(
-        entry => !entry.isDeleted
+        entry => !entry.isDeleted && isOwnedByActiveUser(entry)
       );
 
       resolve(entries);
@@ -447,7 +547,7 @@ export async function getEntriesByDateCs(date: string): Promise<CustomerEntry[]>
       const all = request.result as CustomerEntry[];
 
       const filtered = all
-        .filter(e => !e.isDeleted)
+        .filter(e => !e.isDeleted && isOwnedByActiveUser(e))
         .filter(e => e.date === date)
         .sort((a, b) => a.serialNo - b.serialNo);
 
@@ -469,7 +569,7 @@ export async function getExpenses(): Promise<ExpensesEntry[]> {
 
     request.onsuccess = () => {
       const entries = request.result.filter(
-        entry => !entry.isDeleted
+        entry => !entry.isDeleted && isOwnedByActiveUser(entry)
       );
 
       resolve(entries);
@@ -498,7 +598,7 @@ export async function getEntriesByDateEx(date: string): Promise<ExpensesEntry[]>
       const all = request.result as ExpensesEntry[];
 
       const filtered = all
-        .filter(e => !e.isDeleted)
+        .filter(e => !e.isDeleted && isOwnedByActiveUser(e))
         .filter(e => e.date === date)
         .sort((a, b) => a.serialNo - b.serialNo);
 
@@ -520,7 +620,7 @@ export async function getPayments(): Promise<PaymentsEntry[]> {
 
     request.onsuccess = () => {
       const entries = request.result.filter(
-        entry => !entry.isDeleted
+        entry => !entry.isDeleted && isOwnedByActiveUser(entry)
       );
 
       resolve(entries);
@@ -549,7 +649,7 @@ export async function getEntriesByDatePy(date: string): Promise<PaymentsEntry[]>
       const all = request.result as PaymentsEntry[];
 
       const filtered = all
-        .filter(e => !e.isDeleted)
+        .filter(e => !e.isDeleted && isOwnedByActiveUser(e))
         .filter(e => e.date === date)
         .sort((a, b) => a.serialNo - b.serialNo);
 
@@ -572,7 +672,7 @@ export async function getTrashEntries(): Promise<JournalEntry[]> {
 
     request.onsuccess = () => {
       const entries = request.result.filter(
-        entry => entry.isDeleted
+        entry => entry.isDeleted && isOwnedByActiveUser(entry)
       );
 
       resolve(entries);
@@ -593,7 +693,7 @@ export async function getTrashEntriesCs(): Promise<CustomerEntry[]> {
 
     request.onsuccess = () => {
       const entries = request.result.filter(
-        entry => entry.isDeleted
+        entry => entry.isDeleted && isOwnedByActiveUser(entry)
       );
 
       resolve(entries);
@@ -614,7 +714,7 @@ export async function getTrashEntriesEx(): Promise<ExpensesEntry[]> {
 
     request.onsuccess = () => {
       const entries = request.result.filter(
-        entry => entry.isDeleted
+        entry => entry.isDeleted && isOwnedByActiveUser(entry)
       );
 
       resolve(entries);
@@ -635,7 +735,7 @@ export async function getTrashEntriesPy(): Promise<PaymentsEntry[]> {
 
     request.onsuccess = () => {
       const entries = request.result.filter(
-        entry => entry.isDeleted
+        entry => entry.isDeleted && isOwnedByActiveUser(entry)
       );
 
       resolve(entries);
@@ -650,7 +750,7 @@ export async function restoreEntry(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, "readwrite");
+    const tx = db.transaction([STORE_NAME, SYNC_OUTBOX_STORE_NAME], "readwrite");
     const store = tx.objectStore(STORE_NAME);
     const dateIndex = store.index("date");
 
@@ -659,10 +759,14 @@ export async function restoreEntry(id: number): Promise<void> {
     getRequest.onerror = () => reject(getRequest.error);
 
     getRequest.onsuccess = () => {
-      const deletedEntry = getRequest.result as JournalEntry;
+      const deletedEntry = getRequest.result as JournalEntry | undefined;
 
       if (!deletedEntry) {
         reject(new Error("Entry not found"));
+        return;
+      }
+      if (!isOwnedByActiveUser(deletedEntry)) {
+        reject(new Error("Cannot restore an entry owned by a different account."));
         return;
       }
 
@@ -672,14 +776,14 @@ export async function restoreEntry(id: number): Promise<void> {
 
       dateRequest.onsuccess = () => {
         const activeEntries = (dateRequest.result as JournalEntry[])
-          .filter(e => !e.isDeleted && e.id !== deletedEntry.id)
+          .filter(e => !e.isDeleted && isOwnedByActiveUser(e) && e.id !== deletedEntry.id)
           .sort((a, b) => a.serialNo - b.serialNo);
 
         // Shift serial numbers to make space
         activeEntries.forEach(entry => {
           if (entry.serialNo >= deletedEntry.serialNo) {
             entry.serialNo += 1;
-            store.put(entry);
+            putLocalRecord(tx, STORE_NAME, entry);
           }
         });
 
@@ -687,7 +791,7 @@ export async function restoreEntry(id: number): Promise<void> {
         deletedEntry.isDeleted = false;
         delete deletedEntry.deletedAt;
 
-        store.put(deletedEntry);
+        putLocalRecord(tx, STORE_NAME, deletedEntry);
       };
     };
 
@@ -700,7 +804,7 @@ export async function restoreEntryCs(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(CUSTOMER_STORE_NAME, "readwrite");
+    const tx = db.transaction([CUSTOMER_STORE_NAME, SYNC_OUTBOX_STORE_NAME], "readwrite");
     const store = tx.objectStore(CUSTOMER_STORE_NAME);
 
 
@@ -709,10 +813,14 @@ export async function restoreEntryCs(id: number): Promise<void> {
     getRequest.onerror = () => reject(getRequest.error);
 
     getRequest.onsuccess = () => {
-      const deletedEntry = getRequest.result as CustomerEntry;
+      const deletedEntry = getRequest.result as CustomerEntry | undefined;
 
       if (!deletedEntry) {
         reject(new Error("Entry not found"));
+        return;
+      }
+      if (!isOwnedByActiveUser(deletedEntry)) {
+        reject(new Error("Cannot restore an entry owned by a different account."));
         return;
       }
 
@@ -726,6 +834,7 @@ export async function restoreEntryCs(id: number): Promise<void> {
             e =>
               e.date === deletedEntry.date &&
               !e.isDeleted &&
+              isOwnedByActiveUser(e) &&
               e.id !== deletedEntry.id
           )
           .sort((a, b) => a.serialNo - b.serialNo);
@@ -734,7 +843,7 @@ export async function restoreEntryCs(id: number): Promise<void> {
         activeEntries.forEach(entry => {
           if (entry.serialNo >= deletedEntry.serialNo) {
             entry.serialNo++;
-            store.put(entry);
+            putLocalRecord(tx, CUSTOMER_STORE_NAME, entry);
           }
         });
 
@@ -742,7 +851,7 @@ export async function restoreEntryCs(id: number): Promise<void> {
         deletedEntry.isDeleted = false;
         delete deletedEntry.deletedAt;
 
-        store.put(deletedEntry);
+        putLocalRecord(tx, CUSTOMER_STORE_NAME, deletedEntry);
       };
     };
 
@@ -755,7 +864,7 @@ export async function restoreEntryEx(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(EXPENSES_STORE_NAME, "readwrite");
+    const tx = db.transaction([EXPENSES_STORE_NAME, SYNC_OUTBOX_STORE_NAME], "readwrite");
     const store = tx.objectStore(EXPENSES_STORE_NAME);
 
     const getRequest = store.get(id);
@@ -763,10 +872,14 @@ export async function restoreEntryEx(id: number): Promise<void> {
     getRequest.onerror = () => reject(getRequest.error);
 
     getRequest.onsuccess = () => {
-      const deletedEntry = getRequest.result as ExpensesEntry;
+      const deletedEntry = getRequest.result as ExpensesEntry | undefined;
 
       if (!deletedEntry) {
         reject(new Error("Entry not found"));
+        return;
+      }
+      if (!isOwnedByActiveUser(deletedEntry)) {
+        reject(new Error("Cannot restore an entry owned by a different account."));
         return;
       }
 
@@ -780,6 +893,7 @@ export async function restoreEntryEx(id: number): Promise<void> {
             e =>
               e.date === deletedEntry.date &&
               !e.isDeleted &&
+              isOwnedByActiveUser(e) &&
               e.id !== deletedEntry.id
           )
           .sort((a, b) => a.serialNo - b.serialNo);
@@ -788,7 +902,7 @@ export async function restoreEntryEx(id: number): Promise<void> {
         activeEntries.forEach(entry => {
           if (entry.serialNo >= deletedEntry.serialNo) {
             entry.serialNo++;
-            store.put(entry);
+            putLocalRecord(tx, EXPENSES_STORE_NAME, entry);
           }
         });
 
@@ -796,7 +910,7 @@ export async function restoreEntryEx(id: number): Promise<void> {
         deletedEntry.isDeleted = false;
         delete deletedEntry.deletedAt;
 
-        store.put(deletedEntry);
+        putLocalRecord(tx, EXPENSES_STORE_NAME, deletedEntry);
       };
     };
 
@@ -809,7 +923,7 @@ export async function restoreEntryPy(id: number): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(PAYMENTS_STORE_NAME, "readwrite");
+    const tx = db.transaction([PAYMENTS_STORE_NAME, SYNC_OUTBOX_STORE_NAME], "readwrite");
     const store = tx.objectStore(PAYMENTS_STORE_NAME);
 
     const getRequest = store.get(id);
@@ -817,10 +931,14 @@ export async function restoreEntryPy(id: number): Promise<void> {
     getRequest.onerror = () => reject(getRequest.error);
 
     getRequest.onsuccess = () => {
-      const deletedEntry = getRequest.result as PaymentsEntry;
+      const deletedEntry = getRequest.result as PaymentsEntry | undefined;
 
       if (!deletedEntry) {
         reject(new Error("Entry not found"));
+        return;
+      }
+      if (!isOwnedByActiveUser(deletedEntry)) {
+        reject(new Error("Cannot restore an entry owned by a different account."));
         return;
       }
 
@@ -834,6 +952,7 @@ export async function restoreEntryPy(id: number): Promise<void> {
             e =>
               e.date === deletedEntry.date &&
               !e.isDeleted &&
+              isOwnedByActiveUser(e) &&
               e.id !== deletedEntry.id
           )
           .sort((a, b) => a.serialNo - b.serialNo);
@@ -842,7 +961,7 @@ export async function restoreEntryPy(id: number): Promise<void> {
         activeEntries.forEach(entry => {
           if (entry.serialNo >= deletedEntry.serialNo) {
             entry.serialNo++;
-            store.put(entry);
+            putLocalRecord(tx, PAYMENTS_STORE_NAME, entry);
           }
         });
 
@@ -850,7 +969,7 @@ export async function restoreEntryPy(id: number): Promise<void> {
         deletedEntry.isDeleted = false;
         delete deletedEntry.deletedAt;
 
-        store.put(deletedEntry);
+        putLocalRecord(tx, PAYMENTS_STORE_NAME, deletedEntry);
       };
     };
 
@@ -860,60 +979,37 @@ export async function restoreEntryPy(id: number): Promise<void> {
 }
 
 // Permanent Delete function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
-export async function permanentlyDeleteEntry(id: number): Promise<void> {
+async function permanentlyDeleteLocalRecord(storeName: LocalDataStore, id: number): Promise<void> {
   const db = await initDB();
+  const transaction = db.transaction(
+    [storeName, SYNC_OUTBOX_STORE_NAME, SYNC_TOMBSTONES_STORE_NAME],
+    'readwrite',
+  );
+  const complete = transactionDone(transaction);
+  const store = transaction.objectStore(storeName);
+  const request = store.get(id);
+  request.onsuccess = () => {
+    if (request.result) {
+      deleteLocalRecord(transaction, storeName, request.result);
+    }
+  };
+  await complete;
+}
 
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, "readwrite");
-    const store = transaction.objectStore(STORE_NAME);
-
-    const request = store.delete(id);
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+export async function permanentlyDeleteEntry(id: number): Promise<void> {
+  return permanentlyDeleteLocalRecord(STORE_NAME, id);
 }
 
 export async function permanentlyDeleteEntryCs(id: number): Promise<void> {
-  const db = await initDB();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(CUSTOMER_STORE_NAME, "readwrite");
-    const store = transaction.objectStore(CUSTOMER_STORE_NAME);
-
-    const request = store.delete(id);
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+  return permanentlyDeleteLocalRecord(CUSTOMER_STORE_NAME, id);
 }
 
 export async function permanentlyDeleteEntryEx(id: number): Promise<void> {
-  const db = await initDB();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(EXPENSES_STORE_NAME, "readwrite");
-    const store = transaction.objectStore(EXPENSES_STORE_NAME);
-
-    const request = store.delete(id);
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+  return permanentlyDeleteLocalRecord(EXPENSES_STORE_NAME, id);
 }
 
 export async function permanentlyDeleteEntryPy(id: number): Promise<void> {
-  const db = await initDB();
-
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(PAYMENTS_STORE_NAME, "readwrite");
-    const store = transaction.objectStore(PAYMENTS_STORE_NAME);
-
-    const request = store.delete(id);
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+  return permanentlyDeleteLocalRecord(PAYMENTS_STORE_NAME, id);
 }
 
 // Empty Trash function created for Roznamcha, CustomerEntry, ExpensesEntry, and PaymentsEntry
@@ -926,16 +1022,14 @@ export async function emptyTrash(): Promise<void> {
   const cutoff = Date.now() - 15 * 24 * 60 * 60 * 1000;
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(STORE_NAME, "readwrite");
-    const store = transaction.objectStore(STORE_NAME);
-
+    const transaction = db.transaction([STORE_NAME, SYNC_OUTBOX_STORE_NAME, SYNC_TOMBSTONES_STORE_NAME], "readwrite");
     trashItems.forEach(item => {
       if (
         item.id !== undefined &&
         item.deletedAt &&
         new Date(item.deletedAt).getTime() <= cutoff
       ) {
-        store.delete(item.id);
+        deleteLocalRecord(transaction, STORE_NAME, item);
       }
     });
 
@@ -953,16 +1047,14 @@ export async function emptyTrashCs(): Promise<void> {
   const cutoff = Date.now() - 15 * 24 * 60 * 60 * 1000;
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(CUSTOMER_STORE_NAME, "readwrite");
-    const store = transaction.objectStore(CUSTOMER_STORE_NAME);
-
+    const transaction = db.transaction([CUSTOMER_STORE_NAME, SYNC_OUTBOX_STORE_NAME, SYNC_TOMBSTONES_STORE_NAME], "readwrite");
     trashItems.forEach(item => {
       if (
         item.id !== undefined &&
         item.deletedAt &&
         new Date(item.deletedAt).getTime() <= cutoff
       ) {
-        store.delete(item.id);
+        deleteLocalRecord(transaction, CUSTOMER_STORE_NAME, item);
       }
     });
 
@@ -980,16 +1072,14 @@ export async function emptyTrashEx(): Promise<void> {
   const cutoff = Date.now() - 15 * 24 * 60 * 60 * 1000;
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(EXPENSES_STORE_NAME, "readwrite");
-    const store = transaction.objectStore(EXPENSES_STORE_NAME);
-
+    const transaction = db.transaction([EXPENSES_STORE_NAME, SYNC_OUTBOX_STORE_NAME, SYNC_TOMBSTONES_STORE_NAME], "readwrite");
     trashItems.forEach(item => {
       if (
         item.id !== undefined &&
         item.deletedAt &&
         new Date(item.deletedAt).getTime() <= cutoff
       ) {
-        store.delete(item.id);
+        deleteLocalRecord(transaction, EXPENSES_STORE_NAME, item);
       }
     });
 
@@ -1007,16 +1097,14 @@ export async function emptyTrashPy(): Promise<void> {
   const cutoff = Date.now() - 15 * 24 * 60 * 60 * 1000;
 
   return new Promise((resolve, reject) => {
-    const transaction = db.transaction(PAYMENTS_STORE_NAME, "readwrite");
-    const store = transaction.objectStore(PAYMENTS_STORE_NAME);
-
+    const transaction = db.transaction([PAYMENTS_STORE_NAME, SYNC_OUTBOX_STORE_NAME, SYNC_TOMBSTONES_STORE_NAME], "readwrite");
     trashItems.forEach(item => {
       if (
         item.id !== undefined &&
         item.deletedAt &&
         new Date(item.deletedAt).getTime() <= cutoff
       ) {
-        store.delete(item.id);
+        deleteLocalRecord(transaction, PAYMENTS_STORE_NAME, item);
       }
     });
 
@@ -1037,12 +1125,10 @@ export async function renumberEntries(date: string): Promise<void> {
   const database = await initDB();
 
   return new Promise((resolve, reject) => {
-    const transaction = database.transaction([STORE_NAME], 'readwrite');
-    const store = transaction.objectStore(STORE_NAME);
-
+    const transaction = database.transaction([STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
     entries.forEach((entry, index) => {
       entry.serialNo = index + 1;
-      store.put(entry);
+      putLocalRecord(transaction, STORE_NAME, entry);
     });
 
     transaction.oncomplete = () => resolve();
@@ -1059,11 +1145,9 @@ export async function renumberEntriesCs(date: string): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(CUSTOMER_STORE_NAME, 'readwrite');
-    const store = tx.objectStore(CUSTOMER_STORE_NAME);
-
+    const tx = db.transaction([CUSTOMER_STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
     entries.forEach((entry, index) => {
-      store.put({
+      putLocalRecord(tx, CUSTOMER_STORE_NAME, {
         ...entry,
         serialNo: index + 1,
       });
@@ -1083,11 +1167,9 @@ export async function renumberEntriesEx(date: string): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(EXPENSES_STORE_NAME, 'readwrite');
-    const store = tx.objectStore(EXPENSES_STORE_NAME);
-
+    const tx = db.transaction([EXPENSES_STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
     entries.forEach((entry, index) => {
-      store.put({
+      putLocalRecord(tx, EXPENSES_STORE_NAME, {
         ...entry,
         serialNo: index + 1,
       });
@@ -1107,11 +1189,9 @@ export async function renumberEntriesPy(date: string): Promise<void> {
   const db = await initDB();
 
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(PAYMENTS_STORE_NAME, 'readwrite');
-    const store = tx.objectStore(PAYMENTS_STORE_NAME);
-
+    const tx = db.transaction([PAYMENTS_STORE_NAME, SYNC_OUTBOX_STORE_NAME], 'readwrite');
     entries.forEach((entry, index) => {
-      store.put({
+      putLocalRecord(tx, PAYMENTS_STORE_NAME, {
         ...entry,
         serialNo: index + 1,
       });
@@ -1141,31 +1221,29 @@ function downloadBackup(
   expenses: ExpensesEntry[],
   payments: PaymentsEntry[],
   filename: string,
-  range?: { startDate: string; endDate: string }
+  range?: { startDate: string; endDate: string },
+  settings: Array<{ key: string; value: unknown }> = [],
+  source: 'supabase' | 'indexeddb-cache' = 'indexeddb-cache',
 ): void {
   const backupData = {
     version: 1,
     backupId: crypto.randomUUID(),
     exportedAt: new Date().toISOString(),
+    source,
     ...(range && { range }),
+    settings,
 
-    entries: entries.map(({ id, ...entry }) => ({
-      ...entry,
+    entries: entries.map((entry) => ({
+      ...withoutSyncMetadata(entry),
       isBackup: false,
       backupId: undefined,
     })),
 
-    customers: customers.map(({ id, ...customer }) => ({
-      ...customer,
-    })),
+    customers: customers.map((customer) => withoutSyncMetadata(customer)),
 
-    expenses: expenses.map(({ id, ...expense }) => ({
-      ...expense,
-    })),
+    expenses: expenses.map((expense) => withoutSyncMetadata(expense)),
 
-    payments: payments.map(({ id, ...payment }) => ({
-      ...payment,
-    })),
+    payments: payments.map((payment) => withoutSyncMetadata(payment)),
   };
 
   const blob = new Blob(
@@ -1186,41 +1264,42 @@ function downloadBackup(
 }
 
 // Export functions for backup and import
-export async function exportWeeklyData(): Promise<void> {
+export async function exportWeeklyData(source: 'supabase' | 'indexeddb-cache' = 'indexeddb-cache'): Promise<void> {
   const dates = getLast7Dates();
 
-  const entries: JournalEntry[] = [];
-
-  for (const date of dates) {
-    entries.push(...await getEntriesByDate(date));
-  }
+  const dateSet = new Set(dates);
+  const entries = (await getOwnedRecordsIncludingDeleted<JournalEntry>(STORE_NAME))
+    .filter((entry) => dateSet.has(entry.date));
 
   downloadBackup(
     entries,
-    await getCustomers(),
-    await getExpenses(),
-    await getPayments(),
-    `roznamcha-weekly-backup-${new Date().toISOString().split("T")[0]}.json`
+    await getOwnedRecordsIncludingDeleted<CustomerEntry>(CUSTOMER_STORE_NAME),
+    await getOwnedRecordsIncludingDeleted<ExpensesEntry>(EXPENSES_STORE_NAME),
+    await getOwnedRecordsIncludingDeleted<PaymentsEntry>(PAYMENTS_STORE_NAME),
+    `roznamcha-weekly-backup-${new Date().toISOString().split("T")[0]}.json`,
+    undefined,
+    await getOwnedSettingsForBackup(),
+    source,
   );
 }
 
-export async function exportMonthlyData(): Promise<void> {
+export async function exportMonthlyData(source: 'supabase' | 'indexeddb-cache' = 'indexeddb-cache'): Promise<void> {
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-  const entries = (await getAllEntries()).filter(
+  const entries = (await getOwnedRecordsIncludingDeleted<JournalEntry>(STORE_NAME)).filter(
     entry => new Date(entry.date) >= oneMonthAgo
   );
 
-  const customers = (await getCustomers()).filter(
+  const customers = (await getOwnedRecordsIncludingDeleted<CustomerEntry>(CUSTOMER_STORE_NAME)).filter(
     customer => new Date(customer.createdAt) >= oneMonthAgo
   );
 
-  const expenses = (await getExpenses()).filter(
+  const expenses = (await getOwnedRecordsIncludingDeleted<ExpensesEntry>(EXPENSES_STORE_NAME)).filter(
     expense => new Date(expense.createdAt) >= oneMonthAgo
   );
 
-  const payments = (await getPayments()).filter(
+  const payments = (await getOwnedRecordsIncludingDeleted<PaymentsEntry>(PAYMENTS_STORE_NAME)).filter(
     payment => new Date(payment.createdAt) >= oneMonthAgo
   );
 
@@ -1229,43 +1308,50 @@ export async function exportMonthlyData(): Promise<void> {
     customers,
     expenses,
     payments,
-    `roznamcha-monthly-backup-${new Date().toISOString().split("T")[0]}.json`
+    `roznamcha-monthly-backup-${new Date().toISOString().split("T")[0]}.json`,
+    undefined,
+    await getOwnedSettingsForBackup(),
+    source,
   );
 }
 
-export async function exportAllData(): Promise<void> {
+export async function exportAllData(source: 'supabase' | 'indexeddb-cache' = 'indexeddb-cache'): Promise<void> {
   downloadBackup(
-    await getAllEntries(),
-    await getCustomers(),
-    await getExpenses(),
-    await getPayments(),
-    `roznamcha-full-backup-${new Date().toISOString().split("T")[0]}.json`
+    await getOwnedRecordsIncludingDeleted<JournalEntry>(STORE_NAME),
+    await getOwnedRecordsIncludingDeleted<CustomerEntry>(CUSTOMER_STORE_NAME),
+    await getOwnedRecordsIncludingDeleted<ExpensesEntry>(EXPENSES_STORE_NAME),
+    await getOwnedRecordsIncludingDeleted<PaymentsEntry>(PAYMENTS_STORE_NAME),
+    `roznamcha-full-backup-${new Date().toISOString().split("T")[0]}.json`,
+    undefined,
+    await getOwnedSettingsForBackup(),
+    source,
   );
 }
 
 export async function exportByDateRange(
   startDate: string,
-  endDate: string
+  endDate: string,
+  source: 'supabase' | 'indexeddb-cache' = 'indexeddb-cache',
 ): Promise<void> {
   const start = new Date(startDate);
   const end = new Date(endDate);
 
-  const entries = (await getAllEntries()).filter(entry => {
+  const entries = (await getOwnedRecordsIncludingDeleted<JournalEntry>(STORE_NAME)).filter(entry => {
     const d = new Date(entry.date);
     return d >= start && d <= end;
   });
 
-  const customers = (await getCustomers()).filter(customer => {
+  const customers = (await getOwnedRecordsIncludingDeleted<CustomerEntry>(CUSTOMER_STORE_NAME)).filter(customer => {
     const d = new Date(customer.createdAt);
     return d >= start && d <= end;
   });
 
-  const expenses = (await getExpenses()).filter(expense => {
+  const expenses = (await getOwnedRecordsIncludingDeleted<ExpensesEntry>(EXPENSES_STORE_NAME)).filter(expense => {
     const d = new Date(expense.createdAt);
     return d >= start && d <= end;
   });
 
-  const payments = (await getPayments()).filter(payment => {
+  const payments = (await getOwnedRecordsIncludingDeleted<PaymentsEntry>(PAYMENTS_STORE_NAME)).filter(payment => {
     const d = new Date(payment.createdAt);
     return d >= start && d <= end;
   });
@@ -1279,7 +1365,9 @@ export async function exportByDateRange(
     {
       startDate,
       endDate,
-    }
+    },
+    await getOwnedSettingsForBackup(),
+    source,
   );
 }
 
@@ -1314,21 +1402,30 @@ export async function importBackup(
   const customers: CustomerEntry[] = data.customers ?? [];
   const expenses: ExpensesEntry[] = data.expenses ?? [];
   const payments: PaymentsEntry[] = data.payments ?? [];
+  const settings: Array<{ key: string; value: unknown }> = Array.isArray(data.settings)
+    ? data.settings
+    : [];
+  if (settings.some((setting) => typeof setting.key !== 'string'
+    || setting.key.startsWith('@sync:')
+    || setting.key.includes('::'))) {
+    throw new Error('Backup contains an invalid setting key.');
+  }
 
   // Prevent importing the same backup twice
-  const allEntries = await getAllEntries();
+  const allEntries = await getOwnedRecordsIncludingDeleted<JournalEntry>(STORE_NAME);
+  const importMarker = await getSetting<boolean>(`backupImported:${backupId}`);
 
   const alreadyImported = allEntries.some(
     (e) => e.backupId === backupId
   );
 
-  if (alreadyImported) {
+  if (alreadyImported || importMarker) {
     throw new Error("Backup already imported");
   }
 
-  const existingCustomers = await getCustomers();
-  const existingExpenses = await getExpenses();
-  const existingPayments = await getPayments();
+  const existingCustomers = await getOwnedRecordsIncludingDeleted<CustomerEntry>(CUSTOMER_STORE_NAME);
+  const existingExpenses = await getOwnedRecordsIncludingDeleted<ExpensesEntry>(EXPENSES_STORE_NAME);
+  const existingPayments = await getOwnedRecordsIncludingDeleted<PaymentsEntry>(PAYMENTS_STORE_NAME);
 
   const db = await initDB();
 
@@ -1338,14 +1435,11 @@ export async function importBackup(
       CUSTOMER_STORE_NAME,
       EXPENSES_STORE_NAME,
       PAYMENTS_STORE_NAME,
+      SYNC_OUTBOX_STORE_NAME,
+      'settings',
     ],
     "readwrite"
   );
-
-  const entriesStore = tx.objectStore(STORE_NAME);
-  const customersStore = tx.objectStore(CUSTOMER_STORE_NAME);
-  const expensesStore = tx.objectStore(EXPENSES_STORE_NAME);
-  const paymentsStore = tx.objectStore(PAYMENTS_STORE_NAME);
 
   let imported = 0;
   let skipped = 0;
@@ -1354,7 +1448,7 @@ export async function importBackup(
 
   // Import Roznamcha entries
   for (const entry of entries) {
-    const { id, ...rest } = entry;
+    const rest = withoutSyncMetadata(entry);
 
     const duplicate = allEntries.some(
       (e) =>
@@ -1374,7 +1468,7 @@ export async function importBackup(
       continue;
     }
 
-    entriesStore.add({
+    addLocalRecord(tx, STORE_NAME, {
       ...rest,
       isBackup: true,
       backupId,
@@ -1385,7 +1479,7 @@ export async function importBackup(
 
   // Import customers
   for (const customer of customers) {
-    const { id, ...rest } = customer;
+    const rest = withoutSyncMetadata(customer);
 
     const duplicate = existingCustomers.some(
       (c) =>
@@ -1394,7 +1488,7 @@ export async function importBackup(
     );
 
     if (!duplicate) {
-      customersStore.add(rest);
+      addLocalRecord(tx, CUSTOMER_STORE_NAME, rest);
       imported++;
     } else {
       skipped++;
@@ -1403,7 +1497,7 @@ export async function importBackup(
 
   // Import expenses
   for (const expense of expenses) {
-    const { id, ...rest } = expense;
+    const rest = withoutSyncMetadata(expense);
 
     const duplicate = existingExpenses.some(
       (e) =>
@@ -1412,7 +1506,7 @@ export async function importBackup(
     );
 
     if (!duplicate) {
-      expensesStore.add(rest);
+      addLocalRecord(tx, EXPENSES_STORE_NAME, rest);
       imported++;
     } else {
       skipped++;
@@ -1421,7 +1515,7 @@ export async function importBackup(
 
   // Import payments
   for (const payment of payments) {
-    const { id, ...rest } = payment;
+    const rest = withoutSyncMetadata(payment);
 
     const duplicate = existingPayments.some(
       (p) =>
@@ -1430,20 +1524,27 @@ export async function importBackup(
     );
 
     if (!duplicate) {
-      paymentsStore.add(rest);
+      addLocalRecord(tx, PAYMENTS_STORE_NAME, rest);
       imported++;
     } else {
       skipped++;
     }
   }
 
+  for (const setting of settings) {
+    putLocalSetting(tx, setting.key, setting.value);
+  }
+  putLocalSetting(tx, `backupImported:${backupId}`, true);
+
   return new Promise((resolve, reject) => {
-    tx.oncomplete = () =>
+    tx.oncomplete = () => {
+      if (typeof window !== 'undefined') window.dispatchEvent(new Event('roznamcha:data-changed'));
       resolve({
         imported,
         skipped,
         skippedEntries,
       });
+    };
 
     tx.onerror = () => reject(tx.error);
     tx.onabort = () => reject(tx.error);
@@ -1451,14 +1552,17 @@ export async function importBackup(
 }
 
 export async function checkWeeklyBackup() {
-  const lastBackup = localStorage.getItem("lastBackup");
-  const firstSeen = localStorage.getItem("backupFirstVisitSeen");
+  const userId = getActiveSyncUser();
+  const lastBackupKey = userId ? `${userId}:lastBackup` : 'lastBackup';
+  const firstSeenKey = userId ? `${userId}:backupFirstVisitSeen` : 'backupFirstVisitSeen';
+  const lastBackup = localStorage.getItem(lastBackupKey);
+  const firstSeen = localStorage.getItem(firstSeenKey);
 
   const WEEK = 7 * 24 * 60 * 60 * 1000;
 
   // If this is the user's first visit, mark it and do not trigger or prompt a backup.
   if (!firstSeen) {
-    localStorage.setItem("backupFirstVisitSeen", Date.now().toString());
+    localStorage.setItem(firstSeenKey, Date.now().toString());
     return;
   }
 
@@ -1478,10 +1582,10 @@ export async function checkWeeklyBackup() {
 
     if (userConfirmed) {
       await exportWeeklyData();
-      localStorage.setItem("lastBackup", Date.now().toString());
+      localStorage.setItem(lastBackupKey, Date.now().toString());
     } else {
       // Record that user was asked and declined so we don't prompt on every visit; wait another week before asking again.
-      localStorage.setItem("lastBackup", Date.now().toString());
+      localStorage.setItem(lastBackupKey, Date.now().toString());
     }
   }
 }
@@ -1506,20 +1610,25 @@ export async function getWeeklyStats() {
   return stats;
 }
 
-export async function getInvoiceCounter(): Promise<any> {
+export async function getInvoiceCounter(): Promise<{ date: string; sequence: number } | undefined> {
   const database = await initDB();
-  return new Promise((resolve, reject) => {
-    const transaction = database.transaction("settings", "readonly");
-    const store = transaction.objectStore("settings");
-
-    const request = store.get("invoiceCounter");
-
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onerror = () => reject(request.error);
-  });
+  const userId = getActiveSyncUser();
+  const transaction = database.transaction('settings', 'readonly');
+  const store = transaction.objectStore('settings');
+  const key = userId ? getScopedSettingKey(userId, 'invoiceCounter') : 'invoiceCounter';
+  const request = store.get(key);
+  const record = await requestValue<Record<string, unknown> | undefined>(request);
+  if (record?.value && typeof record.value === 'object') {
+    const value = record.value as { date?: unknown; sequence?: unknown };
+    if (typeof value.date === 'string' && typeof value.sequence === 'number') {
+      return { date: value.date, sequence: value.sequence };
+    }
+  }
+  if (userId && record?.ownerUserId !== userId) return undefined;
+  if (typeof record?.date === 'string' && typeof record.sequence === 'number') {
+    return { date: record.date, sequence: record.sequence };
+  }
+  return undefined;
 }
 
 export async function saveInvoiceCounter(
@@ -1527,19 +1636,10 @@ export async function saveInvoiceCounter(
   sequence: number
 ): Promise<void> {
   const database = await initDB();
-  return new Promise((resolve, reject) => {
-    const transaction = database.transaction("settings", "readwrite");
-    const store = transaction.objectStore("settings");
-
-    const request = store.put({
-      key: "invoiceCounter",
-      date,
-      sequence,
-    });
-
-    request.onsuccess = () => resolve();
-    request.onerror = () => reject(request.error);
-  });
+  const transaction = database.transaction(['settings', SYNC_OUTBOX_STORE_NAME], 'readwrite');
+  const complete = transactionDone(transaction);
+  putLocalSetting(transaction, 'invoiceCounter', { date, sequence });
+  await complete;
 }
 
 export async function generateInvoiceNumber() {
@@ -1548,20 +1648,33 @@ export async function generateInvoiceNumber() {
     .slice(0, 10)
     .replace(/-/g, "");
 
-  const counter = await getInvoiceCounter();
-
-  let sequence = 1;
-
-  if (counter && counter.date === today) {
-    sequence = (counter.sequence || 0) + 1;
+  let sequence: number;
+  const onlineAllocation = typeof navigator !== 'undefined' && navigator.onLine && isSupabaseConfigured();
+  if (onlineAllocation) {
+    const formattedDate = `${today.slice(0, 4)}-${today.slice(4, 6)}-${today.slice(6, 8)}`;
+    const { data, error } = await getSupabaseClient().rpc('next_invoice_sequence', {
+      p_date: formattedDate,
+    });
+    if (error) throw new Error(`Could not allocate an invoice number: ${error.message}`);
+    sequence = data;
+  } else {
+    const counter = await getInvoiceCounter();
+    sequence = counter && counter.date === today ? counter.sequence + 1 : 1;
   }
 
-  // Persist the new sequence to avoid duplicates on subsequent calls
   await saveInvoiceCounter(today, sequence);
 
   return {
-    invoiceNo: `INV-${today}-${String(sequence).padStart(3, "0")}`,
+    invoiceNo: `INV-${today}-${String(sequence).padStart(3, "0")}${onlineAllocation ? '' : `-${getOfflineInvoiceSuffix()}`}`,
     date: today,
     sequence,
   };
+}
+
+function getOfflineInvoiceSuffix(): string {
+  const installationId = getActiveInstallationId();
+  if (!installationId) {
+    throw new Error('The local installation identity is unavailable for offline invoice numbering.');
+  }
+  return installationId.replace(/-/g, '').slice(0, 6).toUpperCase();
 }

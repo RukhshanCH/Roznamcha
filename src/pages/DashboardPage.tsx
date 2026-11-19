@@ -92,6 +92,8 @@ export default function DashboardPage() {
     };
 
     void loadData();
+    window.addEventListener('roznamcha:data-changed', loadData);
+    return () => window.removeEventListener('roznamcha:data-changed', loadData);
   }, [startDate, endDate]);
 
   const total = useMemo(() => data.reduce((sum, d) => sum + d.count, 0), [data]);

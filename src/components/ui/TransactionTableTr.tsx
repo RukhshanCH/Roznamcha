@@ -33,7 +33,9 @@ export default function TransactionTableTr() {
     };
 
     useEffect(() => {
-        loadTrash();
+        void loadTrash();
+        window.addEventListener('roznamcha:data-changed', loadTrash);
+        return () => window.removeEventListener('roznamcha:data-changed', loadTrash);
     }, [setEntries, setEntriesCs, setEntriesEx, setEntriesPy]);
 
     const allTrash: TrashItem[] = [

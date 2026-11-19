@@ -10,4 +10,4 @@ export {
   permanentlyDeleteEntryPy,
   emptyTrashPy,
   getTrashEntriesPy
-} from '@/db/indexedDB';
+} from '@/db/primaryRepository';

@@ -53,6 +53,8 @@ export default function PaymentsPage() {
     };
 
     loadEntries();
+    window.addEventListener('roznamcha:data-changed', loadEntries);
+    return () => window.removeEventListener('roznamcha:data-changed', loadEntries);
   }, [selectedDate, showAll, search, setPayments, refreshEntries]);
 
   const handleAddNew = () => {

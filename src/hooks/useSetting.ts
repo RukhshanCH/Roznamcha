@@ -10,13 +10,18 @@ export function useSetting<T = string>(
 
   useEffect(() => {
     let mounted = true;
-    getSetting<T>(key).then((stored) => {
-      if (mounted && stored !== undefined) {
-        setValue(stored);
-      }
-      setLoading(false);
-    });
-    return () => { mounted = false; };
+    const load = () => {
+      getSetting<T>(key).then((stored) => {
+        if (mounted && stored !== undefined) setValue(stored);
+        if (mounted) setLoading(false);
+      });
+    };
+    load();
+    window.addEventListener('roznamcha:data-changed', load);
+    return () => {
+      mounted = false;
+      window.removeEventListener('roznamcha:data-changed', load);
+    };
   }, [key]);
 
   const update = useCallback(async (newValue: T) => {

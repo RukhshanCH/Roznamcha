@@ -1,14 +1,28 @@
 import { useAtom } from 'jotai';
-import { Menu, Search, User } from 'lucide-react';
-import { sidebarCollapsedAtom, searchAtom } from '@/store/atoms';
+import { AlertTriangle, Cloud, CloudOff, LogOut, Menu, RefreshCw, Search, User } from 'lucide-react';
+import {
+  sidebarCollapsedAtom,
+  searchAtom,
+  syncRequestAtom,
+  syncStatusAtom,
+  userAtom,
+} from '@/store/atoms';
 import { useSetting } from '@/hooks/useSetting';
 import { Link } from '@/router';
 import { useState } from 'react';
+import { useAtomValue } from 'jotai';
+import { signOutUser } from '@/hooks/useAuth';
+import { resolveSyncConflict } from '@/db/cloudSync';
 
 export default function HeaderBar() {
   const [, setCollapsed] = useAtom(sidebarCollapsedAtom);
   const [search, setSearch] = useAtom(searchAtom);
+  const user = useAtomValue(userAtom);
+  const [syncStatus, setSyncStatus] = useAtom(syncStatusAtom);
+  const [, requestSync] = useAtom(syncRequestAtom);
   const [isFocus, setIsFocus] = useState(false);
+  const [signOutError, setSignOutError] = useState('');
+  const [conflictError, setConflictError] = useState('');
 
   const [companyName] = useSetting(
     "companyName",
@@ -25,6 +39,46 @@ export default function HeaderBar() {
     }
   };
 
+  const handleSignOut = async () => {
+    setSignOutError('');
+    try {
+      await signOutUser();
+    } catch (error) {
+      setSignOutError(error instanceof Error ? error.message : 'Could not sign out.');
+    }
+  };
+
+  const resolveConflict = async (
+    conflict: (typeof syncStatus.conflicts)[number],
+    choice: 'local' | 'cloud',
+  ) => {
+    if (!user?.id) return;
+    setConflictError('');
+    try {
+      await resolveSyncConflict(user.id, conflict, choice);
+      requestSync((value) => value + 1);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Could not resolve the sync conflict.';
+      setConflictError(message);
+      setSyncStatus((state) => ({ ...state, error: message, phase: 'error' }));
+    }
+  };
+
+  const syncLabel = {
+    idle: 'Sync not started',
+    syncing: 'Syncing',
+    synced: 'All changes synced',
+    pending: `${syncStatus.queued} changes waiting to sync`,
+    offline: `Offline - ${syncStatus.queued} changes waiting`,
+    error: syncStatus.error || 'Sync failed',
+    conflict: `${syncStatus.conflicts.length} sync conflicts need review`,
+  }[syncStatus.phase];
+  const SyncIcon = syncStatus.phase === 'offline'
+    ? CloudOff
+    : syncStatus.phase === 'conflict' || syncStatus.phase === 'error'
+      ? AlertTriangle
+      : Cloud;
+
   return (
     <header className="header-bar">
       <div className="header-left">
@@ -37,6 +91,49 @@ export default function HeaderBar() {
         </button>
       </div>
       <div className="header-right">
+        <div className={`sync-status sync-status-${syncStatus.phase}`} aria-live="polite">
+          <SyncIcon size={18} aria-hidden="true" />
+          <span>{syncLabel}</span>
+          {(syncStatus.phase === 'error' || syncStatus.phase === 'pending' || syncStatus.phase === 'offline') && (
+            <button
+              type="button"
+              className="sync-status-retry"
+              aria-label="Retry cloud sync"
+              title="Retry cloud sync"
+              onClick={() => requestSync((value) => value + 1)}
+            >
+              <RefreshCw size={16} aria-hidden="true" />
+            </button>
+          )}
+          {syncStatus.conflicts.length > 0 && (
+            <details className="sync-conflicts">
+              <summary>Review</summary>
+              <ul>
+                {syncStatus.conflicts.map((conflict) => (
+                  <li key={conflict.key}>
+                    <span>{conflict.store} record {conflict.localId ?? ''}</span>
+                    <button type="button" onClick={() => void resolveConflict(conflict, 'cloud')}>
+                      Use cloud
+                    </button>
+                    <button type="button" onClick={() => void resolveConflict(conflict, 'local')}>
+                      Keep this device
+                    </button>
+                  </li>
+                ))}
+              </ul>
+              {conflictError && <p role="alert">{conflictError}</p>}
+            </details>
+          )}
+        </div>
+        <button
+          className="header-btn"
+          type="button"
+          aria-label={`Sign out${user?.email ? ` ${user.email}` : ''}`}
+          title={signOutError || 'Sign out'}
+          onClick={handleSignOut}
+        >
+          <LogOut />
+        </button>
         {/* <button className="header-btn notification-btn" aria-label="Notifications">
           <Bell />
           <span className="notification-badge">3</span>

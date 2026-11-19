@@ -17,4 +17,4 @@ export {
   emptyTrashCs,
   emptyTrashEx,
   emptyTrashPy
-} from '@/db/indexedDB';
+} from '@/db/primaryRepository';

@@ -38,6 +38,8 @@ export default function CustomersPage() {
       setCustomers(allData);
     };
     void loadData();
+    window.addEventListener('roznamcha:data-changed', loadData);
+    return () => window.removeEventListener('roznamcha:data-changed', loadData);
   }, [setCustomers]);
 
   const handleAddNew = () => {
