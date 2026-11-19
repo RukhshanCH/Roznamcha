@@ -128,6 +128,10 @@ export type Database = {
         Args: { p_date: string };
         Returns: number;
       };
+      migrate_invoice_counter: {
+        Args: { p_invoice_date: string; p_sequence: number };
+        Returns: number;
+      };
       sync_user_record: {
         Args: { p_store: string; p_payload: Json; p_expected_version: number | null };
         Returns: Array<{ applied: boolean; row_id: string | null; sync_version: number | null }>;
@@ -144,6 +148,37 @@ export type Database = {
           p_expected_version: number | null;
         };
         Returns: Array<{ applied: boolean; sync_version: number | null; updated_at: string | null }>;
+      };
+      migrate_user_setting: {
+        Args: {
+          p_key: string;
+          p_value: Json;
+          p_resolution?: 'local' | 'cloud' | null;
+          p_expected_version?: number | null;
+          p_expected_cloud_value?: Json | null;
+        };
+        Returns: Array<{
+          applied: boolean;
+          value: Json | null;
+          sync_version: number | null;
+          updated_at: string | null;
+          conflict: boolean;
+        }>;
+      };
+      migrate_user_record: {
+        Args: { p_store: string; p_payload: Json };
+        Returns: Array<{ applied: boolean; row_id: string | null; sync_version: number | null }>;
+      };
+      verify_user_migration: {
+        Args: {
+          p_installation_id: string;
+          p_source_db_version: number;
+          p_store_counts: Json;
+          p_records: Json;
+          p_settings: Json;
+          p_invoice_counter: Json;
+        };
+        Returns: Array<{ verified: boolean; record_versions: Json }>;
       };
     };
     Enums: Record<string, never>;

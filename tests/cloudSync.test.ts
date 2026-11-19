@@ -338,6 +338,25 @@ describe('offline-first cloud synchronization', () => {
     expect(await settings.getSetting('companyName')).toBe('Cloud company');
   });
 
+  it('updates a setting pulled from another installation using the shared cloud version', async () => {
+    const settings = await import('@/db/core');
+    const sync = await import('@/db/cloudSync');
+    const canonicalInstallationId = '00000000-0000-0000-0000-000000000000';
+    await settings.setSetting('companyName', 'Device A');
+    await sync.synchronizeUserData(userId, installationId);
+
+    const { setActiveSyncContext } = await import('@/db/syncContext');
+    setActiveSyncContext(userId, '00000000-0000-4000-8000-000000000002');
+    expect(await settings.getSetting('companyName')).toBe('Device A');
+    await settings.setSetting('companyName', 'Device B');
+
+    const [remote] = cloudTables.get('user_settings') ?? [];
+    expect(remote?.source_installation_id).toBe(canonicalInstallationId);
+    expect(remote?.value).toBe('Device B');
+    expect(remote?.sync_version).toBe(2);
+    expect(await sync.getSyncConflicts(userId)).toHaveLength(0);
+  });
+
   it('surfaces concurrent setting edits and supports explicit local resolution', async () => {
     const settings = await import('@/db/core');
     const sync = await import('@/db/cloudSync');

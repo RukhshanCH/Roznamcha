@@ -1,5 +1,10 @@
 import type { LocalDataStore, SyncOutboxRecord, SyncTombstoneRecord } from '@/types';
-import { getActiveInstallationId, getActiveSyncUser, getScopedSettingKey } from '@/db/syncContext';
+import {
+  CLOUD_SETTINGS_INSTALLATION_ID,
+  getActiveInstallationId,
+  getActiveSyncUser,
+  getScopedSettingKey,
+} from '@/db/syncContext';
 
 const SYNC_OUTBOX_STORE_NAME = 'syncOutbox';
 const SYNC_TOMBSTONES_STORE_NAME = 'syncTombstones';
@@ -173,8 +178,10 @@ export function putLocalSetting(
       userSettingKey: key,
       value,
       ownerUserId: userId,
-      sourceInstallationId: installationId,
-      cloudVersion: existing?.cloudVersion,
+      sourceInstallationId: CLOUD_SETTINGS_INSTALLATION_ID,
+      cloudVersion: existing?.sourceInstallationId === CLOUD_SETTINGS_INSTALLATION_ID
+        ? existing.cloudVersion
+        : undefined,
       syncStatus: 'pending' as const,
       updatedAt: Date.now(),
     };
@@ -186,7 +193,10 @@ export function putLocalSetting(
       store: 'settings',
       settingKey: key,
       operation: 'upsert',
-      cloudVersion: typeof existing?.cloudVersion === 'number' ? existing.cloudVersion : undefined,
+      cloudVersion: existing?.sourceInstallationId === CLOUD_SETTINGS_INSTALLATION_ID
+        && typeof existing.cloudVersion === 'number'
+        ? existing.cloudVersion
+        : undefined,
       createdAt: Date.now(),
       attempts: 0,
     } satisfies SyncOutboxRecord);

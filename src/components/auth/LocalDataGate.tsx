@@ -10,16 +10,24 @@ import {
   getLocalMigrationState,
   getSyncInstallationId,
   migrateLegacyData,
+  MigrationDateValidationError,
+  MigrationSettingConflictError,
+  repairMigrationRecordDate,
+  type MigrationDateIssue,
   type MigrationPreview,
   type MigrationProgress,
 } from '@/db/localMigration';
 import { setActiveSyncContext, setActiveSyncUser } from '@/db/syncContext';
 import '@/styles/migration.css';
 
-type GateState = 'loading' | 'confirm' | 'migrating' | 'ready' | 'blocked' | 'error';
+type GateState = 'loading' | 'confirm' | 'migrating' | 'setting-conflict' | 'date-repair' | 'ready' | 'blocked' | 'error';
 
 function totalRecords(preview: MigrationPreview): number {
   return Object.values(preview.counts).reduce((total, count) => total + count, 0);
+}
+
+function dateIssueKey(issue: MigrationDateIssue): string {
+  return `${issue.store}:${issue.localId ?? 'unknown'}`;
 }
 
 export default function LocalDataGate({ children }: { children: ReactNode }) {
@@ -30,8 +38,27 @@ export default function LocalDataGate({ children }: { children: ReactNode }) {
   const [preview, setPreview] = useState<MigrationPreview | null>(null);
   const [progress, setProgress] = useState<MigrationProgress | null>(null);
   const [confirmedUserId, setConfirmedUserId] = useState<string | null>(null);
+  const [settingConflict, setSettingConflict] = useState<MigrationSettingConflictError | null>(null);
+  const [settingResolutions, setSettingResolutions] = useState<
+    Record<string, {
+      choice: 'local' | 'cloud';
+      cloudVersion: number | null;
+      cloudValue: MigrationSettingConflictError['cloudValue'];
+    }>
+  >({});
   const [error, setError] = useState('');
+  const [dateIssues, setDateIssues] = useState<MigrationDateIssue[]>([]);
+  const [dateValues, setDateValues] = useState<Record<string, string>>({});
+  const [dateRepairError, setDateRepairError] = useState('');
   const [retry, setRetry] = useState(0);
+
+  function showDateRepair(dateError: MigrationDateValidationError) {
+    setDateIssues(dateError.issues);
+    setDateValues(Object.fromEntries(
+      dateError.issues.map((issue) => [dateIssueKey(issue), '']),
+    ));
+    setDateRepairError('');
+  }
 
   useEffect(() => {
     let active = true;
@@ -92,6 +119,16 @@ export default function LocalDataGate({ children }: { children: ReactNode }) {
         updateState(currentUserId, 'confirm');
       } catch (loadError) {
         if (!active) return;
+        if (loadError instanceof MigrationDateValidationError) {
+          showDateRepair(loadError);
+          updateState(currentUserId, 'date-repair');
+          return;
+        }
+        if (loadError instanceof MigrationSettingConflictError) {
+          setSettingConflict(loadError);
+          updateState(currentUserId, 'setting-conflict');
+          return;
+        }
         setError(loadError instanceof Error ? loadError.message : 'Could not prepare the local data migration.');
         updateState(currentUserId, 'error');
       }
@@ -104,25 +141,78 @@ export default function LocalDataGate({ children }: { children: ReactNode }) {
     };
   }, [retry, userId]);
 
-  async function beginMigration() {
-    if (!userId || confirmedUserId !== userId) return;
+  async function runMigration(resolutions: typeof settingResolutions) {
+    if (!userId) return;
     setState('migrating');
     setError('');
+    setSettingConflict(null);
     setProgress(null);
     try {
-      await migrateLegacyData(userId, true, setProgress);
+      await migrateLegacyData(userId, true, setProgress, resolutions);
       setActiveSyncContext(userId, await getSyncInstallationId());
       setState('ready');
     } catch (migrationError) {
+      if (migrationError instanceof MigrationDateValidationError) {
+        showDateRepair(migrationError);
+        setState('date-repair');
+        return;
+      }
+      if (migrationError instanceof MigrationSettingConflictError) {
+        setSettingConflict(migrationError);
+        setState('setting-conflict');
+        return;
+      }
       setError(migrationError instanceof Error ? migrationError.message : 'Migration failed.');
       setState('error');
     }
+  }
+
+  async function beginMigration() {
+    if (!userId || confirmedUserId !== userId) return;
+    await runMigration(settingResolutions);
+  }
+
+  async function resolveSettingConflict(choice: 'local' | 'cloud') {
+    if (!userId || !settingConflict) return;
+    const resolutions = {
+      ...settingResolutions,
+      [settingConflict.settingKey]: {
+        choice,
+        cloudVersion: settingConflict.cloudVersion,
+        cloudValue: settingConflict.cloudValue,
+      },
+    };
+    setSettingResolutions(resolutions);
+    await runMigration(resolutions);
   }
 
   async function retryMigration() {
     setError('');
     setState('loading');
     setRetry((value) => value + 1);
+  }
+
+  async function saveDateCorrection(issue: MigrationDateIssue) {
+    if (!userId || issue.localId === null) return;
+    const key = dateIssueKey(issue);
+    const date = dateValues[key];
+    if (!date) {
+      setDateRepairError(`Choose the correct date for ${issue.store} record ${issue.localId}.`);
+      return;
+    }
+
+    try {
+      await repairMigrationRecordDate(userId, issue.store, issue.localId, date);
+      setDateIssues((current) => current.filter((item) => dateIssueKey(item) !== key));
+      setDateValues((current) => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      });
+      setDateRepairError('');
+    } catch (repairError) {
+      setDateRepairError(repairError instanceof Error ? repairError.message : 'Could not save the corrected date.');
+    }
   }
 
   async function signOut() {
@@ -205,6 +295,88 @@ export default function LocalDataGate({ children }: { children: ReactNode }) {
               value={progress?.completed ?? 0}
             />
             <p>Your local data remains available on this device.</p>
+          </>
+        )}
+
+        {state === 'setting-conflict' && settingConflict && (
+          <>
+            <h1>Resolve a settings conflict</h1>
+            <p>
+              The cloud already has a different value for <strong>{settingConflict.settingKey}</strong>.
+              Choose which value should be used across your devices. Choosing the local value replaces
+              the current cloud value for this setting; choosing the cloud value keeps the existing
+              cloud value and uses it on this device.
+            </p>
+            <p>Local value: <code>{JSON.stringify(settingConflict.localValue)}</code></p>
+            <p>Cloud value: <code>{JSON.stringify(settingConflict.cloudValue)}</code></p>
+            <button type="button" onClick={() => void resolveSettingConflict('local')}>
+              Use local value
+            </button>
+            <button type="button" className="migration-secondary" onClick={() => void resolveSettingConflict('cloud')}>
+              Keep cloud value
+            </button>
+            <button type="button" className="migration-secondary" onClick={signOut}>
+              Sign out
+            </button>
+          </>
+        )}
+
+        {state === 'date-repair' && (
+          <>
+            <h1>Correct local dates before migration</h1>
+            <p>
+              These records require a date to migrate. Use a trustworthy source to choose the correct
+              date; the app will not guess or use the creation time. Saving changes only the date on
+              the selected local record.
+            </p>
+            {dateIssues.length > 0 && (
+              <ul className="migration-date-issues">
+                {dateIssues.map((issue) => {
+                  const key = dateIssueKey(issue);
+                  const inputId = `migration-date-${key}`;
+                  return (
+                    <li className="migration-date-issue" key={key}>
+                      <p>
+                        <strong>{issue.store} record {issue.localId ?? '<unknown>'}</strong>
+                        {issue.serialNo !== null ? ` (serial ${issue.serialNo})` : ''}
+                        {issue.name ? ` — ${issue.name}` : ''}
+                      </p>
+                      <p>Current date value: <code>{issue.value}</code></p>
+                      {issue.localId !== null && (
+                        <>
+                          <label htmlFor={inputId}>Correct date</label>
+                          <input
+                            id={inputId}
+                            type="date"
+                            value={dateValues[key] ?? ''}
+                            onChange={(event) => setDateValues((current) => ({
+                              ...current,
+                              [key]: event.target.value,
+                            }))}
+                          />
+                          <button
+                            type="button"
+                            disabled={!dateValues[key]}
+                            onClick={() => void saveDateCorrection(issue)}
+                          >
+                            Save this date
+                          </button>
+                        </>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {dateRepairError && <p role="alert">{dateRepairError}</p>}
+            {dateIssues.length === 0 && (
+              <button type="button" onClick={() => void runMigration(settingResolutions)}>
+                Retry migration
+              </button>
+            )}
+            <button type="button" className="migration-secondary" onClick={signOut}>
+              Sign out
+            </button>
           </>
         )}
 

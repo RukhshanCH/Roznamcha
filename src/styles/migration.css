@@ -26,6 +26,34 @@
   padding-inline-start: 22px;
 }
 
+.migration-date-issues {
+  display: grid;
+  gap: 12px;
+}
+
+.migration-date-issue {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+}
+
+.migration-date-issue p {
+  overflow-wrap: anywhere;
+}
+
+.migration-date-issue label {
+  font-weight: 600;
+}
+
+.migration-date-issue input {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #9ca3af;
+  border-radius: 6px;
+}
+
 .migration-confirm {
   display: flex;
   align-items: flex-start;

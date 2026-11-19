@@ -58,7 +58,11 @@ import {
   refreshCloudSettings,
   refreshCloudStore,
 } from '@/db/cloudSync';
-import { getActiveInstallationId, getActiveSyncUser } from '@/db/syncContext';
+import {
+  CLOUD_SETTINGS_INSTALLATION_ID,
+  getActiveInstallationId,
+  getActiveSyncUser,
+} from '@/db/syncContext';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase';
 
 type CloudStore = 'entries' | 'customers' | 'expenses' | 'payments';
@@ -266,12 +270,13 @@ export async function getSetting<T = string>(key: string): Promise<T | undefined
     .select('value,source_installation_id,sync_version,updated_at')
     .eq('user_id', userId)
     .eq('key', key)
-    .order('updated_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .order('updated_at', { ascending: false });
   if (error) throw error;
 
-  if (!data) {
+  const setting = data.find((row) =>
+    row.source_installation_id === CLOUD_SETTINGS_INSTALLATION_ID,
+  ) ?? data[0];
+  if (!setting) {
     await refreshCloudSettings(userId);
     return getSettingLocal<T>(key);
   }
@@ -285,15 +290,15 @@ export async function getSetting<T = string>(key: string): Promise<T | undefined
   transaction.objectStore('settings').put({
     key: `${userId}::${key}`,
     userSettingKey: key,
-    value: data.value,
+    value: setting.value,
     ownerUserId: userId,
-    sourceInstallationId: data.source_installation_id,
-    cloudVersion: data.sync_version,
-    updatedAt: new Date(data.updated_at).getTime(),
+    sourceInstallationId: setting.source_installation_id,
+    cloudVersion: setting.sync_version,
+    updatedAt: new Date(setting.updated_at).getTime(),
     syncStatus: 'synced',
   });
   await complete;
-  return data.value as T;
+  return setting.value as T;
 }
 
 async function getCachedSetting(userId: string, key: string): Promise<Record<string, unknown> | undefined> {

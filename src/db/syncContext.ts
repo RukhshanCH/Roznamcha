@@ -1,5 +1,7 @@
 import type { SyncOutboxRecord } from '@/types';
 
+export const CLOUD_SETTINGS_INSTALLATION_ID = '00000000-0000-0000-0000-000000000000';
+
 let activeUserId: string | null = null;
 let activeInstallationId: string | null = null;
 

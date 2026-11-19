@@ -11,7 +11,10 @@ import {
   SYNC_OUTBOX_STORE_NAME,
   SYNC_TOMBSTONES_STORE_NAME,
 } from '@/db/indexedDB';
-import { getScopedSettingKey } from '@/db/syncContext';
+import {
+  CLOUD_SETTINGS_INSTALLATION_ID,
+  getScopedSettingKey,
+} from '@/db/syncContext';
 import { getSupabaseClient } from '@/lib/supabase';
 
 type CloudDataStore = LocalDataStore;
@@ -190,7 +193,7 @@ async function saveOutboxError(record: SyncOutboxRecord, message: string, remote
   await complete;
 }
 
-async function pushSetting(record: SyncOutboxRecord, userId: string, installationId: string): Promise<void> {
+async function pushSetting(record: SyncOutboxRecord, userId: string): Promise<void> {
   if (!record.settingKey) throw new Error('A setting outbox record is missing its key.');
   const db = await initDB();
   const readTransaction = db.transaction(['settings', SYNC_OUTBOX_STORE_NAME], 'readonly');
@@ -210,9 +213,11 @@ async function pushSetting(record: SyncOutboxRecord, userId: string, installatio
   const { data, error } = await getSupabaseClient().rpc('sync_user_setting', {
     p_key: record.settingKey,
     p_value: jsonValue(setting.value),
-    p_installation_id: installationId,
-    p_expected_version: record.cloudVersion
-      ?? (typeof setting.cloudVersion === 'number' ? setting.cloudVersion : null),
+    p_installation_id: CLOUD_SETTINGS_INSTALLATION_ID,
+    p_expected_version: setting.sourceInstallationId === CLOUD_SETTINGS_INSTALLATION_ID
+      ? record.cloudVersion
+        ?? (typeof setting.cloudVersion === 'number' ? setting.cloudVersion : null)
+      : null,
   });
   if (error) throw error;
   const result = data?.[0];
@@ -369,7 +374,7 @@ async function pushOutbox(userId: string, installationId: string): Promise<strin
   for (const record of await getOutbox(userId)) {
     if (record.lastError?.toLowerCase().includes('remote record changed')) continue;
     try {
-      if (record.store === 'settings') await pushSetting(record, userId, installationId);
+      if (record.store === 'settings') await pushSetting(record, userId);
       else await pushRecord(record, userId, installationId);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Cloud synchronization failed.';
@@ -535,7 +540,12 @@ async function pullSettings(userId: string): Promise<boolean> {
 
   const newestByKey = new Map<string, typeof data[number]>();
   for (const row of data) {
-    if (!newestByKey.has(row.key)) newestByKey.set(row.key, row);
+    const current = newestByKey.get(row.key);
+    if (!current
+      || (row.source_installation_id === CLOUD_SETTINGS_INSTALLATION_ID
+        && current.source_installation_id !== CLOUD_SETTINGS_INSTALLATION_ID)) {
+      newestByKey.set(row.key, row);
+    }
   }
   const db = await initDB();
   const transaction = db.transaction(['settings', SYNC_OUTBOX_STORE_NAME], 'readwrite');
@@ -684,6 +694,7 @@ export async function resolveSyncConflict(
         const pending = outboxRequest.result as SyncOutboxRecord | undefined;
         if (!setting || pending?.mutationId !== outboxRecord.mutationId) return;
         setting.cloudVersion = conflict.remoteVersion ?? setting.cloudVersion;
+        setting.sourceInstallationId = CLOUD_SETTINGS_INSTALLATION_ID;
         setting.syncStatus = 'pending';
         settings.put(setting);
         outbox.put({
@@ -700,20 +711,15 @@ export async function resolveSyncConflict(
       return;
     }
 
-    const localRead = db.transaction('settings', 'readonly');
-    const cachedSetting = await requestValue<Record<string, unknown> | undefined>(
-      localRead.objectStore('settings').get(localKey),
-    );
-    const installationId = cachedSetting?.sourceInstallationId;
-    let remoteQuery = getSupabaseClient().from('user_settings').select('*')
+    const { data: remoteSettings, error: remoteError } = await getSupabaseClient()
+      .from('user_settings').select('*')
       .eq('user_id', userId).eq('key', conflict.settingKey);
-    if (typeof installationId === 'string') {
-      remoteQuery = remoteQuery.eq('source_installation_id', installationId);
-    }
-    const { data: remoteSettings, error: remoteError } = await remoteQuery
-      .order('updated_at', { ascending: false });
     if (remoteError) throw remoteError;
-    const remoteSetting = remoteSettings[0];
+    const remoteSetting = remoteSettings.find((setting) =>
+      setting.source_installation_id === CLOUD_SETTINGS_INSTALLATION_ID,
+    ) ?? [...remoteSettings].sort((a, b) =>
+      b.updated_at.localeCompare(a.updated_at),
+    )[0];
     const transaction = db.transaction(['settings', SYNC_OUTBOX_STORE_NAME], 'readwrite');
     const complete = transactionDone(transaction);
     const settings = transaction.objectStore('settings');
