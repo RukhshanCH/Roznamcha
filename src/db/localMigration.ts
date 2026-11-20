@@ -767,23 +767,18 @@ function counterDate(value: unknown): string {
 }
 
 async function updateMigrationRun(
-  userId: string,
   installationId: string,
-  status: MigrationStatus,
+  status: 'running' | 'failed',
   counts: Record<string, number>,
   error: string | null = null,
 ) {
-  const { error: runError } = await getSupabaseClient()
-    .from('migration_runs')
-    .upsert({
-      user_id: userId,
-      installation_id: installationId,
-      source_db_version: DATABASE_VERSION,
-      status,
-      store_counts: counts,
-      last_error: error,
-      completed_at: status === 'verified' ? new Date().toISOString() : null,
-    }, { onConflict: 'user_id,installation_id' });
+  const { error: runError } = await getSupabaseClient().rpc('set_user_migration_status', {
+    p_installation_id: installationId,
+    p_source_db_version: DATABASE_VERSION,
+    p_status: status,
+    p_store_counts: counts,
+    p_last_error: error,
+  });
   if (runError) throw runError;
 }
 
@@ -1287,7 +1282,7 @@ export async function migrateLegacyData(
     stores = await saveStableIds(db, installationId, initialSnapshot);
     const snapshot: LocalMigrationSnapshot = { ...initialSnapshot, stores };
 
-    await updateMigrationRun(userId, installationId, 'running', counts);
+    await updateMigrationRun(installationId, 'running', counts);
     const { entries, customers, expenses, payments } = stores;
     const journalRows = entries.map((record) => mapJournalEntry(record, userId, installationId));
     const customerRows = customers.map((record) => mapCustomer(record, userId, installationId));
@@ -1482,7 +1477,7 @@ export async function migrateLegacyData(
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Migration failed for an unknown reason.';
     try {
-      await updateMigrationRun(userId, installationId, 'failed', counts, message);
+      await updateMigrationRun(installationId, 'failed', counts, message);
       await writeSettings(db, [{
         key: `${RUN_KEY_PREFIX}${userId}`,
         value: { status: 'failed', ownerUserId: userId, error: message } satisfies LocalMigrationState,

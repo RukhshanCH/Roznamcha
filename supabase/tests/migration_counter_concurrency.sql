@@ -32,6 +32,7 @@ select dblink_exec(
 );
 set role authenticated;
 
+set role postgres;
 do $$
 begin
   if exists (
@@ -44,6 +45,7 @@ begin
   end if;
 end
 $$;
+set role authenticated;
 
 select dblink_send_query(
   'migration_counter_worker',
@@ -85,6 +87,7 @@ select public.migrate_invoice_counter('1901-01-01', 50);
 select * from dblink_get_result('migration_counter_worker') as result(sequence bigint);
 select * from dblink_get_result('migration_counter_worker') as result(sequence bigint);
 
+set role postgres;
 do $$
 begin
   if coalesce((
@@ -95,6 +98,7 @@ begin
   end if;
 end
 $$;
+set role authenticated;
 
 select dblink_send_query(
   'migration_counter_worker',
@@ -136,6 +140,7 @@ select public.next_invoice_sequence('1901-01-02');
 select * from dblink_get_result('migration_counter_worker') as result(sequence bigint);
 select * from dblink_get_result('migration_counter_worker') as result(sequence bigint);
 
+set role postgres;
 do $$
 begin
   if coalesce((
@@ -146,6 +151,7 @@ begin
   end if;
 end
 $$;
+set role authenticated;
 
 select dblink_disconnect('migration_counter_worker');
 

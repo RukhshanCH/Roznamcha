@@ -1,25 +1,50 @@
 .migration-page {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 24px;
-  background: #f3f6fb;
+  padding: clamp(16px, 4vw, 32px);
+  direction: ltr;
+  text-align: left;
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  font-family: var(--font-ui);
 }
 
 .migration-card {
   width: min(100%, 560px);
   display: grid;
   gap: 14px;
-  padding: 28px;
-  border-radius: 16px;
-  background: #fff;
-  box-shadow: 0 8px 36px rgb(15 23 42 / 10%);
+  padding: clamp(22px, 5vw, 32px);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
+  box-shadow: var(--shadow-card);
 }
 
 .migration-card h1,
 .migration-card p,
 .migration-card ul {
   margin: 0;
+}
+
+.migration-card h1 {
+  color: var(--text-primary);
+  font-size: clamp(1.35rem, 4vw, 1.65rem);
+  line-height: 1.35;
+}
+
+.migration-card p,
+.migration-card li {
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.migration-card [role="alert"] {
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--badge-red);
+  background: #fef2f2;
 }
 
 .migration-card ul {
@@ -35,8 +60,9 @@
   display: grid;
   gap: 8px;
   padding: 12px;
-  border: 1px solid #d1d5db;
+  border: 1px solid var(--border-color);
   border-radius: 8px;
+  background: var(--table-header-bg);
 }
 
 .migration-date-issue p {
@@ -44,29 +70,60 @@
 }
 
 .migration-date-issue label {
+  font-size: 0.875rem;
   font-weight: 600;
 }
 
 .migration-date-issue input {
   width: 100%;
-  padding: 8px;
-  border: 1px solid #9ca3af;
-  border-radius: 6px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  font: 0.875rem var(--font-ui);
+}
+
+.migration-date-issue input:focus-visible {
+  border-color: var(--accent-blue);
+  outline: 0;
+  box-shadow: 0 0 0 3px var(--accent-blue-light);
 }
 
 .migration-confirm {
   display: flex;
   align-items: flex-start;
   gap: 10px;
+  line-height: 1.5;
+}
+
+.migration-confirm input {
+  flex: 0 0 auto;
+  margin-top: 4px;
+  accent-color: var(--accent-blue);
 }
 
 .migration-card button {
-  padding: 11px 16px;
-  border: 0;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid var(--accent-blue);
   border-radius: 8px;
   color: #fff;
-  background: #1d4ed8;
+  background: var(--accent-blue);
+  font: 600 0.9rem var(--font-ui);
   cursor: pointer;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.migration-card button:hover:not(:disabled):not(.migration-secondary) {
+  border-color: var(--accent-blue-hover);
+  background: var(--accent-blue-hover);
+}
+
+.migration-card button:focus-visible {
+  outline: 3px solid var(--accent-blue-light);
+  outline-offset: 2px;
 }
 
 .migration-card button:disabled {
@@ -74,15 +131,28 @@
   opacity: 0.6;
 }
 
-.migration-card .migration-secondary {
-  color: #1f2937;
+.migration-card button.migration-secondary {
+  border-color: var(--border-color);
+  color: var(--text-primary);
+  background: #f3f4f6;
+}
+
+.migration-card button.migration-secondary:hover:not(:disabled) {
   background: #e5e7eb;
 }
 
 .migration-card progress {
   width: 100%;
+  accent-color: var(--accent-blue);
 }
 
 .migration-spinner {
+  color: var(--accent-blue);
   animation: auth-spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .migration-spinner {
+    animation: none;
+  }
 }

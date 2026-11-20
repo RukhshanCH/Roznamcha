@@ -34,6 +34,7 @@ set role authenticated;
 
 do $$
 declare
+  v_user_id uuid := auth.uid();
   v_payload jsonb;
   v_different_uuid jsonb;
   v_conflict jsonb;
@@ -44,22 +45,101 @@ declare
   v_records jsonb;
   v_verified boolean;
   v_versions jsonb;
+  v_direct_insert_blocked boolean := false;
+  v_verified_status_rejected boolean := false;
+  v_owner_check_rejected boolean := false;
+  v_definer_function_count integer;
 begin
-  delete from public.journal_entries
-  where user_id = auth.uid()
-    and installation_id = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
-  delete from public.user_settings
-  where user_id = auth.uid();
-  delete from public.migration_runs
-  where user_id = auth.uid()
-    and installation_id = 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+  if exists (
+    select 1
+    from (values
+      ('journal_entries'), ('customers'), ('expenses'), ('payments'),
+      ('user_settings'), ('invoice_counters'), ('migration_runs')
+    ) as app_tables(table_name)
+    where has_table_privilege(
+        'authenticated', 'public.' || app_tables.table_name, 'insert'
+      )
+      or has_table_privilege(
+        'authenticated', 'public.' || app_tables.table_name, 'update'
+      )
+      or has_table_privilege(
+        'authenticated', 'public.' || app_tables.table_name, 'delete'
+      )
+  ) then
+    raise exception 'Authenticated role retains direct write privileges';
+  end if;
+  if exists (
+    select 1
+    from (values
+      ('public.sync_user_record(text,jsonb,bigint)'),
+      ('public.delete_user_record(text,uuid,bigint)'),
+      ('public.sync_user_setting(text,jsonb,uuid,bigint)'),
+      ('public.migrate_user_setting(text,jsonb,text,bigint,jsonb)'),
+      ('public.migrate_user_record(text,jsonb)'),
+      ('public.migrate_invoice_counter(date,bigint)'),
+      ('public.next_invoice_sequence(date)'),
+      ('public.verify_user_migration(uuid,integer,jsonb,jsonb,jsonb,jsonb)'),
+      ('public.set_user_migration_status(uuid,integer,text,jsonb,text)')
+    ) as rpc(function_signature)
+    where not has_function_privilege('authenticated', rpc.function_signature, 'execute')
+      or has_function_privilege('anon', rpc.function_signature, 'execute')
+  ) then
+    raise exception 'Authenticated RPC execute grants are incorrect or exposed to anon';
+  end if;
+  select count(*) into v_definer_function_count
+  from pg_catalog.pg_proc as proc
+  where proc.oid in (
+    'public.sync_user_record(text,jsonb,bigint)'::regprocedure,
+    'public.delete_user_record(text,uuid,bigint)'::regprocedure,
+    'public.sync_user_setting(text,jsonb,uuid,bigint)'::regprocedure,
+    'public.migrate_user_setting(text,jsonb,text,bigint,jsonb)'::regprocedure,
+    'public.migrate_user_record(text,jsonb)'::regprocedure,
+    'public.migrate_invoice_counter(date,bigint)'::regprocedure,
+    'public.next_invoice_sequence(date)'::regprocedure,
+    'public.verify_user_migration(uuid,integer,jsonb,jsonb,jsonb,jsonb)'::regprocedure,
+    'public.set_user_migration_status(uuid,integer,text,jsonb,text)'::regprocedure
+  )
+    and proc.prosecdef
+    and proc.proconfig @> array['search_path=""'];
+  if v_definer_function_count <> 9 then
+    raise exception 'Expected all nine authenticated write RPCs to be fixed-search-path SECURITY DEFINER functions';
+  end if;
 
-  insert into public.migration_runs (
-    user_id, installation_id, source_db_version, status, store_counts
-  ) values (
-    auth.uid(), 'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
-    6, 'running', '{}'::jsonb
+  perform public.set_user_migration_status(
+    'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+    6,
+    'running',
+    '{}'::jsonb,
+    null
   );
+  perform public.set_user_migration_status(
+    'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+    6,
+    'failed',
+    '{}'::jsonb,
+    'retry fixture'
+  );
+  perform public.set_user_migration_status(
+    'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+    6,
+    'running',
+    '{}'::jsonb,
+    null
+  );
+  begin
+    perform public.set_user_migration_status(
+      'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+      6,
+      'verified',
+      '{}'::jsonb,
+      null
+    );
+  exception when raise_exception then
+    v_verified_status_rejected := true;
+  end;
+  if not v_verified_status_rejected then
+    raise exception 'Migration status RPC allowed callers to self-verify';
+  end if;
 
   v_payload := jsonb_build_object(
     'id', '11111111-1111-4111-8111-111111111111',
@@ -83,6 +163,40 @@ begin
     'is_deleted', false,
     'deleted_at', null
   );
+
+  begin
+    insert into public.journal_entries (
+      id, user_id, installation_id, local_id, serial_no, name, mobile_number,
+      total, advance, remaining, remaining_plus, note, payment_method, date,
+      created_at
+    ) values (
+      '33333333-3333-4333-8333-333333333333',
+      auth.uid(),
+      'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',
+      102, 2, 'Direct write must fail', '', 0, 0, 0, 0, '', 'cash',
+      '1902-02-02', '1902-02-02T00:00:00Z'
+    );
+  exception when insufficient_privilege then
+    v_direct_insert_blocked := true;
+  end;
+  if not v_direct_insert_blocked then
+    raise exception 'Authenticated direct record INSERT was not blocked';
+  end if;
+  begin
+    perform public.migrate_user_record(
+      'entries',
+      jsonb_set(
+        v_payload,
+        '{user_id}',
+        to_jsonb('ffffffff-ffff-4fff-8fff-ffffffffffff'::text)
+      )
+    );
+  exception when raise_exception then
+    v_owner_check_rejected := true;
+  end;
+  if not v_owner_check_rejected then
+    raise exception 'SECURITY DEFINER migration RPC accepted another user id';
+  end if;
 
   select result.applied, result.row_id, result.sync_version
   into v_applied, v_existing_id, v_existing_version
@@ -123,18 +237,31 @@ begin
     or v_remote ->> 'name' <> 'Natural key record' then
     raise exception 'Natural-key conflict overwrote the existing cloud record';
   end if;
+  perform pg_catalog.set_config(
+    'request.jwt.claim.sub',
+    'ffffffff-ffff-4fff-8fff-ffffffffffff',
+    true
+  );
+  if exists (
+    select 1
+    from public.journal_entries
+    where id = '11111111-1111-4111-8111-111111111111'
+  ) then
+    raise exception 'RLS exposed a record to a different authenticated user';
+  end if;
+  perform pg_catalog.set_config('request.jwt.claim.sub', v_user_id::text, true);
 
-  insert into public.user_settings (
-    user_id, key, value, source_installation_id, sync_version
-  ) values (
-    auth.uid(),
+  select result.applied
+  into v_applied
+  from public.sync_user_setting(
     'migrationTheme',
     '"dark"'::jsonb,
     '00000000-0000-0000-0000-000000000000',
-    1
-  )
-  on conflict (user_id, key, source_installation_id)
-  do update set value = excluded.value;
+    null
+  ) as result;
+  if not v_applied then
+    raise exception 'Initial setting upload failed';
+  end if;
 
   if public.migrate_invoice_counter('1902-02-02', 8) <> 8 then
     raise exception 'Invoice counter migration did not establish the legacy sequence';
@@ -249,26 +376,25 @@ begin
 
   perform dblink_exec(
     'migration_settings_updater',
-    pg_catalog.format(
-      $command$
-        do $block$
-        begin
-          perform pg_catalog.pg_advisory_xact_lock(
-            pg_catalog.hashtextextended(%L, 0)
-          );
-          update public.user_settings
-          set value = '"light"'::jsonb
-          where user_id = auth.uid()
-            and key = 'migrationTheme'
-            and source_installation_id = '00000000-0000-0000-0000-000000000000';
-          if not found then
-            raise exception 'Concurrent settings update did not find its fixture row';
-          end if;
-        end
-        $block$;
-      $command$,
-      v_user_id::text || ':migrationTheme'
-    )
+    $command$
+      do $block$
+      declare
+        v_applied boolean;
+      begin
+        select result.applied
+        into v_applied
+        from public.sync_user_setting(
+          'migrationTheme',
+          '"light"'::jsonb,
+          '00000000-0000-0000-0000-000000000000',
+          1
+        ) as result;
+        if not coalesce(v_applied, false) then
+          raise exception 'Concurrent settings RPC update was not applied';
+        end if;
+      end
+      $block$;
+    $command$
   );
 
   if not exists (

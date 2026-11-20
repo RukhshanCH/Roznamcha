@@ -180,6 +180,16 @@ export type Database = {
         };
         Returns: Array<{ verified: boolean; record_versions: Json }>;
       };
+      set_user_migration_status: {
+        Args: {
+          p_installation_id: string;
+          p_source_db_version: number;
+          p_status: 'pending' | 'running' | 'failed';
+          p_store_counts: Json;
+          p_last_error?: string | null;
+        };
+        Returns: undefined;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;

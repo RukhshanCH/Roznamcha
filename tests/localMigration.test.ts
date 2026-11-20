@@ -191,6 +191,26 @@ function createSupabaseMock() {
   }
 
   async function rpc(name: string, args: Record<string, unknown>) {
+    if (name === 'set_user_migration_status') {
+      const rows = tables.get('migration_runs') ?? [];
+      const installation = String(args.p_installation_id);
+      const existing = rows.find((row) =>
+        row.user_id === 'user-a' && row.installation_id === installation,
+      );
+      const values = {
+        user_id: 'user-a',
+        installation_id: installation,
+        source_db_version: args.p_source_db_version,
+        status: args.p_status,
+        store_counts: args.p_store_counts,
+        last_error: args.p_last_error,
+      };
+      if (existing) Object.assign(existing, values);
+      else rows.push(values);
+      tables.set('migration_runs', rows);
+      return { data: null, error: null };
+    }
+
     if (name === 'migrate_user_record') {
       const store = String(args.p_store);
       const table = store === 'entries' ? 'journal_entries' : store;

@@ -101,7 +101,7 @@ export default function Settings() {
                 .settings-container {
                     max-width: 800px;
                     margin: 0 auto;
-                    font-family: system-ui, -apple-system, sans-serif;
+                    font-family: var(--font-ui);
                 }
                 .settings-header {
                     margin-bottom: 32px;
@@ -109,33 +109,33 @@ export default function Settings() {
                 .settings-header h2 {
                     font-size: 28px;
                     font-weight: 700;
-                    color: #1f2937;
+                    color: var(--text-primary);
                     margin: 0 0 6px 0;
                     display: flex;
                     align-items: center;
                     gap: 10px;
                 }
                 .settings-header p {
-                    color: #6b7280;
+                    color: var(--text-secondary);
                     margin: 0;
                     font-size: 15px;
                 }
                 .settings-card {
-                    background: #ffffff;
-                    border: 1px solid #e5e7eb;
+                    background: var(--bg-card);
+                    border: 1px solid var(--border-color);
                     border-radius: 12px;
                     padding: 28px;
                     margin-bottom: 20px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+                    box-shadow: var(--shadow-card);
                 }
                 .card-title {
                     font-size: 16px;
                     font-weight: 600;
-                    color: #374151;
+                    color: var(--text-primary);
                     margin: 0 0 20px 0;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
-                    border-bottom: 1px solid #f3f4f6;
+                    border-bottom: 1px solid var(--border-color);
                     padding-bottom: 12px;
                 }
                 
@@ -157,27 +157,27 @@ export default function Settings() {
                     height: 100%;
                     border-radius: 50%;
                     object-fit: cover;
-                    border: 3px solid #e5e7eb;
-                    background: #f9fafb;
+                    border: 3px solid var(--border-color);
+                    background: var(--table-header-bg);
                 }
                 .profile-avatar-placeholder {
                     width: 100%;
                     height: 100%;
                     border-radius: 50%;
-                    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+                    background: linear-gradient(135deg, var(--accent-blue), var(--accent-blue-hover));
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     color: white;
                     font-size: 42px;
                     font-weight: 700;
-                    border: 3px solid #e5e7eb;
+                    border: 3px solid var(--border-color);
                 }
                 .profile-avatar-overlay {
                     position: absolute;
                     bottom: 4px;
                     right: 4px;
-                    background: #3b82f6;
+                    background: var(--accent-blue);
                     color: white;
                     width: 36px;
                     height: 36px;
@@ -186,11 +186,11 @@ export default function Settings() {
                     align-items: center;
                     justify-content: center;
                     cursor: pointer;
-                    border: 3px solid white;
+                    border: 3px solid var(--bg-card);
                     transition: background 0.2s;
                 }
                 .profile-avatar-overlay:hover {
-                    background: #2563eb;
+                    background: var(--accent-blue-hover);
                 }
                 .profile-info {
                     flex: 1;
@@ -199,15 +199,16 @@ export default function Settings() {
                 .profile-info h3 {
                     margin: 0 0 6px 0;
                     font-size: 22px;
-                    color: #111827;
+                    color: var(--text-primary);
                 }
                 .profile-info p {
                     margin: 0;
-                    color: #6b7280;
+                    color: var(--text-secondary);
                     font-size: 14px;
                 }
                 .profile-actions {
                     display: flex;
+                    flex-wrap: wrap;
                     gap: 10px;
                     margin-top: 14px;
                 }
@@ -221,21 +222,22 @@ export default function Settings() {
                     border-radius: 8px;
                     font-size: 14px;
                     font-weight: 500;
+                    font-family: var(--font-ui);
                     cursor: pointer;
                     border: none;
                     transition: all 0.2s;
                 }
                 .btn-primary {
-                    background: #3b82f6;
+                    background: var(--accent-blue);
                     color: white;
                 }
                 .btn-primary:hover {
-                    background: #2563eb;
+                    background: var(--accent-blue-hover);
                 }
                 .btn-secondary {
                     background: #f3f4f6;
-                    color: #374151;
-                    border: 1px solid #d1d5db;
+                    color: var(--text-primary);
+                    border: 1px solid var(--border-color);
                 }
                 .btn-secondary:hover {
                     background: #e5e7eb;
@@ -274,10 +276,10 @@ export default function Settings() {
                 .company-name-text {
                     font-size: 20px;
                     font-weight: 600;
-                    color: #111827;
+                    color: var(--text-primary);
                 }
                 .edit-icon-inline {
-                    color: #9ca3af;
+                    color: var(--text-secondary);
                     width: 16px;
                     height: 16px;
                     opacity: 0;
@@ -288,20 +290,25 @@ export default function Settings() {
                 }
                 .company-name-input-group {
                     display: flex;
+                    flex-wrap: wrap;
                     align-items: center;
                     gap: 8px;
                 }
                 .input-field {
+                    min-width: 0;
                     padding: 8px 12px;
-                    border: 1px solid #d1d5db;
+                    border: 1px solid var(--border-color);
                     border-radius: 8px;
                     font-size: 16px;
+                    font-family: var(--font-ui);
+                    color: var(--text-primary);
+                    background: var(--bg-card);
                     outline: none;
                     transition: border-color 0.2s, box-shadow 0.2s;
                 }
                 .input-field:focus {
-                    border-color: #3b82f6;
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+                    border-color: var(--accent-blue);
+                    box-shadow: 0 0 0 3px var(--accent-blue-light);
                 }
                 
                 /* Form Grid */
@@ -318,19 +325,19 @@ export default function Settings() {
                 .form-label {
                     font-size: 13px;
                     font-weight: 600;
-                    color: #374151;
+                    color: var(--text-secondary);
                     text-transform: uppercase;
                     letter-spacing: 0.3px;
                 }
                 .form-hint {
                     font-size: 12px;
-                    color: #9ca3af;
+                    color: var(--text-secondary);
                     margin: 0;
                 }
                 
                 /* Skeleton Loading */
                 .skeleton {
-                    background: linear-gradient(90deg, #f3f4f6 25%, #e5e7eb 50%, #f3f4f6 75%);
+                    background: linear-gradient(90deg, #f3f4f6 25%, var(--border-color) 50%, #f3f4f6 75%);
                     background-size: 200% 100%;
                     animation: shimmer 1.5s infinite;
                     border-radius: 8px;
@@ -357,12 +364,26 @@ export default function Settings() {
                 .urdu-text {
                     font-family: 'Jameel Noori Nastaleeq', 'Noto Nastaliq Urdu', 'Urdu Typesetting', serif;
                 }
+                @media (max-width: 640px) {
+                    .settings-card {
+                        padding: 20px;
+                    }
+                    .settings-header h2 {
+                        font-size: 24px;
+                    }
+                    .form-grid {
+                        grid-template-columns: minmax(0, 1fr);
+                    }
+                    .company-name-input-group .input-field {
+                        flex: 1 1 160px;
+                    }
+                }
             `}</style>
 
             {/* Page Header */}
             <div className="settings-header">
                 <h2>
-                    <Building2 size={26} color="#3b82f6" />
+                    <Building2 size={26} color="var(--accent-blue)" />
                     Settings
                 </h2>
                 <p>Manage your business profile and application preferences</p>

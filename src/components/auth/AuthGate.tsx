@@ -1,9 +1,14 @@
 import { useState, type FormEvent, type ReactNode } from 'react';
-import { useAtomValue } from 'jotai';
+import { useAtomValue, useSetAtom } from 'jotai';
 import { BookOpen, LoaderCircle, Mail } from 'lucide-react';
 import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase';
-import { authErrorAtom, authLoadingAtom, userAtom } from '@/store/atoms';
-import { useAuthBootstrap } from '@/hooks/useAuth';
+import { authErrorAtom, authLoadingAtom, passwordRecoveryAtom, userAtom } from '@/store/atoms';
+import {
+  completePasswordRecovery,
+  requestMagicLink,
+  requestPasswordRecovery,
+  useAuthBootstrap,
+} from '@/hooks/useAuth';
 import '@/styles/auth.css';
 
 export default function AuthGate({ children }: { children: ReactNode }) {
@@ -12,8 +17,11 @@ export default function AuthGate({ children }: { children: ReactNode }) {
   const user = useAtomValue(userAtom);
   const loading = useAtomValue(authLoadingAtom);
   const authError = useAtomValue(authErrorAtom);
+  const passwordRecovery = useAtomValue(passwordRecoveryAtom);
+  const setPasswordRecovery = useSetAtom(passwordRecoveryAtom);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [mode, setMode] = useState<'magic' | 'password' | 'reset'>('magic');
   const [passwordAction, setPasswordAction] = useState<'sign-in' | 'sign-up'>('sign-in');
@@ -35,19 +43,12 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     try {
       const supabase = getSupabaseClient();
       if (mode === 'magic') {
-        const { error: sendError } = await supabase.auth.signInWithOtp({
-          email: email.trim(),
-          options: { emailRedirectTo: window.location.origin },
-        });
-        if (sendError) throw sendError;
-        setSuccess('Sign-in link sent. Check your email and spam folder.');
+        await requestMagicLink(email.trim(), window.location.origin);
+        setSuccess('If this email belongs to an account that can sign in with a link, a link will be sent.');
         setSent(true);
       } else if (mode === 'reset') {
-        const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: window.location.origin,
-        });
-        if (resetError) throw resetError;
-        setSuccess('Password recovery link sent. Check your email and spam folder.');
+        await requestPasswordRecovery(email.trim(), window.location.origin);
+        setSuccess('If an account exists for this email, a recovery link will be sent.');
         setSent(true);
       } else if (passwordAction === 'sign-up') {
         const { error: signUpError } = await supabase.auth.signUp({
@@ -69,7 +70,38 @@ export default function AuthGate({ children }: { children: ReactNode }) {
         if (signInError) throw signInError;
       }
     } catch (authError) {
-      setError(authError instanceof Error ? authError.message : 'Could not complete authentication.');
+      setError(
+        mode === 'magic'
+          ? 'Could not request a sign-in link. Please try again later.'
+          : mode === 'reset'
+            ? 'Could not request password recovery. Please try again later.'
+            : authError instanceof Error ? authError.message : 'Could not complete authentication.',
+      );
+    } finally {
+      setSending(false);
+    }
+  }
+
+  async function submitRecoveredPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (password.length < 8) {
+      setError('Use at least 8 characters for your new password.');
+      return;
+    }
+    if (password !== confirmPassword) {
+      setError('The passwords do not match.');
+      return;
+    }
+
+    setSending(true);
+    setError('');
+    try {
+      await completePasswordRecovery(password);
+      setPasswordRecovery(false);
+    } catch (recoveryError) {
+      setError(recoveryError instanceof Error
+        ? recoveryError.message
+        : 'Could not update the password. Request a new recovery link and try again.');
     } finally {
       setSending(false);
     }
@@ -84,10 +116,47 @@ export default function AuthGate({ children }: { children: ReactNode }) {
     );
   }
 
+  if (passwordRecovery && user) {
+    return (
+      <main dir="ltr" className="auth-page">
+        <section className="auth-card" aria-labelledby="recovery-title">
+          <BookOpen size={36} aria-hidden="true" />
+          <h1 id="recovery-title">Choose a new password</h1>
+          <form onSubmit={submitRecoveredPassword}>
+            <label htmlFor="recovery-password">New password</label>
+            <input
+              id="recovery-password"
+              autoComplete="new-password"
+              type="password"
+              minLength={8}
+              required
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+            <label htmlFor="recovery-confirm-password">Confirm new password</label>
+            <input
+              id="recovery-confirm-password"
+              autoComplete="new-password"
+              type="password"
+              minLength={8}
+              required
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+            />
+            {error && <p className="auth-error" role="alert">{error}</p>}
+            <button type="submit" disabled={sending}>
+              {sending ? 'Please wait…' : 'Update password'}
+            </button>
+          </form>
+        </section>
+      </main>
+    );
+  }
+
   if (user) return <>{children}</>;
 
   return (
-    <main className="auth-page">
+    <main dir='ltr' className="auth-page">
       <section className="auth-card" aria-labelledby="auth-title">
         <BookOpen size={36} aria-hidden="true" />
         <h1 id="auth-title">

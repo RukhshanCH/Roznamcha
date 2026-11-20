@@ -50,6 +50,7 @@ export const alertMessageAtom = atom("");
 export const userAtom = atom<User | null>(null);
 export const authLoadingAtom = atom(true);
 export const authErrorAtom = atom<string | null>(null);
+export const passwordRecoveryAtom = atom(false);
 export const syncStatusAtom = atom<SyncStatusState>({
   phase: 'idle',
   queued: 0,

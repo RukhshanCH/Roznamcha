@@ -4,6 +4,7 @@ import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase';
 import {
   authErrorAtom,
   authLoadingAtom,
+  passwordRecoveryAtom,
   userAtom,
 } from '@/store/atoms';
 
@@ -11,6 +12,7 @@ export function useAuthBootstrap() {
   const setUser = useSetAtom(userAtom);
   const setLoading = useSetAtom(authLoadingAtom);
   const setError = useSetAtom(authErrorAtom);
+  const setPasswordRecovery = useSetAtom(passwordRecoveryAtom);
 
   useEffect(() => {
     if (!isSupabaseConfigured()) {
@@ -21,9 +23,11 @@ export function useAuthBootstrap() {
 
     let active = true;
     const supabase = getSupabaseClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (!active) return;
       setUser(session?.user ?? null);
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
+      if (event === 'SIGNED_OUT') setPasswordRecovery(false);
       setError(null);
       setLoading(false);
     });
@@ -44,7 +48,7 @@ export function useAuthBootstrap() {
       active = false;
       subscription.unsubscribe();
     };
-  }, [setError, setLoading, setUser]);
+  }, [setError, setLoading, setPasswordRecovery, setUser]);
 }
 
 export async function signOutUser(): Promise<void> {
@@ -59,5 +63,26 @@ export async function updateUserProfile(
     data: { display_name: profile.displayName.trim() },
     ...(profile.password ? { password: profile.password } : {}),
   });
+  if (error) throw error;
+}
+
+export async function requestMagicLink(email: string, redirectTo: string): Promise<void> {
+  const { error } = await getSupabaseClient().auth.signInWithOtp({
+    email,
+    options: {
+      emailRedirectTo: redirectTo,
+      shouldCreateUser: false,
+    },
+  });
+  if (error) throw error;
+}
+
+export async function requestPasswordRecovery(email: string, redirectTo: string): Promise<void> {
+  const { error } = await getSupabaseClient().auth.resetPasswordForEmail(email, { redirectTo });
+  if (error) throw error;
+}
+
+export async function completePasswordRecovery(password: string): Promise<void> {
+  const { error } = await getSupabaseClient().auth.updateUser({ password });
   if (error) throw error;
 }
