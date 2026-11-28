@@ -1,17 +1,16 @@
 import { useState, useRef, type ChangeEvent, type FormEvent } from "react";
 import { useSetting } from "@/hooks/useSetting";
-import { Pencil, Camera, Trash2, Building2, MapPin, Phone, Mail, Save } from "lucide-react";
+import { Pencil, Camera, Trash2, Building2, MapPin, Phone, Mail, Save, X } from "lucide-react";
 import Logo from "../assets/Logo.webp";
 import { useAtomValue } from 'jotai';
 import { userAtom } from '@/store/atoms';
-import { updateUserProfile } from '@/hooks/useAuth';
+import { changeUserEmail, changeUserPassword, updateUserProfile } from '@/hooks/useAuth';
 
 export default function Settings() {
     const user = useAtomValue(userAtom);
     const [accountName, setAccountName] = useState(
         typeof user?.user_metadata?.display_name === 'string' ? user.user_metadata.display_name : '',
     );
-    const [newPassword, setNewPassword] = useState('');
     const [profileError, setProfileError] = useState('');
     const [profileMessage, setProfileMessage] = useState('');
     const [profileSaving, setProfileSaving] = useState(false);
@@ -22,13 +21,81 @@ export default function Settings() {
         setProfileMessage('');
         setProfileSaving(true);
         try {
-            await updateUserProfile({ displayName: accountName, password: newPassword || undefined });
-            setNewPassword('');
-            setProfileMessage('Account profile updated.');
+            await updateUserProfile({ displayName: accountName });
+            setProfileMessage('Display name updated.');
         } catch (error) {
             setProfileError(error instanceof Error ? error.message : 'Could not update the account profile.');
         } finally {
             setProfileSaving(false);
+        }
+    };
+
+    // Change email (Supabase sends a confirmation link to the new address;
+    // with secure email change enabled it also asks the current address).
+    const [newEmail, setNewEmail] = useState('');
+    const [emailError, setEmailError] = useState('');
+    const [emailMessage, setEmailMessage] = useState('');
+    const [emailSaving, setEmailSaving] = useState(false);
+
+    const saveEmail = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setEmailError('');
+        setEmailMessage('');
+        if (newEmail.trim().toLowerCase() === (user?.email ?? '').toLowerCase()) {
+            setEmailError('That is already your current email address.');
+            return;
+        }
+        setEmailSaving(true);
+        try {
+            await changeUserEmail(newEmail);
+            setNewEmail('');
+            setEmailMessage('Confirmation link sent. Open the link in the new inbox (and your current inbox, if asked) to finish changing your email.');
+        } catch (error) {
+            setEmailError(error instanceof Error ? error.message : 'Could not change the email address.');
+        } finally {
+            setEmailSaving(false);
+        }
+    };
+
+    // Change password (current password is verified first, new + confirm must match)
+    const [currentPassword, setCurrentPassword] = useState('');
+    const [newPassword, setNewPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [passwordError, setPasswordError] = useState('');
+    const [passwordMessage, setPasswordMessage] = useState('');
+    const [passwordSaving, setPasswordSaving] = useState(false);
+
+    const savePassword = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setPasswordError('');
+        setPasswordMessage('');
+        if (!currentPassword) {
+            setPasswordError('Enter your current password.');
+            return;
+        }
+        if (newPassword.length < 8) {
+            setPasswordError('New password must be at least 8 characters.');
+            return;
+        }
+        if (newPassword !== confirmPassword) {
+            setPasswordError('New password and confirm password do not match.');
+            return;
+        }
+        if (newPassword === currentPassword) {
+            setPasswordError('New password must be different from the current password.');
+            return;
+        }
+        setPasswordSaving(true);
+        try {
+            await changeUserPassword(currentPassword, newPassword);
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmPassword('');
+            setPasswordMessage('Password changed.');
+        } catch (error) {
+            setPasswordError(error instanceof Error ? error.message : 'Could not change the password.');
+        } finally {
+            setPasswordSaving(false);
         }
     };
 
@@ -38,12 +105,14 @@ export default function Settings() {
     const [nameInput, setNameInput] = useState(companyName);
 
     // Profile picture (stored as base64 string in settings)
-    const [profilePic, setProfilePic] = useSetting<string | null>("profilePic", Logo);
+    const [profilePic, setProfilePic] = useSetting<string | null>("profilePic", null);
 
-    // Extra business info (optional but practical)
-    const [businessAddress, setBusinessAddress] = useSetting("businessAddress", "");
-    const [businessPhone, setBusinessPhone] = useSetting("businessPhone", "");
-    const [businessEmail, setBusinessEmail] = useSetting("businessEmail", "");
+    // Extra business info — edited through a draft form (ContactDetailsForm)
+    // so a value is written once, on Save, not on every keystroke.
+    const [businessAddress, setBusinessAddress, businessAddressLoading] = useSetting("businessAddress", "");
+    const [businessPhone, setBusinessPhone, businessPhoneLoading] = useSetting("businessPhone", "");
+    const [businessEmail, setBusinessEmail, businessEmailLoading] = useSetting("businessEmail", "");
+    const contactLoading = businessAddressLoading || businessPhoneLoading || businessEmailLoading;
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -255,8 +324,16 @@ export default function Settings() {
                     font-size: 13px;
                 }
 
+                .btn {
+                    line-height: 1;
+                }
                 .btn svg {
-                    margin-top: 7px;
+                    display: block;
+                    flex-shrink: 0;
+                }
+                .btn:disabled {
+                    opacity: 0.6;
+                    cursor: not-allowed;
                 }
                 
                 /* Company Name Editor */
@@ -323,11 +400,18 @@ export default function Settings() {
                     gap: 6px;
                 }
                 .form-label {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
                     font-size: 13px;
                     font-weight: 600;
                     color: var(--text-secondary);
                     text-transform: uppercase;
                     letter-spacing: 0.3px;
+                }
+                .form-label svg {
+                    display: block;
+                    flex-shrink: 0;
                 }
                 .form-hint {
                     font-size: 12px;
@@ -396,13 +480,7 @@ export default function Settings() {
                 <div className="profile-section">
                     {/* Avatar */}
                     <div className="profile-avatar-wrapper">
-                        {profilePic ? (
-                            <img src={profilePic ?? Logo} alt="Profile" className="profile-avatar" />
-                        ) : (
-                            <div className="profile-avatar-placeholder">
-                                {companyName.charAt(0).toUpperCase()}
-                            </div>
-                        )}
+                        <img src={profilePic ?? Logo} alt="Profile" className="profile-avatar" />
 
                         <div
                             className="profile-avatar-overlay"
@@ -440,7 +518,7 @@ export default function Settings() {
                                     <Save size={14} /> Save
                                 </button>
                                 <button className="btn btn-secondary btn-sm" onClick={handleCancelName}>
-                                    <XIcon /> Cancel
+                                    <X size={14} /> Cancel
                                 </button>
                             </div>
                         ) : (
@@ -463,17 +541,8 @@ export default function Settings() {
                                 className="btn btn-secondary btn-sm"
                                 onClick={() => fileInputRef.current?.click()}
                             >
-                                <Camera size={14} /> {profilePic !== null && profilePic !== Logo ? "Change Picture" : "Upload Picture"}
+                                <Camera size={14} /> {profilePic !== null ? "Change Picture" : "Upload Picture"}
                             </button>
-
-                            {profilePic !== Logo && (
-                                <button
-                                    className="btn btn-secondary btn-sm"
-                                    onClick={() => setProfilePic(Logo)}
-                                >
-                                    <Camera size={14} /> Use Default Picture
-                                </button>
-                            )}
 
                             {profilePic !== null && (
                                 <button
@@ -484,13 +553,16 @@ export default function Settings() {
                                 </button>
                             )}
                         </div>
+                        {profilePic === null && (
+                            <p className="form-hint" style={{ marginTop: "8px" }}>Using the default Roznamcha logo</p>
+                        )}
                     </div>
                 </div>
             </div>
 
             <div className="settings-card">
                 <h3 className="card-title">Account Profile</h3>
-                <p>{user?.email}</p>
+                <p style={{ marginBottom: "16px" }}>{user?.email}</p>
                 <form onSubmit={saveAccountProfile}>
                     <div className="form-grid">
                         <div className="form-group">
@@ -503,8 +575,73 @@ export default function Settings() {
                                 onChange={(event) => setAccountName(event.target.value)}
                             />
                         </div>
+                    </div>
+                    {profileError && <p role="alert" className="auth-error">{profileError}</p>}
+                    {profileMessage && <p role="status" className="auth-success">{profileMessage}</p>}
+                    <button className="btn btn-primary" type="submit" disabled={profileSaving} style={{ marginTop: "14px" }}>
+                        <Save size={14} /> {profileSaving ? 'Saving…' : 'Save display name'}
+                    </button>
+                </form>
+            </div>
+
+            <div className="settings-card">
+                <h3 className="card-title">Change Email</h3>
+                <form onSubmit={saveEmail}>
+                    <div className="form-grid">
                         <div className="form-group">
-                            <label className="form-label" htmlFor="account-new-password">New password (optional)</label>
+                            <label className="form-label" htmlFor="account-current-email">Current email</label>
+                            <input
+                                id="account-current-email"
+                                className="input-field"
+                                value={user?.email ?? ''}
+                                readOnly
+                                dir="ltr"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="account-new-email">New email</label>
+                            <input
+                                id="account-new-email"
+                                className="input-field"
+                                type="email"
+                                autoComplete="email"
+                                value={newEmail}
+                                onChange={(event) => setNewEmail(event.target.value)}
+                                placeholder="e.g. new@company.com"
+                                dir="ltr"
+                                required
+                            />
+                        </div>
+                    </div>
+                    <p className="form-hint" style={{ marginTop: "10px" }}>
+                        For security, Supabase emails a confirmation link before the change takes effect. Your email stays the same until you open that link.
+                    </p>
+                    {emailError && <p role="alert" className="auth-error">{emailError}</p>}
+                    {emailMessage && <p role="status" className="auth-success">{emailMessage}</p>}
+                    <button className="btn btn-primary" type="submit" disabled={emailSaving} style={{ marginTop: "14px" }}>
+                        <Mail size={14} /> {emailSaving ? 'Sending…' : 'Send confirmation link'}
+                    </button>
+                </form>
+            </div>
+
+            <div className="settings-card">
+                <h3 className="card-title">Change Password</h3>
+                <form onSubmit={savePassword}>
+                    <div className="form-grid">
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="account-current-password">Current password</label>
+                            <input
+                                id="account-current-password"
+                                className="input-field"
+                                type="password"
+                                autoComplete="current-password"
+                                value={currentPassword}
+                                onChange={(event) => setCurrentPassword(event.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="account-new-password">New password</label>
                             <input
                                 id="account-new-password"
                                 className="input-field"
@@ -513,74 +650,149 @@ export default function Settings() {
                                 minLength={8}
                                 value={newPassword}
                                 onChange={(event) => setNewPassword(event.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="account-confirm-password">Confirm new password</label>
+                            <input
+                                id="account-confirm-password"
+                                className="input-field"
+                                type="password"
+                                autoComplete="new-password"
+                                minLength={8}
+                                value={confirmPassword}
+                                onChange={(event) => setConfirmPassword(event.target.value)}
+                                required
                             />
                         </div>
                     </div>
-                    {profileError && <p role="alert" className="auth-error">{profileError}</p>}
-                    {profileMessage && <p role="status" className="auth-success">{profileMessage}</p>}
-                    <button className="btn btn-primary" type="submit" disabled={profileSaving}>
-                        <Save size={14} /> {profileSaving ? 'Saving…' : 'Save account profile'}
+                    {passwordError && <p role="alert" className="auth-error">{passwordError}</p>}
+                    {passwordMessage && <p role="status" className="auth-success">{passwordMessage}</p>}
+                    <button className="btn btn-primary" type="submit" disabled={passwordSaving} style={{ marginTop: "14px" }}>
+                        <Save size={14} /> {passwordSaving ? 'Saving…' : 'Change password'}
                     </button>
                 </form>
             </div>
 
-            {/* Business Details Card */}
+            {/* Contact Details Card — draft form, saved explicitly.
+                These details print on the Roznamcha report and the Invoice. */}
             <div className="settings-card">
                 <h3 className="card-title">Contact Details</h3>
-                <div className="form-grid">
-                    <div className="form-group">
-                        <label className="form-label">
-                            <MapPin size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: "4px" }} />
-                            Business Address
-                        </label>
-                        <input
-                            className="input-field"
-                            value={businessAddress}
-                            onChange={(e) => setBusinessAddress(e.target.value)}
-                            placeholder="e.g. Main Bazaar, Lahore"
-                        />
-                        <p className="form-hint">This will appear on printed reports</p>
+                {contactLoading ? (
+                    <div>
+                        <div className="skeleton skeleton-line" />
+                        <div className="skeleton skeleton-line short" />
                     </div>
-
-                    <div className="form-group">
-                        <label className="form-label">
-                            <Phone size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: "4px" }} />
-                            Phone Number
-                        </label>
-                        <input
-                            className="input-field"
-                            value={businessPhone}
-                            onChange={(e) => setBusinessPhone(e.target.value)}
-                            placeholder="e.g. 0300-1234567"
-                            dir="ltr"
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label className="form-label">
-                            <Mail size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: "4px" }} />
-                            Email Address
-                        </label>
-                        <input
-                            className="input-field"
-                            value={businessEmail}
-                            onChange={(e) => setBusinessEmail(e.target.value)}
-                            placeholder="e.g. info@company.com"
-                            dir="ltr"
-                        />
-                    </div>
-                </div>
+                ) : (
+                    <ContactDetailsForm
+                        key={`${businessAddress}|${businessPhone}|${businessEmail}`}
+                        initialAddress={businessAddress}
+                        initialPhone={businessPhone}
+                        initialEmail={businessEmail}
+                        onSave={async (values) => {
+                            await setBusinessAddress(values.address);
+                            await setBusinessPhone(values.phone);
+                            await setBusinessEmail(values.email);
+                        }}
+                    />
+                )}
             </div>
         </div>
     );
 }
 
-// Simple X icon component since lucide-react X might conflict
-function XIcon() {
+// Draft form for the contact details: typing only changes local state, so a
+// cloud reload can never revert the field mid-typing (the old inputs wrote
+// straight to the synced setting on every keystroke and appeared not to
+// save). One Save writes all three values, once.
+function ContactDetailsForm({
+    initialAddress,
+    initialPhone,
+    initialEmail,
+    onSave,
+}: {
+    initialAddress: string;
+    initialPhone: string;
+    initialEmail: string;
+    onSave: (values: { address: string; phone: string; email: string }) => Promise<void>;
+}) {
+    const [address, setAddress] = useState(initialAddress);
+    const [phone, setPhone] = useState(initialPhone);
+    const [email, setEmail] = useState(initialEmail);
+    const [error, setError] = useState('');
+    const [message, setMessage] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    const submit = async (event: FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setError('');
+        setMessage('');
+        setSaving(true);
+        try {
+            await onSave({ address: address.trim(), phone: phone.trim(), email: email.trim() });
+            setMessage('Contact details saved. They now appear on printed reports and invoices.');
+        } catch (saveError) {
+            setError(saveError instanceof Error ? saveError.message : 'Could not save the contact details.');
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
-        <svg style={{ marginTop: "7px" }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
+        <form onSubmit={submit}>
+            <div className="form-grid">
+                <div className="form-group">
+                    <label className="form-label" htmlFor="contact-address">
+                        <MapPin size={14} />
+                        Business Address
+                    </label>
+                    <input
+                        id="contact-address"
+                        className="input-field"
+                        value={address}
+                        onChange={(e) => setAddress(e.target.value)}
+                        placeholder="e.g. Main Bazaar, Lahore"
+                    />
+                    <p className="form-hint">This appears on printed reports and invoices</p>
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label" htmlFor="contact-phone">
+                        <Phone size={14} />
+                        Phone Number
+                    </label>
+                    <input
+                        id="contact-phone"
+                        className="input-field"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        placeholder="e.g. 0300-1234567"
+                        dir="ltr"
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label className="form-label" htmlFor="contact-email">
+                        <Mail size={14} />
+                        Email Address
+                    </label>
+                    <input
+                        id="contact-email"
+                        className="input-field"
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        placeholder="e.g. info@company.com"
+                        dir="ltr"
+                    />
+                </div>
+            </div>
+            {error && <p role="alert" className="auth-error">{error}</p>}
+            {message && <p role="status" className="auth-success">{message}</p>}
+            <button className="btn btn-primary" type="submit" disabled={saving} style={{ marginTop: "14px" }}>
+                <Save size={14} /> {saving ? 'Saving…' : 'Save contact details'}
+            </button>
+        </form>
     );
 }

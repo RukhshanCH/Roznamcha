@@ -99,6 +99,13 @@ function createSupabaseMock() {
       const existing = rows.find((row) => row.user_id === userId
         && row.key === args.p_key
         && row.source_installation_id === args.p_installation_id);
+      if (args.p_value === null) {
+        // New migration: a null value deletes the row instead of failing
+        // on the jsonb NOT NULL constraint.
+        if (existing) rows.splice(rows.indexOf(existing), 1);
+        cloudTables.set('user_settings', rows);
+        return { data: [{ applied: true, sync_version: null, updated_at: new Date().toISOString() }], error: null };
+      }
       if (!existing) {
         if (args.p_expected_version !== null) {
           return { data: [{ applied: false, sync_version: null, updated_at: null }], error: null };
@@ -336,6 +343,18 @@ describe('offline-first cloud synchronization', () => {
     await settings.setSetting('companyName', 'Cloud company');
     expect(cloudTables.get('user_settings')?.[0].value).toBe('Cloud company');
     expect(await settings.getSetting('companyName')).toBe('Cloud company');
+  });
+
+  it('removes a setting (null value) without a sync error and clears the cloud row', async () => {
+    const settings = await import('@/db/core');
+    await settings.setSetting('profilePic', 'data:image/png;base64,AAAA');
+    expect(cloudTables.get('user_settings')).toHaveLength(1);
+    await settings.setSetting<string | null>('profilePic', null);
+    expect(cloudTables.get('user_settings')).toHaveLength(0);
+    expect(await settings.getSetting('profilePic')).toBeUndefined();
+    // A fresh write after removal inserts cleanly (no stale expected version).
+    await settings.setSetting('profilePic', 'data:image/png;base64,BBBB');
+    expect(cloudTables.get('user_settings')?.[0].value).toBe('data:image/png;base64,BBBB');
   });
 
   it('updates a setting pulled from another installation using the shared cloud version', async () => {

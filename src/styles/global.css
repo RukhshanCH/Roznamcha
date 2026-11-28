@@ -363,6 +363,11 @@ input[type="number"] {
   background-color: #F3F4F6;
 }
 
+.header-btn svg {
+  display: block;
+  flex-shrink: 0;
+}
+
 .search-bar {
   position: relative;
   width: 37px;
@@ -545,6 +550,8 @@ input[type="number"] {
   width: 16px;
   height: 16px;
   color: var(--text-secondary);
+  display: block;
+  flex-shrink: 0;
 }
 
 .date-picker-btn input[type="date"] {
@@ -558,8 +565,10 @@ input[type="number"] {
 }
 
 .print-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  line-height: 1;
   gap: 8px;
   padding: 10px 20px;
   background: var(--accent-blue);
@@ -579,10 +588,16 @@ input[type="number"] {
 .print-btn svg {
   width: 16px;
   height: 16px;
-  margin-top: 6px;
+  display: block;
+  flex-shrink: 0;
 }
 
 .pdf-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  line-height: 1;
   padding: 12px 15px;
   color: #fff;
   border: none;
@@ -603,7 +618,7 @@ input[type="number"] {
 }
 
 .pdf-btn svg {
-  transform: translateY(3px);
+  display: block;
   flex-shrink: 0;
 }
 
@@ -1040,6 +1055,12 @@ input[type="number"] {
   line-height: 1;
 
   box-sizing: border-box;
+  gap: 8px;
+}
+
+.btn svg {
+  display: block;
+  flex-shrink: 0;
 }
 
 .btn:hover {
@@ -1135,8 +1156,10 @@ input[type="number"] {
 
 /* Add Entry Button */
 .add-entry-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
+  justify-content: center;
+  line-height: 1;
   gap: 8px;
   padding: 7px 15px;
   background: var(--accent-green);
@@ -1157,11 +1180,8 @@ input[type="number"] {
 .add-entry-btn svg {
   width: 16px;
   height: 16px;
-  margin-top: 4px;
-}
-
-.add-entry-btn span {
-  transform: translateY(-3px);
+  display: block;
+  flex-shrink: 0;
 }
 
 /* Action Buttons in Table */

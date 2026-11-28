@@ -1,5 +1,5 @@
 import { useAtom } from 'jotai';
-import { AlertTriangle, Cloud, CloudOff, LogOut, Menu, RefreshCw, Search, User } from 'lucide-react';
+import { AlertTriangle, Cloud, CloudOff, LogOut, Menu, RefreshCw, Search } from 'lucide-react';
 import {
   sidebarCollapsedAtom,
   searchAtom,
@@ -13,6 +13,7 @@ import { useState } from 'react';
 import { useAtomValue } from 'jotai';
 import { signOutUser } from '@/hooks/useAuth';
 import { resolveSyncConflict } from '@/db/cloudSync';
+import Logo from '../../assets/Logo.webp';
 
 export default function HeaderBar() {
   const [, setCollapsed] = useAtom(sidebarCollapsedAtom);
@@ -140,13 +141,7 @@ export default function HeaderBar() {
         </button> */}
         <div className="user-profile">
           <Link to={'/settings'} className="header">
-            {
-              profilePic ? (
-                <img src={profilePic} alt="User Avatar" className='logo' />
-              ) : (
-                <User className='logo user' />
-              )
-            }
+            <img src={profilePic ?? Logo} alt="User Avatar" className='logo' />
             <span id="user-name" className={`user-name ${isFocus ? 'user-hide' : ''}`}>{companyName}</span>
           </Link>
         </div>

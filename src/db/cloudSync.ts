@@ -236,7 +236,14 @@ async function pushSetting(record: SyncOutboxRecord, userId: string): Promise<vo
     const updatedSetting = updatedSettingRequest.result as Record<string, unknown> | undefined;
     const updatedOutbox = updatedOutboxRequest.result as SyncOutboxRecord | undefined;
     if (updatedOutbox?.mutationId === record.mutationId && updatedSetting?.ownerUserId === userId) {
-      if (!result.applied) {
+      if (result.applied && updatedSetting.value === null) {
+        // A null setting value deletes the cloud row (see the
+        // sync_user_setting migration). Drop the local record too, so the
+        // setting falls back to its default everywhere and the next write
+        // starts from a clean insert instead of a stale expected version.
+        settings.delete(localKey);
+        outbox.delete(record.key);
+      } else if (!result.applied) {
         settings.put({
           ...updatedSetting,
           cloudVersion: result.sync_version ?? updatedSetting.cloudVersion,

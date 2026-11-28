@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { generateInvoiceNumber, initDB, saveInvoiceCounter } from '@/db/roznamcha';
 import { useSetting } from "@/hooks/useSetting";
-import { User } from "lucide-react";
+import Logo from "../assets/Logo.webp";
 
 // ═══════════════════════════════════════════════════════════════
 // TYPES
@@ -79,6 +79,10 @@ const DEFAULT_FLEX = "china-220";
 const Invoice: React.FC = () => {
   const pdfRef = useRef<HTMLDivElement>(null);
   const [profilePic] = useSetting<string | null>("profilePic", null);
+  const [companyName] = useSetting("companyName", "Company Name");
+  const [businessAddress] = useSetting("businessAddress", "");
+  const [businessPhone] = useSetting("businessPhone", "");
+  const [businessEmail] = useSetting("businessEmail", "");
 
   // ── Invoice number lifecycle ───────────────────────────────
   const [nextInvoice, setNextInvoice] = useState<NextInvoice | null>(null);
@@ -346,14 +350,16 @@ const Invoice: React.FC = () => {
       <div dir="ltr" className="invoice-container" ref={pdfRef}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <div className="logo">
-            {
-              profilePic ?
-              <img src={profilePic} alt="Al-Jannat Flex" />
-              : <User size={42} />
-            }
+            <img src={profilePic ?? Logo} alt={companyName} />
           </div>
-          <div>
+          <div style={{ textAlign: "right" }}>
             <h1 className="invoice">INVOICE</h1>
+            <div style={{ marginTop: 10, fontSize: 13, lineHeight: 1.5, color: "#4a5568" }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: "#2d3748" }}>{companyName}</div>
+              {businessAddress && <div>{businessAddress}</div>}
+              {businessPhone && <div>{businessPhone}</div>}
+              {businessEmail && <div>{businessEmail}</div>}
+            </div>
           </div>
         </div>
 

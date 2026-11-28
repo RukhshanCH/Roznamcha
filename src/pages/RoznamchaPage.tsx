@@ -32,6 +32,9 @@ export default function RoznamchaPage() {
     "companyName",
     "Company Name"
   );
+  const [businessAddress] = useSetting("businessAddress", "");
+  const [businessPhone] = useSetting("businessPhone", "");
+  const [businessEmail] = useSetting("businessEmail", "");
   const printRef = useRef<HTMLDivElement>(null);
 
   // ─── Inject Urdu font globally ───
@@ -403,6 +406,9 @@ export default function RoznamchaPage() {
           <Suspense fallback={null}>
             <PrintableRoznamcha
               companyName={companyName}
+              businessAddress={businessAddress}
+              businessPhone={businessPhone}
+              businessEmail={businessEmail}
               selectedDate={selectedDate}
               summary={summary}
               transactions={filteredTransactions}

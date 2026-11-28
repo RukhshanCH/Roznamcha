@@ -1,5 +1,8 @@
 interface Props {
   companyName: string;
+  businessAddress?: string;
+  businessPhone?: string;
+  businessEmail?: string;
   selectedDate: string;
   summary: {
     totalPayments: string;
@@ -30,6 +33,9 @@ interface Props {
 
 export default function PrintableRoznamcha({
   companyName,
+  businessAddress,
+  businessPhone,
+  businessEmail,
   selectedDate,
   summary,
   transactions,
@@ -100,6 +106,11 @@ export default function PrintableRoznamcha({
         <h1 style={{ fontSize: 24, margin: 0, color: "#5D4037" }}>{companyName}</h1>
         <p style={{ fontSize: 16, margin: "6px 0 0", color: "#8B7355" }}>روزنامچہ رجسٹر</p>
         <p style={{ fontSize: 12, margin: "4px 0 0", color: "#666" }}>تاریخ: {selectedDate}</p>
+        {(businessAddress || businessPhone || businessEmail) && (
+          <p dir="ltr" style={{ fontSize: 11, margin: "4px 0 0", color: "#666", textAlign: "center" }}>
+            {[businessAddress, businessPhone, businessEmail].filter(Boolean).join(" · ")}
+          </p>
+        )}
       </div>
 
       <div style={{ fontSize: 14, marginBottom: 10, color: "#5D4037", background: "#E8E0D5", padding: "8px 12px", borderRadius: 4 }}>

@@ -57,12 +57,36 @@ export async function signOutUser(): Promise<void> {
 }
 
 export async function updateUserProfile(
-  profile: { displayName: string; password?: string },
+  profile: { displayName: string },
 ): Promise<void> {
   const { error } = await getSupabaseClient().auth.updateUser({
     data: { display_name: profile.displayName.trim() },
-    ...(profile.password ? { password: profile.password } : {}),
   });
+  if (error) throw error;
+}
+
+export async function changeUserEmail(newEmail: string): Promise<void> {
+  const email = newEmail.trim().toLowerCase();
+  if (!email) throw new Error('Enter the new email address.');
+  const { error } = await getSupabaseClient().auth.updateUser({ email });
+  if (error) throw error;
+}
+
+export async function changeUserPassword(
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError) throw userError;
+  if (!user?.email) throw new Error('Could not read the signed-in account.');
+  // Re-authenticate with the current password before allowing a change.
+  const { error: verifyError } = await supabase.auth.signInWithPassword({
+    email: user.email,
+    password: currentPassword,
+  });
+  if (verifyError) throw new Error('Current password is incorrect.');
+  const { error } = await supabase.auth.updateUser({ password: newPassword });
   if (error) throw error;
 }
 
