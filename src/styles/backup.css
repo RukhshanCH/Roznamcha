@@ -63,18 +63,6 @@
   color: white;
 }
 
-.btn {
-  border: none;
-  padding: 12px 18px;
-  border-radius: 10px;
-  transition: .2s;
-  cursor: pointer;
-}
-
-.btn:hover {
-  transform: translateY(-2px);
-}
-
 .btn.btn-disabled {
   cursor: not-allowed;
   background: #e5e7eb;

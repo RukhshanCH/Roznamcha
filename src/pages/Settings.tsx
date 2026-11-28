@@ -1,6 +1,6 @@
 import { useState, useRef, type ChangeEvent, type FormEvent } from "react";
 import { useSetting } from "@/hooks/useSetting";
-import { Pencil, Camera, Trash2, Building2, MapPin, Phone, Mail, Save, X } from "lucide-react";
+import { Pencil, Camera, Trash2, Building2, MapPin, Phone, Mail, Save, X, User, AlertTriangle } from "lucide-react";
 import Logo from "../assets/Logo.webp";
 import { useAtomValue } from 'jotai';
 import { userAtom } from '@/store/atoms';
@@ -8,94 +8,83 @@ import { changeUserEmail, changeUserPassword, updateUserProfile } from '@/hooks/
 
 export default function Settings() {
     const user = useAtomValue(userAtom);
-    const [accountName, setAccountName] = useState(
-        typeof user?.user_metadata?.display_name === 'string' ? user.user_metadata.display_name : '',
-    );
-    const [profileError, setProfileError] = useState('');
-    const [profileMessage, setProfileMessage] = useState('');
-    const [profileSaving, setProfileSaving] = useState(false);
-
-    const saveAccountProfile = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        setProfileError('');
-        setProfileMessage('');
-        setProfileSaving(true);
-        try {
-            await updateUserProfile({ displayName: accountName });
-            setProfileMessage('Display name updated.');
-        } catch (error) {
-            setProfileError(error instanceof Error ? error.message : 'Could not update the account profile.');
-        } finally {
-            setProfileSaving(false);
-        }
-    };
-
-    // Change email (Supabase sends a confirmation link to the new address;
-    // with secure email change enabled it also asks the current address).
+    const initialDisplayName =
+        typeof user?.user_metadata?.display_name === 'string' ? user.user_metadata.display_name : '';
+    const [accountName, setAccountName] = useState(initialDisplayName);
+    const [savedName, setSavedName] = useState(initialDisplayName);
     const [newEmail, setNewEmail] = useState('');
-    const [emailError, setEmailError] = useState('');
-    const [emailMessage, setEmailMessage] = useState('');
-    const [emailSaving, setEmailSaving] = useState(false);
-
-    const saveEmail = async (event: FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-        setEmailError('');
-        setEmailMessage('');
-        if (newEmail.trim().toLowerCase() === (user?.email ?? '').toLowerCase()) {
-            setEmailError('That is already your current email address.');
-            return;
-        }
-        setEmailSaving(true);
-        try {
-            await changeUserEmail(newEmail);
-            setNewEmail('');
-            setEmailMessage('Confirmation link sent. Open the link in the new inbox (and your current inbox, if asked) to finish changing your email.');
-        } catch (error) {
-            setEmailError(error instanceof Error ? error.message : 'Could not change the email address.');
-        } finally {
-            setEmailSaving(false);
-        }
-    };
-
-    // Change password (current password is verified first, new + confirm must match)
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
-    const [passwordError, setPasswordError] = useState('');
-    const [passwordMessage, setPasswordMessage] = useState('');
-    const [passwordSaving, setPasswordSaving] = useState(false);
+    const [accountError, setAccountError] = useState('');
+    const [accountMessages, setAccountMessages] = useState<string[]>([]);
+    const [accountSaving, setAccountSaving] = useState(false);
 
-    const savePassword = async (event: FormEvent<HTMLFormElement>) => {
+    const passwordTouched = currentPassword !== '' || newPassword !== '' || confirmPassword !== '';
+    const accountDirty =
+        accountName.trim() !== savedName.trim() || newEmail.trim() !== '' || passwordTouched;
+
+    // One card, one Save: display name, email change and password change are
+    // applied together — only the parts the user actually filled in.
+    const saveAccount = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setPasswordError('');
-        setPasswordMessage('');
-        if (!currentPassword) {
-            setPasswordError('Enter your current password.');
+        setAccountError('');
+        setAccountMessages([]);
+
+        const wantsEmail = newEmail.trim() !== '';
+        if (wantsEmail && newEmail.trim().toLowerCase() === (user?.email ?? '').toLowerCase()) {
+            setAccountError('The new email is the same as your current email address.');
             return;
         }
-        if (newPassword.length < 8) {
-            setPasswordError('New password must be at least 8 characters.');
+        if (passwordTouched) {
+            if (!currentPassword) {
+                setAccountError('Enter your current password to change your password.');
+                return;
+            }
+            if (newPassword.length < 8) {
+                setAccountError('New password must be at least 8 characters.');
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                setAccountError('New password and confirm password do not match.');
+                return;
+            }
+            if (newPassword === currentPassword) {
+                setAccountError('New password must be different from the current password.');
+                return;
+            }
+        }
+        if (!accountDirty) {
+            setAccountError('No changes to save.');
             return;
         }
-        if (newPassword !== confirmPassword) {
-            setPasswordError('New password and confirm password do not match.');
-            return;
-        }
-        if (newPassword === currentPassword) {
-            setPasswordError('New password must be different from the current password.');
-            return;
-        }
-        setPasswordSaving(true);
+
+        setAccountSaving(true);
+        const messages: string[] = [];
         try {
-            await changeUserPassword(currentPassword, newPassword);
-            setCurrentPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-            setPasswordMessage('Password changed.');
+            if (accountName.trim() !== savedName.trim()) {
+                await updateUserProfile({ displayName: accountName });
+                setSavedName(accountName.trim());
+                messages.push('Display name updated.');
+            }
+            if (wantsEmail) {
+                await changeUserEmail(newEmail);
+                setNewEmail('');
+                messages.push('Email change requested — open the confirmation link sent to your new inbox (and your current inbox, if asked) to finish it.');
+            }
+            if (passwordTouched) {
+                await changeUserPassword(currentPassword, newPassword);
+                setCurrentPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+                messages.push('Password changed.');
+            }
+            setAccountMessages(messages);
         } catch (error) {
-            setPasswordError(error instanceof Error ? error.message : 'Could not change the password.');
+            if (messages.length > 0) setAccountMessages(messages);
+            setAccountError(error instanceof Error ? error.message : 'Could not save the account changes.');
         } finally {
-            setPasswordSaving(false);
+            setAccountSaving(false);
         }
     };
 
@@ -183,6 +172,11 @@ export default function Settings() {
                     display: flex;
                     align-items: center;
                     gap: 10px;
+                    line-height: 1;
+                }
+                .settings-header h2 svg {
+                    display: block;
+                    flex-shrink: 0;
                 }
                 .settings-header p {
                     color: var(--text-secondary);
@@ -198,14 +192,58 @@ export default function Settings() {
                     box-shadow: var(--shadow-card);
                 }
                 .card-title {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
                     font-size: 16px;
-                    font-weight: 600;
+                    font-weight: 700;
+                    line-height: 1;
                     color: var(--text-primary);
                     margin: 0 0 20px 0;
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
                     border-bottom: 1px solid var(--border-color);
                     padding-bottom: 12px;
+                }
+                .card-title svg {
+                    display: block;
+                    flex-shrink: 0;
+                    color: var(--accent-blue);
+                }
+                .form-subheading {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    font-size: 13px;
+                    font-weight: 700;
+                    line-height: 1;
+                    color: var(--text-primary);
+                    text-transform: uppercase;
+                    letter-spacing: 0.3px;
+                    margin: 22px 0 14px 0;
+                }
+                .form-subheading svg {
+                    display: block;
+                    flex-shrink: 0;
+                    color: var(--accent-blue);
+                }
+                .unsaved-warning {
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    background: #FFFBEB;
+                    border: 1px solid #FDE68A;
+                    color: #92400E;
+                    padding: 10px 12px;
+                    border-radius: 8px;
+                    font-size: 13px;
+                    font-weight: 500;
+                    line-height: 1.3;
+                    margin-top: 14px;
+                }
+                .unsaved-warning svg {
+                    display: block;
+                    flex-shrink: 0;
                 }
                 
                 /* Profile Section */
@@ -261,6 +299,10 @@ export default function Settings() {
                 .profile-avatar-overlay:hover {
                     background: var(--accent-blue-hover);
                 }
+                .profile-avatar-overlay svg {
+                    display: block;
+                    flex-shrink: 0;
+                }
                 .profile-info {
                     flex: 1;
                     min-width: 200px;
@@ -286,41 +328,65 @@ export default function Settings() {
                 .btn {
                     display: inline-flex;
                     align-items: center;
-                    gap: 6px;
-                    padding: 8px 16px;
+                    justify-content: center;
+                    gap: 8px;
+                    height: 42px;
+                    padding: 0 18px;
                     border-radius: 8px;
                     font-size: 14px;
                     font-weight: 500;
                     font-family: var(--font-ui);
                     cursor: pointer;
-                    border: none;
-                    transition: all 0.2s;
+                    border: 1px solid transparent;
+                    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
                 }
                 .btn-primary {
-                    background: var(--accent-blue);
+                    background: linear-gradient(135deg, #3B82F6, #2563EB);
                     color: white;
+                    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
                 }
                 .btn-primary:hover {
-                    background: var(--accent-blue-hover);
+                    background: linear-gradient(135deg, #2563EB, #1D4ED8);
+                    transform: translateY(-1px);
+                    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35);
+                }
+                .btn-primary:active {
+                    transform: translateY(0) scale(0.98);
+                    box-shadow: 0 1px 2px rgba(37, 99, 235, 0.25);
                 }
                 .btn-secondary {
-                    background: #f3f4f6;
+                    background: #ffffff;
                     color: var(--text-primary);
-                    border: 1px solid var(--border-color);
+                    border-color: var(--border-color);
                 }
                 .btn-secondary:hover {
-                    background: #e5e7eb;
+                    background: #EFF6FF;
+                    color: #2563EB;
+                    border-color: #2563EB;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
+                }
+                .btn-secondary:active {
+                    transform: translateY(0) scale(0.98);
                 }
                 .btn-danger {
                     background: #fef2f2;
                     color: #dc2626;
-                    border: 1px solid #fecaca;
+                    border-color: #fecaca;
                 }
                 .btn-danger:hover {
-                    background: #fee2e2;
+                    background: #dc2626;
+                    color: #ffffff;
+                    border-color: #dc2626;
+                    transform: translateY(-1px);
+                    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+                }
+                .btn-danger:active {
+                    transform: translateY(0) scale(0.98);
                 }
                 .btn-sm {
-                    padding: 6px 12px;
+                    height: 36px;
+                    padding: 0 14px;
                     font-size: 13px;
                 }
 
@@ -373,6 +439,7 @@ export default function Settings() {
                 }
                 .input-field {
                     min-width: 0;
+                    height: 42px;
                     padding: 8px 12px;
                     border: 1px solid var(--border-color);
                     border-radius: 8px;
@@ -475,7 +542,7 @@ export default function Settings() {
 
             {/* Profile Picture & Company Name Card */}
             <div className="settings-card">
-                <h3 className="card-title">Business Identity</h3>
+                <h3 className="card-title"><Building2 size={18} /> Business Identity</h3>
 
                 <div className="profile-section">
                     {/* Avatar */}
@@ -546,6 +613,15 @@ export default function Settings() {
 
                             {profilePic !== null && (
                                 <button
+                                    className="btn btn-secondary btn-sm"
+                                    onClick={() => setProfilePic(null)}
+                                >
+                                    <Camera size={14} /> Use Default Picture
+                                </button>
+                            )}
+
+                            {profilePic !== null && (
+                                <button
                                     className="btn btn-danger btn-sm"
                                     onClick={handleRemoveImage}
                                 >
@@ -561,32 +637,8 @@ export default function Settings() {
             </div>
 
             <div className="settings-card">
-                <h3 className="card-title">Account Profile</h3>
-                <p style={{ marginBottom: "16px" }}>{user?.email}</p>
-                <form onSubmit={saveAccountProfile}>
-                    <div className="form-grid">
-                        <div className="form-group">
-                            <label className="form-label" htmlFor="account-display-name">Display name</label>
-                            <input
-                                id="account-display-name"
-                                className="input-field"
-                                autoComplete="name"
-                                value={accountName}
-                                onChange={(event) => setAccountName(event.target.value)}
-                            />
-                        </div>
-                    </div>
-                    {profileError && <p role="alert" className="auth-error">{profileError}</p>}
-                    {profileMessage && <p role="status" className="auth-success">{profileMessage}</p>}
-                    <button className="btn btn-primary" type="submit" disabled={profileSaving} style={{ marginTop: "14px" }}>
-                        <Save size={14} /> {profileSaving ? 'Saving…' : 'Save display name'}
-                    </button>
-                </form>
-            </div>
-
-            <div className="settings-card">
-                <h3 className="card-title">Change Email</h3>
-                <form onSubmit={saveEmail}>
+                <h3 className="card-title"><User size={18} /> Account</h3>
+                <form onSubmit={saveAccount}>
                     <div className="form-grid">
                         <div className="form-group">
                             <label className="form-label" htmlFor="account-current-email">Current email</label>
@@ -599,7 +651,17 @@ export default function Settings() {
                             />
                         </div>
                         <div className="form-group">
-                            <label className="form-label" htmlFor="account-new-email">New email</label>
+                            <label className="form-label" htmlFor="account-display-name">Display name</label>
+                            <input
+                                id="account-display-name"
+                                className="input-field"
+                                autoComplete="name"
+                                value={accountName}
+                                onChange={(event) => setAccountName(event.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label className="form-label" htmlFor="account-new-email">New email (optional)</label>
                             <input
                                 id="account-new-email"
                                 className="input-field"
@@ -607,26 +669,16 @@ export default function Settings() {
                                 autoComplete="email"
                                 value={newEmail}
                                 onChange={(event) => setNewEmail(event.target.value)}
-                                placeholder="e.g. new@company.com"
+                                placeholder="Leave blank to keep your current email"
                                 dir="ltr"
-                                required
                             />
                         </div>
                     </div>
                     <p className="form-hint" style={{ marginTop: "10px" }}>
-                        For security, Supabase emails a confirmation link before the change takes effect. Your email stays the same until you open that link.
+                        For security, Roznamcha emails a confirmation link before the change takes effect. Your email stays the same until you open that link.
                     </p>
-                    {emailError && <p role="alert" className="auth-error">{emailError}</p>}
-                    {emailMessage && <p role="status" className="auth-success">{emailMessage}</p>}
-                    <button className="btn btn-primary" type="submit" disabled={emailSaving} style={{ marginTop: "14px" }}>
-                        <Mail size={14} /> {emailSaving ? 'Sending…' : 'Send confirmation link'}
-                    </button>
-                </form>
-            </div>
 
-            <div className="settings-card">
-                <h3 className="card-title">Change Password</h3>
-                <form onSubmit={savePassword}>
+                    <h4 className="form-subheading"><Save size={15} /> Change password (optional)</h4>
                     <div className="form-grid">
                         <div className="form-group">
                             <label className="form-label" htmlFor="account-current-password">Current password</label>
@@ -637,7 +689,6 @@ export default function Settings() {
                                 autoComplete="current-password"
                                 value={currentPassword}
                                 onChange={(event) => setCurrentPassword(event.target.value)}
-                                required
                             />
                         </div>
                         <div className="form-group">
@@ -650,7 +701,6 @@ export default function Settings() {
                                 minLength={8}
                                 value={newPassword}
                                 onChange={(event) => setNewPassword(event.target.value)}
-                                required
                             />
                         </div>
                         <div className="form-group">
@@ -663,14 +713,21 @@ export default function Settings() {
                                 minLength={8}
                                 value={confirmPassword}
                                 onChange={(event) => setConfirmPassword(event.target.value)}
-                                required
                             />
                         </div>
                     </div>
-                    {passwordError && <p role="alert" className="auth-error">{passwordError}</p>}
-                    {passwordMessage && <p role="status" className="auth-success">{passwordMessage}</p>}
-                    <button className="btn btn-primary" type="submit" disabled={passwordSaving} style={{ marginTop: "14px" }}>
-                        <Save size={14} /> {passwordSaving ? 'Saving…' : 'Change password'}
+
+                    {accountDirty && accountMessages.length === 0 && (
+                        <p className="unsaved-warning" role="alert">
+                            <AlertTriangle size={15} /> You have unsaved changes — click Save changes to apply them.
+                        </p>
+                    )}
+                    {accountError && <p role="alert" className="auth-error">{accountError}</p>}
+                    {accountMessages.map((message) => (
+                        <p key={message} role="status" className="auth-success">{message}</p>
+                    ))}
+                    <button className="btn btn-primary" type="submit" disabled={accountSaving} style={{ marginTop: "14px" }}>
+                        <Save size={14} /> {accountSaving ? 'Saving…' : 'Save changes'}
                     </button>
                 </form>
             </div>
@@ -678,7 +735,7 @@ export default function Settings() {
             {/* Contact Details Card — draft form, saved explicitly.
                 These details print on the Roznamcha report and the Invoice. */}
             <div className="settings-card">
-                <h3 className="card-title">Contact Details</h3>
+                <h3 className="card-title"><Phone size={18} /> Contact Details</h3>
                 {contactLoading ? (
                     <div>
                         <div className="skeleton skeleton-line" />
@@ -686,7 +743,6 @@ export default function Settings() {
                     </div>
                 ) : (
                     <ContactDetailsForm
-                        key={`${businessAddress}|${businessPhone}|${businessEmail}`}
                         initialAddress={businessAddress}
                         initialPhone={businessPhone}
                         initialEmail={businessEmail}
@@ -723,6 +779,10 @@ function ContactDetailsForm({
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [saving, setSaving] = useState(false);
+    const dirty =
+        address.trim() !== initialAddress.trim()
+        || phone.trim() !== initialPhone.trim()
+        || email.trim() !== initialEmail.trim();
 
     const submit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -788,6 +848,11 @@ function ContactDetailsForm({
                     />
                 </div>
             </div>
+            {dirty && !message && (
+                <p className="unsaved-warning" role="alert">
+                    <AlertTriangle size={15} /> You have unsaved changes — click Save contact details to apply them.
+                </p>
+            )}
             {error && <p role="alert" className="auth-error">{error}</p>}
             {message && <p role="status" className="auth-success">{message}</p>}
             <button className="btn btn-primary" type="submit" disabled={saving} style={{ marginTop: "14px" }}>
